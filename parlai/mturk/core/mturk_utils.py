@@ -311,20 +311,21 @@ def create_hit_type(
         locale_requirements += qualifications
 
     if not has_locale_qual:
-        locale_requirements.append(
-            {
-                'QualificationTypeId': '00000000000000000071',
-                'Comparator': 'In',
-                'LocaleValues': [
-                    {'Country': 'US'},
-                    {'Country': 'CA'},
-                    {'Country': 'GB'},
-                    {'Country': 'AU'},
-                    {'Country': 'NZ'},
-                ],
-                'RequiredToPreview': True,
-            }
-        )
+        # locale_requirements.append(
+        #     {
+        #         'QualificationTypeId': '00000000000000000071',
+        #         'Comparator': 'In',
+        #         'LocaleValues': [
+        #             {'Country': 'US'},
+        #             {'Country': 'CA'},
+        #             {'Country': 'GB'},
+        #             {'Country': 'AU'},
+        #             {'Country': 'NZ'},
+        #         ],
+        #         'RequiredToPreview': True,
+        #     }
+        # )
+        pass
 
     # Create the HIT type
     response = client.create_hit_type(
@@ -386,6 +387,11 @@ def expire_hit(is_sandbox, hit_id):
     # Update expiration to a time in the past, the HIT expires instantly
     past_time = datetime(2015, 1, 1)
     client.update_expiration_for_hit(HITId=hit_id, ExpireAt=past_time)
+
+
+def delete_hit(is_sandbox, hit_id):
+    client = get_mturk_client(is_sandbox)
+    client.delete_hit(HITId=hit_id)
 
 
 def setup_sns_topic(task_name, server_url, task_group_id):

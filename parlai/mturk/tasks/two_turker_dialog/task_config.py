@@ -37,7 +37,5 @@ and on the left side of the chat page. Supports HTML formatting.
 task_config[
     'task_description'
 ] = '''\'\'\'
-In this task, you are going to chat with other people in Murk.<br><br>
-
-If you are ready, please click "Accept HIT" to start this task.
+In this task, you are going to chat with other people in Murk.
 \'\'\''''

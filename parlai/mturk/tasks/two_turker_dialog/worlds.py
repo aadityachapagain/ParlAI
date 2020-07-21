@@ -8,7 +8,10 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
     def parley(self):
         self.mturk_agent.observe({
             'id': 'SYSTEM',
-            'text': 'Welcome! When you\'re ready continue',
+            'text': (
+                'Welcome! If you are ready,'
+                'please click "I am ready, continue" to start this task.'
+            ),
             # This is message(Can be formated in html) that can be shown in onboarding page
         })
         self.mturk_agent.act()
@@ -24,7 +27,7 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
 
     def parley(self):
         self.turn_index += 1
-        acts = [None] * len(self.agents)
+        acts = {}
         if self.turn_index == 1:
             for agent in self.agents:
                 agent.observe({
@@ -34,9 +37,9 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
                         'Only send message in your turn.'
                     )
                 })
-        for index, agent in enumerate(self.agents):
-            acts[index] = agent.act(timeout=None)
-            if acts[index]['episode_done']:
+        for agent in self.agents:
+            acts[agent.id] = agent.act(timeout=None)
+            if acts[agent.id]['episode_done']:
                 self.episodeDone = True
                 for ag in self.agents:
                     ag.observe(validate({
@@ -50,10 +53,12 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
                     }))
                 return
             else:
-                self.dialog.append((index, acts[index]['text']))
+                self.dialog.append({"turn_index": self.turn_index,
+                                    "id": agent.id,
+                                    "text": acts[agent.id]["text"]})
                 for other_agent in self.agents:
                     if other_agent != agent:
-                        other_agent.observe(validate(acts[index]))
+                        other_agent.observe(validate(acts[agent.id]))
 
     def shutdown(self):
         """

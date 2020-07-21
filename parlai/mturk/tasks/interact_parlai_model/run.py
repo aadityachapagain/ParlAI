@@ -23,7 +23,7 @@ def main():
     bot_agent_id = 'BOT'
     bot_agent = create_agent(opt, requireModelExists=True)
 
-    mturk_manager = MTurkManager(opt=opt, mturk_agent_ids=mturk_agent_id, use_db=False)
+    mturk_manager = MTurkManager(opt=opt, mturk_agent_ids=mturk_agent_id, use_db=True)
     mturk_manager.setup_server()
 
     def run_onboard(worker):

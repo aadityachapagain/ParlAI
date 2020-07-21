@@ -33,11 +33,11 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             self.mturk_agent.observe({
                 'id': 'SYSTEM',
                 'text': (
-                    'You can talk with he bot now.'
+                    'You can talk with the bot now.'
                     'Only send message in your turn.'
                 )
             })
-        for index, agent in enumerate([self.mturk_agent, self.parlai_agent]):
+        for agent in [self.mturk_agent, self.parlai_agent]:
             if agent == self.mturk_agent:
                 acts[agent.id] = agent.act(timeout=None)  # TODO add agent timeout for action
             else:
@@ -54,7 +54,9 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
                 }))
                 return
             else:
-                self.dialog.append(acts)
+                self.dialog.append({"turn_index": self.turn_index,
+                                    "id": agent.id,
+                                    "text": acts[agent.id]["text"]})
                 for other_agent in [self.mturk_agent, self.parlai_agent]:
                     if other_agent != agent:
                         other_agent.observe(validate(acts[agent.id]))

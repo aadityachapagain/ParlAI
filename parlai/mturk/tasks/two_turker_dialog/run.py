@@ -19,7 +19,7 @@ def main():
     opt.update(task_config)
 
     mturk_agent_ids = ['PERSON_1', 'PERSON_2']
-    mturk_manager = MTurkManager(opt=opt, mturk_agent_ids=mturk_agent_ids, use_db=False)
+    mturk_manager = MTurkManager(opt=opt, mturk_agent_ids=mturk_agent_ids, use_db=True)
     mturk_manager.setup_server()
 
     def run_onboard(worker):

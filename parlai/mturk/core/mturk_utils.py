@@ -273,6 +273,20 @@ def give_worker_qualification(worker_id, qualification_id, value=None, is_sandbo
         )
 
 
+def check_worker_qualification_exist(qual_id, worker_id, is_sandbox):
+    """
+    Get the score for the given qualification id associated with given worker id
+    """
+    client = get_mturk_client(is_sandbox)
+    try:
+        response = client.get_qualification_score(QualificationTypeId=qual_id,
+                                                  WorkerId=worker_id
+                                                  )
+        return True
+    except ClientError as e:
+        return False
+
+
 def remove_worker_qualification(
     worker_id, qualification_id, is_sandbox=True, reason=''
 ):

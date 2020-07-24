@@ -1,4 +1,5 @@
 import os
+import yaml
 
 from parlai.core.params import ParlaiParser
 from parlai.mturk.core import mturk_utils
@@ -16,8 +17,13 @@ def main():
     argparser.add_mturk_args()
     opt = argparser.parse_args()
 
-    opt['task'] = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
+    task_dir = os.path.dirname(os.path.abspath(__file__))
+    opt['task'] = os.path.basename(task_dir)
     opt.update(task_config)
+
+    with open(os.path.join(task_dir, 'config.yml')) as f:
+        cfg = yaml.load(f.read(), Loader=yaml.FullLoader)
+    opt.update(cfg)
 
     mturk_agent_ids = ['PERSON_1', 'PERSON_2']
     mturk_manager = MTurkManager(opt=opt, mturk_agent_ids=mturk_agent_ids, use_db=True)
@@ -62,13 +68,23 @@ def main():
             {
                 'QualificationTypeId': fail_qual_id,
                 'Comparator': 'DoesNotExist',
-                'ActionsGuarded': 'Accept',
-            }
+                'ActionsGuarded': 'DiscoverPreviewAndAccept',
+            },
         ]
+        if not opt['is_sandbox']:
+            agent_qualifications.extend([
+                {
+                    'QualificationTypeId': '00000000000000000071',
+                    'Comparator': 'In',
+                    'LocaleValues': [{'Country': country} for country in opt['allowed_countries']],
+                    'ActionsGuarded': 'DiscoverPreviewAndAccept',
+                },
+            ])
         mturk_manager.create_hits(qualifications=agent_qualifications)
 
         def check_workers_eligibility(workers):
             return workers
+
         eligibility_function = {'func': check_workers_eligibility, 'multiple': True}
 
         def assign_worker_roles(workers):

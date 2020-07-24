@@ -8,11 +8,11 @@
           <span id="task-description" style="font-size: 14px">
           </span>
       </div>
-<!--      <div id="left-bottom-pane" style="min-height: 30%; overflow:auto">-->
-<!--        &lt;!&ndash; <span id="task-persona" style="font-size: 16px; background-color: #CDA6B8"> &ndash;&gt;-->
-<!--          <span id="task-persona" style="font-size: 16px;">-->
-<!--          </span>-->
-<!--      </div>-->
+      <div id="left-bottom-pane" style="min-height: 30%; overflow:auto">
+        <!-- <span id="task-persona" style="font-size: 16px; background-color: #CDA6B8"> -->
+          <span id="task-persona" style="font-size: 16px;">
+          </span>
+      </div>
   </div>
 {% endblock %}
 {% block right_pane %}
@@ -67,25 +67,18 @@
       } else {
         add_message_to_conversation(agent_id, message_text, true);
       }
-      // if ("persona_text" in message) {
-      //   var persona_text = message.persona_text.replace(/(?:\r\n|\r|\n)/g, '<br />');
-      //     $("span#task-persona").html('<br><br><b> Your assigned character is:</b><br><br>' + persona_text);
-      //     log(message.persona_text, 1);
-      // }
-      // if("exceed_min_turns" in message && message.exceed_min_turns){
-      //   exceed_min_turns = true;
-      //   $("button#id_done_button").css("disabled", false);
-      //   $("button#id_done_button").css("display", "");
-      //   $("input#id_text_input").css("width", "40%");
-      //   $(window).resize(window_resize);
-      // }
-      // NEW ADDED SCRIPTS //
-      exceed_min_turns = true;
-      $("button#id_done_button").css("disabled", false);
-      $("button#id_done_button").css("display", "");
-      $("input#id_text_input").css("width", "40%");
-      $(window).resize(window_resize);
-      // NEW ADDED SCRIPTS //
+      if ("show_persona" in message) {
+        message.persona_description = message.persona_description.replace(/(?:\r\n|\r|\n)/g, '<br />');
+          $("span#task-persona").html(message.persona_description);
+          log(message.persona_description, 1);
+      }
+      if("exceed_min_turns" in message && message.exceed_min_turns){
+        exceed_min_turns = true;
+        $("button#id_done_button").css("disabled", false);
+        $("button#id_done_button").css("display", "");
+        $("input#id_text_input").css("width", "40%");
+        $(window).resize(window_resize);
+      }
     }
     $("button#id_done_button").on('click', function () {
         var text = "I am done with the chat and clicked the 'Done' button, thank you!";

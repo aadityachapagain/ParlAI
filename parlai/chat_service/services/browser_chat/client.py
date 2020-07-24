@@ -148,6 +148,13 @@ def on_open(ws):
 
     :param ws: websocket.WebSocketApp that sends messages to a browser_manager
     """
+    begin_data = json.dumps({'text':'begin'})
+    ws.send(begin_data)
+
+    ws.send(begin_data)
+    # check if the bot started or not 
+    
+    print('bots started ... ')
     threading.Thread(target=_run_browser).start()
 
 

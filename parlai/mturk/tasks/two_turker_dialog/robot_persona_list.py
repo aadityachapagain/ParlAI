@@ -1,4 +1,4 @@
-personas = [
+robot_personas = [
     {
         "title": "Shy and Unsure",
         "description": "Karu is shy, cautious and feels a bit unsure about being able to accomplish its mission."

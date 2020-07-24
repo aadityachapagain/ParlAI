@@ -8,7 +8,8 @@ from parlai.mturk.core import mturk_utils
 from parlai.mturk.core.agents import TIMEOUT_MESSAGE, MTURK_DISCONNECT_MESSAGE, RETURN_MESSAGE
 from parlai.mturk.core.worlds import MTurkOnboardWorld, MTurkTaskWorld
 from .qual_question import questions
-from .persona_list import personas
+from .robot_persona_list import robot_personas
+from .child_personas import gen_child_persona_sentence
 
 
 class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
@@ -81,10 +82,10 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
             # Check qualification result
             if correct_answers >= self.opt['min_pass_qual_quests']:
                 self.pass_qual_test = True
-                self.send_persona((
+                self.send_task_instruction((
                     'Congratulations you completed qualification task.\n'
-                    'Now, Please read the assigned persona carefully and when you are ready '
-                    f'send anything to continue.\n Please respond within {self.opt["max_onboard_resp_time"]//60} minutes. '
+                    'Now, Please read the assigned persona carefully and <b>when you are ready '
+                    f'send anything to continue.</b>\n Please respond within {self.opt["max_onboard_resp_time"] // 60} minutes. '
                     'We need to pair you with another turker.'
                 ))
             else:
@@ -96,27 +97,25 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
                 ))
         else:
             # Worker is good to go to main task
-            self.send_persona((
+            self.send_task_instruction((
                 'Welcome back! You\'ve already completed our qualification task. \n'
-                'Please read the assigned persona carefully and when you are ready '
-                'send anything to continue.'
+                'Please read the assigned persona carefully and <b>when you are ready '
+                'send anything to continue.</b>'
                 f'send anything to continue.\n Please respond within {self.opt["max_onboard_resp_time"] // 60} minutes. '
                 'We need to pair you with another turker.'
             ))
         self.episodeDone = True
 
-    def send_persona(self, message):
-        persona_chosen = random.choice(personas)
-        self.mturk_agent.persona_assigned = persona_chosen
+    def send_task_instruction(self, message):
         self.mturk_agent.observe({
             'id': 'SYSTEM',
             'qual_test_pass': True,
             'text': message,
             'onboard_message': (
-                '<b><h4>Persona Instruction</h4></b>'
+                '<b><h4>Task Instruction</h4></b>'
                 '<br>'
-                f'You\'re going to talk to a character who is <b>{persona_chosen["title"]}</b>. '
-                f'The character description: <i>{persona_chosen["description"]}</i>'
+                f'Once you\'re paired with a turker you will be assigned a character. Chat with another worker as if '
+                'you\'ve that character.'
             )
         })
         agent_act = self.mturk_agent.act(timeout=self.opt['max_onboard_resp_time'])
@@ -163,6 +162,18 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
         self.dialog = []
         self.n_turn = np.random.randint(self.opt['range_turn'][0],
                                         self.opt['range_turn'][1]) + 1
+        self.assign_conv_role()
+
+    def assign_conv_role(self):
+        child_persona_text = gen_child_persona_sentence()
+        robot = random.choice(robot_personas)
+        robot_persona_text = (
+            f'You\'re assigned a role of Karu who is {robot["title"]}. '
+            f'A description for your character: <i>{robot["description"]}</i>'
+        )
+        role_texts = random.sample([child_persona_text, robot_persona_text], 2)
+        self.agents[0].persona_text = role_texts[0]
+        self.agents[1].persona_text = role_texts[1]
 
     def parley(self):
         self.turn_index += 1
@@ -176,11 +187,12 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
                 control_msg['text'] = self.get_instruction(agent_id=agent.id, tag='start')
                 control_msg['show_persona'] = True
                 control_msg['persona_description'] = (
-                        '<br><br>'
-                        '<b><h4>Persona Instruction</h4></b>'
-                        '<br>'
-                        f'You\'re going to talk to a character who is <b>{agent.persona_assigned["title"]}</b> '
-                        f'The character description: <i>{agent.persona_assigned["description"]}</i>'
+                    '<br>'
+                    '<b><h3>Task Instruction</h3></b>'
+                    '<br>'
+                    f"You're assigned with the following character: <br>"
+                    f'<b><span style="color:blue">{agent.persona_text}</span></b>'
+                    '<br>'
                 )
                 agent.observe(validate(control_msg))
 
@@ -203,7 +215,8 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
         """Otherwise, we proceed accordingly"""
         for agent in self.agents:
             if not self.episodeDone:
-                acts[agent.id] = agent.act(timeout=self.opt['max_resp_time'])
+                acts[agent.id] = agent.act(
+                    timeout=self.opt['max_resp_time'] + (60 if self.turn_index == 1 else 0))  # More time for 1st turn
             if self.check_timeout(acts[agent.id]):
                 return
 
@@ -267,7 +280,7 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
                       'to end the chat. \n'
                       '<b>You can track the character description on the left.</b> '
                       '\n <span style="color:blue"><b>Please try to speak to the '
-                      'other person as if he/she is the character mentioned .</b></span>'
+                      'other person as if you\'re the character mentioned .</b></span>'
                       '\n <span style="color:blue"><b>Do not trivially copy the '
                       'character descriptions into the message.</b></span> \n'
                       'Please respond quickly. We need it interactive and real time.'
@@ -374,6 +387,6 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
 
     def get_custom_task_data(self):
         return {
-            'opponent_personas': {ag.id: ag.persona_assigned for ag in self.agents},
+            'opponent_personas': {ag.id: ag.persona_text for ag in self.agents},
             'conversations': self.dialog
         }

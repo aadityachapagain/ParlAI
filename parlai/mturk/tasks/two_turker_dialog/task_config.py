@@ -8,7 +8,6 @@ from typing import Dict, Any
 
 task_config: Dict[str, Any] = {}
 
-
 task_config['frontend_version'] = 0
 
 """A short and descriptive title about the kind of task the HIT contains.
@@ -17,19 +16,16 @@ and everywhere the HIT is mentioned.
 """
 task_config['hit_title'] = 'Chat with another worker playing a childlike character'
 
-
 """A description includes detailed information about the kind of task the HIT contains.
 On the Amazon Mechanical Turk web site, the HIT description appears in the expanded
 view of search results, and in the HIT and assignment screens.
 """
 task_config['hit_description'] = 'You will chat to another person with the childlike character assigned to you.'
 
-
 """One or more words or phrases that describe the HIT, separated by commas.
 On MTurk website, these words are used in searches to find HITs.
 """
 task_config['hit_keywords'] = 'chat,dialog,conversation,text'
-
 
 """A detailed task description that will be shown on the HIT task preview page
 and on the left side of the chat page. Supports HTML formatting.
@@ -50,6 +46,5 @@ Karu is a robot built by The Global Robotics Laboratory on a mission to understa
 Overall, Karu communicates in clear, gender-neutral and optimistic sounding tone that is comparable in communication structure to an eight year old child.
 <br>
 Karu is very intelligent, empathetic and caring but many times the resulting style of communication feels very self-conscious and awkward as if the robot is deeply concerned about 'saying the right thing.'
-<br>
-<br>
+<br><b>Note: <span style="color:red">- No racism, sexism or otherwise offensive messages, or the submission will be rejected and we will report to Amazon.</b></span>
 '''

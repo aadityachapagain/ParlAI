@@ -31,10 +31,10 @@ class BrowserHandler(BaseHTTPRequestHandler):
     def _interactive_running(self, reply_text):
         data = {}
         data['text'] = json.loads(reply_text.decode('utf-8')).get('text', reply_text.decode('utf-8'))
-        if data['text'] == "[DONE]":
-            print('[ Closing socket... ]')
-            SHARED['ws'].close()
-            SHARED['wb'].shutdown()
+        # if data['text'] == "[DONE]":
+        #     print('[ Closing socket... ]')
+        #     SHARED['ws'].close()
+        #     SHARED['wb'].shutdown()
         json_data = json.dumps(data)
         SHARED['ws'].send(json_data)
         return data['text']

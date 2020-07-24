@@ -30,7 +30,7 @@ class BrowserHandler(BaseHTTPRequestHandler):
 
     def _interactive_running(self, reply_text):
         data = {}
-        data['text'] = reply_text.decode('utf-8')
+        data['text'] = json.loads(reply_text.decode('utf-8')).get('text', reply_text.decode('utf-8'))
         if data['text'] == "[DONE]":
             print('[ Closing socket... ]')
             SHARED['ws'].close()
@@ -58,7 +58,7 @@ class BrowserHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            model_response = {'text':usr_msg['text'], 'bot_reply': None}
+            model_response = {'text':usr_msg, 'bot_reply': None}
             message_available.wait()
             model_response['bot_reply'] = {'text': new_message}
             message_available.clear()

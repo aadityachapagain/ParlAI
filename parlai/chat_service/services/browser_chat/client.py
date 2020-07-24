@@ -58,7 +58,7 @@ class BrowserHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            model_response = {'text':usr_msg, 'bot_reply': None]}
+            model_response = {'text':usr_msg, 'bot_reply': None}
             message_available.wait()
             model_response['bot_reply'] = {'text': new_message}
             message_available.clear()

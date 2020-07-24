@@ -10,7 +10,7 @@ import threading
 from parlai.core.params import ParlaiParser
 from parlai.scripts.interactive_web import WEB_HTML, STYLE_SHEET, FONT_AWESOME
 from http.server import BaseHTTPRequestHandler, HTTPServer
-
+import time
 
 SHARED = {}
 
@@ -37,6 +37,7 @@ class BrowserHandler(BaseHTTPRequestHandler):
             SHARED['wb'].shutdown()
         json_data = json.dumps(data)
         SHARED['ws'].send(json_data)
+        return data['text']
 
     def do_HEAD(self):
         """
@@ -53,13 +54,13 @@ class BrowserHandler(BaseHTTPRequestHandler):
         if self.path == '/interact':
             content_length = int(self.headers['Content-Length'])
             body = self.rfile.read(content_length)
-            self._interactive_running(body)
+            usr_msg = self._interactive_running(body)
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            model_response = {'id': 'Model', 'episode_done': False}
+            model_response = {'text':usr_msg, 'bot_reply': None]}
             message_available.wait()
-            model_response['text'] = new_message
+            model_response['bot_reply'] = {'text': new_message}
             message_available.clear()
             json_str = json.dumps(model_response)
             self.wfile.write(bytes(json_str, 'utf-8'))

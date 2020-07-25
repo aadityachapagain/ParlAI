@@ -84,7 +84,7 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
                 self.pass_qual_test = True
                 self.send_task_instruction((
                     'Congratulations you completed qualification task.\n'
-                    'Now, Please read the assigned persona carefully and <b>when you are ready '
+                    'Now, Please read the instructions carefully and <b>when you are ready '
                     f'send anything to continue.</b>\n Please respond within {self.opt["max_onboard_resp_time"] // 60} minutes. '
                     'We need to pair you with another turker.'
                 ))
@@ -99,9 +99,9 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
             # Worker is good to go to main task
             self.send_task_instruction((
                 'Welcome back! You\'ve already completed our qualification task. \n'
-                'Please read the assigned persona carefully and <b>when you are ready '
+                'Please read the instruction carefully and <b>when you are ready '
                 'send anything to continue.</b>'
-                f'send anything to continue.\n Please respond within {self.opt["max_onboard_resp_time"] // 60} minutes. '
+                f'\n Please respond within {self.opt["max_onboard_resp_time"] // 60} minutes. '
                 'We need to pair you with another turker.'
             ))
         self.episodeDone = True
@@ -188,7 +188,7 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
                 control_msg['show_persona'] = True
                 control_msg['persona_description'] = (
                     '<br>'
-                    '<b><h3>Task Instruction</h3></b>'
+                    '<b><h3>Your Persona</h3></b>'
                     '<br>'
                     f"You're assigned with the following character: <br>"
                     f'<b><span style="color:blue">{agent.persona_text}</span></b>'
@@ -326,14 +326,14 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
         if msg_len < th_min:
             control_msg['text'] = (
                 'Your message is too short, please make it more than '
-                '<b><span style="color:red">5 words</span></b>.'
+                f'<b><span style="color:red">{th_min} words</span></b>.'
             )
             ag.observe(validate(control_msg))
             return True
         if msg_len > th_max:
             control_msg['text'] = (
                 'Your message is too long, please make it less than '
-                '<b><span style="color:red">15 words</span></b>.'
+                f'<b><span style="color:red">{th_max} words</span></b>.'
             )
             ag.observe(validate(control_msg))
             return True

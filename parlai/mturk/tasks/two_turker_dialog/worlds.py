@@ -82,12 +82,7 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
             # Check qualification result
             if correct_answers >= self.opt['min_pass_qual_quests']:
                 self.pass_qual_test = True
-                self.send_task_instruction((
-                    'Congratulations you completed qualification task.\n'
-                    'Now, Please read the instructions carefully and <b>when you are ready '
-                    f'send anything to continue.</b>\n Please respond within {self.opt["max_onboard_resp_time"] // 60} minutes. '
-                    'We need to pair you with another turker.'
-                ))
+                self.send_task_instruction(self.get_instruction('passed_first_time'))
             else:
                 self.pass_qual_test = False
                 # if Failed expire hit
@@ -97,13 +92,7 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
                 ))
         else:
             # Worker is good to go to main task
-            self.send_task_instruction((
-                'Welcome back! You\'ve already completed our qualification task. \n'
-                'Please read the instruction carefully and <b>when you are ready '
-                'send anything to continue.</b>'
-                f'\n Please respond within {self.opt["max_onboard_resp_time"] // 60} minutes. '
-                'We need to pair you with another turker.'
-            ))
+            self.send_task_instruction(self.get_instruction('already_passed'))
         self.episodeDone = True
 
     def send_task_instruction(self, message):
@@ -151,6 +140,23 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
         self.mturk_agent.mturk_manager.force_expire_hit(self.mturk_agent.worker_id,
                                                         self.mturk_agent.assignment_id,
                                                         text=message)
+
+    def get_instruction(self, tag):
+        if tag == 'passed_first_time':
+            return (
+                'Congratulations you completed qualification task.\n'
+                'Now, Please read the instructions carefully and <b>when you are ready '
+                f'send anything to continue.</b>\n Please respond within {self.opt["max_onboard_resp_time"] // 60} minutes. '
+                'We need to pair you with another turker.'
+            )
+        if tag == 'already_passed':
+            return (
+                'Welcome back! You\'ve already completed our qualification task. \n'
+                'Please read the instruction carefully and <b>when you are ready '
+                'send anything to continue.</b>'
+                f'\n Please respond within {self.opt["max_onboard_resp_time"] // 60} minutes. '
+                'We need to pair you with another turker.'
+            )
 
 
 class TwoTurkerDialogWorld(MTurkTaskWorld):
@@ -372,7 +378,7 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
         )
 
     def review_work(self):
-        if self.opt['immediate_assignment_approve']:
+        if self.opt.get('immediate_assignment_approve'):
             global review_agent
 
             def review_agent(ag):

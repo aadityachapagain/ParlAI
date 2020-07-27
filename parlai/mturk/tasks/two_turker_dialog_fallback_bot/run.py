@@ -2,7 +2,6 @@ import os
 import time
 import yaml
 
-from parlai.core.agents import create_agent
 from parlai.core.params import ParlaiParser
 from parlai.mturk.core import mturk_utils
 from parlai.mturk.tasks.two_turker_dialog.worlds import (
@@ -14,12 +13,37 @@ from parlai.mturk.tasks.two_turker_dialog_fallback_bot.worlds import (
 )
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.mturk_manager import MturkManagerWithWaitingPoolTimeout
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.task_config import task_config
+from parlai.mturk.tasks.two_turker_dialog_fallback_bot.api_bot_agent import APIBotAgent
 
 
 def main():
-    argparser = ParlaiParser(False, True)
+    argparser = ParlaiParser(False, False)
     argparser.add_parlai_data_path()
     argparser.add_mturk_args()
+    argparser.add_argument(
+        '--bot-host',
+        dest='bot_host',
+        required=True,
+        help='IP Address of the bot API'
+    )
+    argparser.add_argument(
+        '--bot-port',
+        dest='bot_port',
+        default=8000,
+        help='Port address of Bot agent'
+    )
+    argparser.add_argument(
+        '--bot-username',
+        dest='bot_username',
+        required=True,
+        help='username to use for authentication in bot API'
+    )
+    argparser.add_argument(
+        '--bot-password',
+        dest='bot_password',
+        required=True,
+        help='password to use for authentication in bot API'
+    )
     opt = argparser.parse_args()
 
     task_dir = os.path.dirname(os.path.abspath(__file__))
@@ -32,7 +56,6 @@ def main():
 
     mturk_agent_ids = ['PERSON_1', 'PERSON_2']
     bot_agent_id = 'KARU'
-    bot_agent = create_agent(opt, requireModelExists=True)
     mturk_manager = MturkManagerWithWaitingPoolTimeout(opt=opt, mturk_agent_ids=mturk_agent_ids, use_db=True)
     mturk_manager.setup_server()
 
@@ -103,9 +126,8 @@ def main():
 
         def run_conversation(mturk_manager, opt, workers):
             if len(workers) == 1:
-                shared_bot_agent = bot_agent.clone()
-                shared_bot_agent.id = bot_agent_id
-                world = InteractParlAIModelWorld(opt, workers[0], shared_bot_agent)
+                bot_agent = APIBotAgent(opt, bot_agent_id)
+                world = InteractParlAIModelWorld(opt, workers[0], bot_agent)
             else:
                 world = TwoTurkerDialogWorld(opt=opt,
                                              agents=workers)

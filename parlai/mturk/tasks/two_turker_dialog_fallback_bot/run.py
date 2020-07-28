@@ -62,7 +62,7 @@ def main():
                                                        use_db=True)
     mturk_manager.setup_server()
 
-    qual_pass_name = 'SagarChildCompanionDialogQualificationPass'
+    qual_pass_name = 'EmbChildCompanionDialogQualificationPass'
     qual_pass_desc = (
         'Qualification for a worker correctly completing the '
         'child companion dialog qualification test task.'
@@ -72,7 +72,7 @@ def main():
     )
     print('Created pass qualification: ', pass_qual_id)
 
-    qual_fail_name = 'SagarChildCompanionDialogQualificationFail'
+    qual_fail_name = 'EmbChildCompanionDialogQualificationFail'
     qual_fail_desc = (
         'Qualification for a worker not correctly completing the '
         'child companion dialog qualification test task.'

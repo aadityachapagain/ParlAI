@@ -18,6 +18,7 @@ class APIBotAgent(Agent):
                                   data={'username': self.opt['bot_username'],
                                         'password': self.opt['bot_password']})
         self.auth_token = json.loads(auth_resp.content)['access_token']
+        print("Successfully authenticated to BOT API")
 
     def get_headers(self):
         return {'Authorization': 'Bearer ' + self.auth_token}

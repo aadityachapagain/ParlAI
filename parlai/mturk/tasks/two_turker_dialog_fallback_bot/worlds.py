@@ -1,7 +1,10 @@
+import random
+
 import numpy as np
 from parlai.core.worlds import validate
 from parlai.mturk.core.worlds import MTurkTaskWorld
 from parlai.mturk.tasks.two_turker_dialog.child_personas import gen_child_persona_sentence
+from parlai.mturk.tasks.two_turker_dialog_fallback_bot.one_sided_acute_eval_questions import ACUTE_EVAL_QUESTIONS
 from parlai.mturk.tasks.two_turker_dialog.worlds import TwoTurkerDialogOnboardWorld
 
 
@@ -13,30 +16,15 @@ class TwoTurkerDialogFallbackBotOnboardWorld(TwoTurkerDialogOnboardWorld):
             'text': message,
             'onboard_message': (
                 '<b><h4>Task Instruction</h4></b>'
-                f'Once you\'re paired with a turker you will be assigned a character. Chat with another worker as if '
-                'you\'ve that character. If not able to pair you\'ll chat with Karu playing a child role with assigned character.'
+                '<br>'
+                f'Once the task starts, you will be given a persona for the day. '
+                f'For instance, the persona may say you are a girl that likes Legos and '
+                f'today you are feeling sad. If you got the role of Karu, you should aim to be empathetic, interesting and knowledgeable.'
             )
         })
         agent_act = self.mturk_agent.act(timeout=self.opt['max_onboard_resp_time'])
         if self.check_timeout(agent_act):
             return
-
-    def get_instruction(self, tag):
-        if tag == 'passed_first_time':
-            return (
-                'Congratulations you completed qualification task.\n'
-                'Now, Please read the instructions carefully and <b>when you are ready '
-                f'send anything to continue.</b>\n Please respond within {self.opt["max_onboard_resp_time"] // 60} minutes. '
-                f'We need to pair you with another turker. If not able to pair within {self.opt["waiting_pool_time"]//60} minutes after your response, you\'ll be paired with Karu'
-            )
-        if tag == 'already_passed':
-            return (
-                'Welcome back! You\'ve already completed our qualification task. \n'
-                'Please read the instruction carefully and <b>when you are ready '
-                'send anything to continue.</b>'
-                f'\n Please respond within {self.opt["max_onboard_resp_time"] // 60} minutes. '
-                f'We need to pair you with another turker. If not able to pair within {self.opt["waiting_pool_time"]//60} minutes after your response, you\'ll be paired with Karu'
-            )
 
 
 class InteractParlAIModelWorld(MTurkTaskWorld):
@@ -83,7 +71,10 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         """If max turns reached, end the episode"""
         if self.turn_index == self.opt['max_turns'] + 1:
             control_msg['text'] = self.get_instruction('exceed_max_turns')
+            if self.opt.get('bot_evaluation'):
+                self.get_bot_evaluation(self.mturk_agent)
             control_msg['episode_done'] = True
+            control_msg['text'] = self.get_instruction('end')
             self.mturk_agent.observe(validate(control_msg))
             self.episodeDone = True
             return
@@ -105,23 +96,11 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
                         return
             if acts[agent.id]['episode_done']:
                 if (not self.mturk_agent.disconnected) and self.opt.get('bot_evaluation'):
-                    self.mturk_agent.observe(validate({
-                        'id': 'SYSTEM',
-                        'text': self.get_instruction('eval')
-                    }))
-                eval_act = self.mturk_agent.act(timeout=self.opt['max_resp_time'])
-                while eval_act['text'].strip() not in ['1', '2', '3', '4', '5']:
-                    control_msg['text'] = self.get_instruction('eval_warn')
+                    if self.opt.get('bot_evaluation'):
+                        self.get_bot_evaluation(self.mturk_agent)
+                    control_msg['text'] = self.get_instruction('end')
+                    control_msg['episode_done'] = True
                     self.mturk_agent.observe(validate(control_msg))
-                    eval_act = self.mturk_agent.act(timeout=self.opt['max_resp_time'])
-
-                self.bot_eval_by_worker = eval_act['text']
-
-                self.mturk_agent.observe(validate({
-                    'id': 'SYSTEM',
-                    'text': self.get_instruction('end'),
-                    'episode_done': True
-                }))
                 self.episodeDone = True
                 return
             else:
@@ -132,17 +111,53 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
                     if other_agent != agent:
                         other_agent.observe(validate(acts[agent.id]))
 
+    def get_bot_evaluation(self, agent):
+        agent.observe(validate({
+            'id': 'SYSTEM',
+            'text': (
+                'We would like you to give some feedback on the conversation you had.'
+            ),
+            'episode_done': False
+        }))
+        questions = random.sample(ACUTE_EVAL_QUESTIONS, len(ACUTE_EVAL_QUESTIONS))
+        self.bot_eval_by_worker = dict()
+        self.bot_eval_by_worker[agent.id] = dict()
+        for quest in questions:
+            agent.observe(validate({
+                'id': 'SYSTEM',
+                'text': (
+                    f'<b>{quest["question"]}</b><br>'
+                    'Please answer in "<b>Yes</b>" or "<b>No.</b>"'
+                ),
+                'episode_done': False
+            }))
+            eval_act = agent.act(timeout=self.opt["max_resp_time"])
+            if self.check_timeout(eval_act):
+                return
+            while eval_act["text"].strip().lower() not in ["yes", "no"]:
+                agent.observe(validate({
+                    "id": "SYSTEM",
+                    "text": 'Please answer in "<b>Yes</b>" or "<b>No.</b>"',
+                    "episode_done": False,
+                }))
+                eval_act = agent.act(timeout=self.opt["max_resp_time"])
+                if self.check_timeout(eval_act):
+                    return
+            self.bot_eval_by_worker[agent.id].update({
+                quest["title"]: eval_act["text"]
+            })
+
     def get_instruction(self, tag):
         if tag == 'start':
             return (
-                    '\nSorry you had to wait too long and we couldn\'t find other worker to pair with you.'
-                    'Now you can chat with our existing Karu. \nYou need to finish at least <b>'
+                    '\nSuccessfully matched. Now let\'s get to know each other '
+                    'through the chat! \nYou need to finish at least <b>'
                     + str(self.n_turn)
                     + ' chat turns</b>, after that you can click the "Done" button '
-                      'to end the chat. Then you can share your experience conversing with Karu. \n'
+                      'to end the chat. \n'
                       '<b>You can track the character description on the left.</b> '
-                      '\n <span style="color:blue"><b>Please try to speak to Karu '
-                      ' as if you\'re the character mentioned .</b></span>'
+                      '\n <span style="color:blue"><b>Please try to speak to the '
+                      'other person as if you\'re the character mentioned .</b></span>'
                       '\n <span style="color:blue"><b>Do not trivially copy the '
                       'character descriptions into the message.</b></span> \n'
                       'Please respond quickly. We need it interactive and real time.'

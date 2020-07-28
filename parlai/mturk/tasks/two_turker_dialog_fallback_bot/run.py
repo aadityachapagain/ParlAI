@@ -55,11 +55,14 @@ def main():
     opt.update(cfg)
 
     mturk_agent_ids = ['PERSON_1', 'PERSON_2']
-    bot_agent_id = 'KARU'
-    mturk_manager = MturkManagerWithWaitingPoolTimeout(opt=opt, mturk_agent_ids=mturk_agent_ids, use_db=True)
+    bot_agent_id = 'PERSON_2'
+    mturk_manager = MturkManagerWithWaitingPoolTimeout(opt=opt,
+                                                       mturk_agent_ids=mturk_agent_ids[:1] if opt.get(
+                                                           'force_bot') else mturk_agent_ids,
+                                                       use_db=True)
     mturk_manager.setup_server()
 
-    qual_pass_name = 'ChildCompanionDialogQualificationPass'
+    qual_pass_name = 'SagarChildCompanionDialogQualificationPass'
     qual_pass_desc = (
         'Qualification for a worker correctly completing the '
         'child companion dialog qualification test task.'
@@ -69,7 +72,7 @@ def main():
     )
     print('Created pass qualification: ', pass_qual_id)
 
-    qual_fail_name = 'ChildCompanionDialogQualificationFail'
+    qual_fail_name = 'SagarChildCompanionDialogQualificationFail'
     qual_fail_desc = (
         'Qualification for a worker not correctly completing the '
         'child companion dialog qualification test task.'

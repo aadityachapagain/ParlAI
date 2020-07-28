@@ -42,3 +42,4 @@ waiting_pool_time: 180  # If not paired with another worker within this time, ta
 bot_evaluation: True  # Ask turker to rate bot at last if they talk with bot
 #model_file: zoo:blender/blender_90M/model  # Mode to use as the fallback bot(not used since we're now using API)
 hobby: True  # Whether to use heroku app or not
+force_bot: False

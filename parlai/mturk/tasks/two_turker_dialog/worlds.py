@@ -175,7 +175,7 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
         robot = random.choice(robot_personas)
         robot_persona_text = (
             f'You\'re assigned a role of Karu who is {robot["title"]}. '
-            f'A description for your character: <i>{robot["description"]}</i>'
+            f'<i>{robot["description"]}</i>'
         )
         role_texts = random.sample([child_persona_text, robot_persona_text], 2)
         self.agents[0].persona_text = role_texts[0]

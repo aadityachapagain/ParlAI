@@ -37,10 +37,15 @@ task_config[
 <br>
 <b><h4>Task Description</h4></b>
 <br>
-(If you're in this HIT for the first time you need to pass a simple qualification test based on the introduction of Karu. You will choose correct response our childfriendly Karu would most likely to choose while talking with children. You can keep accepting new HITs after you pass the test, so keep working on it if you like the task!)
+(If this is the first time you have done this type of HIT you will need
+to pass a simple qualification test. We are evaluating a robot Karu
+that talks to children aged 5 to 10. In the qualification stage, your
+job is to choose the response that Karu should make. You can keep accepting new HITs after you pass the test,
+so keep working on it if you like the task!)
 <br>
-<b>In the main task you will chitchat with another worker, playing the part of a children-robot conversation with a assigned character.
-If other workers are not available to be paired with you, you'll chat with existing Karu as a children aged 5 to 10 with given character and share experience conversing with Karu.</b>
+<b>In the main task, you will play either the role of the child or Karu and your partner will be
+the other party. You should aim for conversation that is typical of children
+and not discuss adult or teenage topics. If you are Karu, you should aim to be empathetic, interesting and knowledgeable.</b>
 <br>
 <b><h4>Introducing Karu</h4></b>
 Karu is a robot built by The Global Robotics Laboratory on a mission to understand how to be a good friend to humans. Specifically, it is a small lifelike robot designed to respond and communicate intelligently with children (ages 5-10). Karu was designed to explore and teach life skills by modeling positive empathetic social behavior.

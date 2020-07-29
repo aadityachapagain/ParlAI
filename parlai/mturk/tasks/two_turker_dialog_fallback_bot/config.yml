@@ -3,7 +3,7 @@ unique_worker: False  # enforce that no worker can work on your task twice
 max_hits_per_worker: 0  # Max number of hits each worker can perform during current group run, 0 means unlimited
 unique_qual_name: None  # qualification name to use for uniqueness between HITs
 reward: 0.15  # reward for each worker for finishing the conversation, in US dollars
-is_sandbox: True  # submit the HITs to MTurk sandbox site, if False go Live
+is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
 hard_block: False  # Hard block disconnecting Turkers from all of your HITs
 disconnect_qualification: None  # qualification to use for soft blocking users for
 #  disconnects. By default

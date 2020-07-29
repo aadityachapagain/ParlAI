@@ -36,7 +36,7 @@ min_num_words_in_message: 3  # Minimum number of words required in the messages[
 max_num_words_in_message: 30  # Maximum number of words allowed in the messages
 immediate_assignment_approve: False  # Approve assignment immediately after completion
 number_of_qualification_questions: 7  # Qualifications questions to be asked, available 10
-min_pass_qual_quests: 4  # To perform main HIT need to pass `min_pass_qual_quests` or more qualification questions
+min_pass_qual_quests: 3  # To perform main HIT need to pass `min_pass_qual_quests` or more qualification questions
 allowed_countries: [US, CA, GB, AU, NZ, NP]  # List of countries qualification of Turker, defualt list of English Speaking Countries(Except NP)
 waiting_pool_time: 60  # If not paired with another worker within this time, talk with the bot, None for not using the feature
 bot_evaluation: True  # Ask turker to rate bot at last if they talk with bot

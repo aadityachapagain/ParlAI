@@ -4,6 +4,7 @@ import numpy as np
 from parlai.core.worlds import validate
 from parlai.mturk.core.worlds import MTurkTaskWorld
 from parlai.mturk.tasks.two_turker_dialog.child_personas import gen_child_persona_sentence
+from parlai.mturk.tasks.two_turker_dialog.robot_persona_list import robot_personas
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.one_sided_acute_eval_questions import ACUTE_EVAL_QUESTIONS
 from parlai.mturk.tasks.two_turker_dialog.worlds import TwoTurkerDialogOnboardWorld
 
@@ -40,9 +41,22 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         self.assign_conv_role()
         self.bot_eval_by_worker = None
 
+    def get_opponent(self, agent):
+        return self.parlai_agent if agent == self.mturk_agent else self.mturk_agent
+
     def assign_conv_role(self):
         child_persona_text = gen_child_persona_sentence()
-        self.mturk_agent.persona_text = child_persona_text
+        robot = random.choice(robot_personas)
+        robot_persona_text = (
+            f'{robot["title"]} Karu. '
+            f'{robot["description"]}'
+        )
+        if self.mturk_agent.id == 'CHILD':
+            self.mturk_agent.persona_text = child_persona_text
+            self.parlai_agent.persona_text = robot_persona_text
+        else:
+            self.mturk_agent.persona_text = robot_persona_text
+            self.parlai_agent.persona_text = child_persona_text
 
     def parley(self):
         self.turn_index += 1
@@ -51,7 +65,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         control_msg = {'episode_done': False, 'id': 'SYSTEM'}
         """If at first turn, we need to give each agent some prior info if any like personas"""
         if self.turn_index == 1:
-            control_msg['text'] = self.get_instruction(tag='start')
+            control_msg['text'] = self.get_instruction(tag='start', agent=self.mturk_agent)
             control_msg['show_persona'] = True
             control_msg['persona_description'] = (
                 '<br>'
@@ -123,31 +137,37 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         self.bot_eval_by_worker = dict()
         self.bot_eval_by_worker[agent.id] = dict()
         for quest in questions:
+            if quest["title"] == "Persona":
+                quest["question"] = quest["question"] + "<br><i>" + self.get_opponent(agent).persona_text + "</i>"
+            choice_list_html = ''.join(['<li>' + ch + '</li>' for ch in ["Yes", "No"]])
             agent.observe(validate({
                 'id': 'SYSTEM',
                 'text': (
-                    f'<b>{quest["question"]}</b><br>'
-                    'Please answer in "<b>Yes</b>" or "<b>No.</b>"'
+                    f'<b>{quest["question"]}</b>'
+                    '<br>'
+                    f'<ol>{choice_list_html}</ol>'
+                    '<br>'
+                    'Please send "<b>1 for Yes</b>" or "<b>2 for No.</b>"'
                 ),
                 'episode_done': False
             }))
             eval_act = agent.act(timeout=self.opt["max_resp_time"])
             if self.check_timeout(eval_act):
                 return
-            while eval_act["text"].strip().lower() not in ["yes", "no"]:
+            while eval_act["text"].strip().lower() not in ["1", "2"]:
                 agent.observe(validate({
                     "id": "SYSTEM",
-                    "text": 'Please answer in "<b>Yes</b>" or "<b>No.</b>"',
+                    "text": 'Please send "<b>1 for Yes</b>" or "<b>2 for No.</b>"',
                     "episode_done": False,
                 }))
                 eval_act = agent.act(timeout=self.opt["max_resp_time"])
                 if self.check_timeout(eval_act):
                     return
             self.bot_eval_by_worker[agent.id].update({
-                quest["title"]: eval_act["text"]
+                quest["title"]: int(eval_act["text"])
             })
 
-    def get_instruction(self, tag):
+    def get_instruction(self, tag, agent=None):
         if tag == 'start':
             return (
                     '\nSuccessfully matched. Now let\'s get to know each other '
@@ -155,7 +175,9 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
                     + str(self.n_turn)
                     + ' chat turns</b>, after that you can click the "Done" button '
                       'to end the chat. \n'
-                      '<b>You can track the character description on the left.</b> '
+                      '<b>You\'re assigned with following persona:<b>'
+                      f'<br><b><span style="color:blue">{agent.persona_text}</span></b><br>'
+                      '<b>You can also track the character description on the left.</b> '
                       '\n <span style="color:blue"><b>Please try to speak to the '
                       'other person as if you\'re the character mentioned .</b></span>'
                       '\n <span style="color:blue"><b>Do not trivially copy the '
@@ -163,7 +185,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
                       'Please respond quickly. We need it interactive and real time.'
             )
         if tag == 'end':
-            return 'Thanks for conversing with our bot.'
+            return 'Thanks for taking part in this HIT. If you like you can do more HITs.'
         if tag == 'eval':
             return 'How would you <b>rate the conversation with Karu in scale of 1 to 5</b>?'
         if tag == 'eval_warn':
@@ -231,5 +253,8 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
 
     def get_custom_task_data(self):
         return {'conversations': self.dialog,
+                'worker_role': self.mturk_agent.id,
                 'worker_persona': self.mturk_agent.persona_text,
+                'bot_role': self.parlai_agent.id,
+                'bot_persona': self.parlai_agent.persona_text,
                 'bot_eval_by_worker': self.bot_eval_by_worker}

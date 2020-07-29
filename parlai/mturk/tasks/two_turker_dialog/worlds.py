@@ -174,12 +174,14 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
         child_persona_text = gen_child_persona_sentence()
         robot = random.choice(robot_personas)
         robot_persona_text = (
-            f'You\'re assigned a role of Karu who is {robot["title"]}. '
-            f'<i>{robot["description"]}</i>'
+            f'{robot["title"]} Karu. '
+            f'{robot["description"]}'
         )
-        role_texts = random.sample([child_persona_text, robot_persona_text], 2)
-        self.agents[0].persona_text = role_texts[0]
-        self.agents[1].persona_text = role_texts[1]
+        for agent in self.agents:
+            if agent.id == 'CHILD':
+                agent.persona_text = child_persona_text
+            else:
+                agent.persona_text = robot_persona_text
 
     def parley(self):
         self.turn_index += 1
@@ -190,7 +192,7 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
         """If at first turn, we need to give each agent some prior info if any like personas"""
         if self.turn_index == 1:
             for agent in self.agents:
-                control_msg['text'] = self.get_instruction(agent_id=agent.id, tag='start')
+                control_msg['text'] = self.get_instruction(agent=agent, tag='start',)
                 control_msg['show_persona'] = True
                 control_msg['persona_description'] = (
                     '<br>'
@@ -261,7 +263,7 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
                 return
 
             while (self.turn_index <= self.n_turn) and acts[agent.id]['episode_done']:
-                control_msg['text'] = self.get_instruction(agent_id=agent.id, tag='chat_not_done')
+                control_msg['text'] = self.get_instruction(agent=agent, tag='chat_not_done')
                 control_msg['episode_done'] = False
                 agent.observe(validate(control_msg))
                 acts[agent.id] = agent.act(timeout=self.opt['max_resp_time'])
@@ -276,15 +278,17 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
                     if other_agent != agent:
                         other_agent.observe(validate(acts[agent.id]))
 
-    def get_instruction(self, agent_id=None, tag='first'):
+    def get_instruction(self, agent=None, tag='first'):
         if tag == 'start':
             return (
                     '\nSuccessfully matched. Now let\'s get to know each other '
                     'through the chat! \nYou need to finish at least <b>'
                     + str(self.n_turn)
                     + ' chat turns</b>, after that you can click the "Done" button '
-                      'to end the chat. \n'
-                      '<b>You can track the character description on the left.</b> '
+                      'to end the chat.\n'
+                      '<b>You\'re assigned with following persona:<b>'
+                      f'<br><b><span style="color:blue">{agent.persona_text}</span></b><br>'
+                      '<b>You can also track the character description on the left.</b> '
                       '\n <span style="color:blue"><b>Please try to speak to the '
                       'other person as if you\'re the character mentioned .</b></span>'
                       '\n <span style="color:blue"><b>Do not trivially copy the '
@@ -303,7 +307,7 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
         if tag == 'timeout':
             return (
                 '<b>{}</b> is timeout. Please click the "Done with this HIT" '
-                'button below to exit this HIT. No rejections.'.format(agent_id)
+                'button below to exit this HIT. No rejections.'.format(agent.id)
             )
 
         if tag == 'exceed_min_turns':
@@ -393,6 +397,6 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
 
     def get_custom_task_data(self):
         return {
-            'opponent_personas': {ag.id: ag.persona_text for ag in self.agents},
+            'personas': {ag.id: ag.persona_text for ag in self.agents},
             'conversations': self.dialog
         }

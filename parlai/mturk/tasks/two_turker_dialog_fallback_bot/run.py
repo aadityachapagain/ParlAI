@@ -1,6 +1,7 @@
 import os
 import time
 import yaml
+import random
 
 from parlai.core.params import ParlaiParser
 from parlai.mturk.core import mturk_utils
@@ -54,15 +55,15 @@ def main():
         cfg = yaml.load(f.read(), Loader=yaml.FullLoader)
     opt.update(cfg)
 
-    mturk_agent_ids = ['PERSON_1', 'PERSON_2']
-    bot_agent_id = 'PERSON_2'
+    mturk_agent_ids = ['CHILD', 'KARU']
+    # bot_agent_id = 'PERSON_2'
     mturk_manager = MturkManagerWithWaitingPoolTimeout(opt=opt,
                                                        mturk_agent_ids=mturk_agent_ids[:1] if opt.get(
                                                            'force_bot') else mturk_agent_ids,
                                                        use_db=True)
     mturk_manager.setup_server()
 
-    qual_pass_name = 'EmbChildCompanionDialogQualificationPass'
+    qual_pass_name = f'{opt["qual_test_qualification"]}Pass'
     qual_pass_desc = (
         'Qualification for a worker correctly completing the '
         'child companion dialog qualification test task.'
@@ -72,7 +73,7 @@ def main():
     )
     print('Created pass qualification: ', pass_qual_id)
 
-    qual_fail_name = 'EmbChildCompanionDialogQualificationFail'
+    qual_fail_name = f'{opt["qual_test_qualification"]}Fail'
     qual_fail_desc = (
         'Qualification for a worker not correctly completing the '
         'child companion dialog qualification test task.'
@@ -122,13 +123,18 @@ def main():
         eligibility_function = {'func': check_workers_eligibility, 'multiple': True}
 
         def assign_worker_roles(workers):
+            roles = random.sample(mturk_agent_ids, len(mturk_agent_ids))
             for index, worker in enumerate(workers):
-                worker.id = mturk_agent_ids[index % len(mturk_agent_ids)]
+                worker.id = roles[index % len(roles)]
 
         global run_conversation
 
         def run_conversation(mturk_manager, opt, workers):
             if len(workers) == 1:
+                if workers[0].id == 'CHILD':
+                    bot_agent_id = 'KARU'
+                else:
+                    bot_agent_id = 'CHILD'
                 bot_agent = APIBotAgent(opt, bot_agent_id)
                 world = InteractParlAIModelWorld(opt, workers[0], bot_agent)
             else:
@@ -150,8 +156,9 @@ def main():
     except BaseException:
         raise
     finally:
-        mturk_utils.delete_qualification(pass_qual_id, opt['is_sandbox'])
-        mturk_utils.delete_qualification(fail_qual_id, opt['is_sandbox'])
+        if opt.get("delete_qual_test_qualification"):
+            mturk_utils.delete_qualification(pass_qual_id, opt['is_sandbox'])
+            mturk_utils.delete_qualification(fail_qual_id, opt['is_sandbox'])
         mturk_manager.expire_all_unassigned_hits()
         mturk_manager.shutdown()
 

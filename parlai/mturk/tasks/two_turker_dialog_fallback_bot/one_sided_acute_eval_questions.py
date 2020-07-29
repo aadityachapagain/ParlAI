@@ -1,19 +1,18 @@
 ACUTE_EVAL_QUESTIONS = [
     {
-        "title": "Engagingness",
-        "question": "Would you prefer to talk with this person for long conversation?"
+        "title": "Engaging",
+        "question": "Would you like to talk more with this person?"
     },
     {
         "title": "Interestingness",
-        "question": "If you had to say if this person is interesting or boring? would you say he is interesting ?"
+        "question": "Would you say the conversation was interesting ?"
     },
     {
-        "title": "Knowledgeable",
-        "question": ("If you had to say if this person is more knowledgeable or more ignorant?"
-                     "Would you say more knowledeable?")
+        "title": "Persona",
+        "question": "Did the person embody the following persona accurately?"
     },
     {
         "title": "Empathetic",
-        "question": "Does this person sounds more empathetic?"
+        "question": "Did this person sound empathetic?"
     },
 ]

@@ -1,4 +1,4 @@
-num_conversations: 24 # number of conversations you want to create for this task
+num_conversations: 100 # number of conversations you want to create for this task
 unique_worker: False  # enforce that no worker can work on your task twice
 max_hits_per_worker: 0  # Max number of hits each worker can perform during current group run, 0 means unlimited
 unique_qual_name: None  # qualification name to use for uniqueness between HITs

@@ -26,7 +26,7 @@ task_config[
 """One or more words or phrases that describe the HIT, separated by commas.
 On MTurk website, these words are used in searches to find HITs.
 """
-task_config['hit_keywords'] = 'chat,dialog,conversation,text'
+task_config['hit_keywords'] = 'chat,dialog,conversation,text,child'
 
 """A detailed task description that will be shown on the HIT task preview page
 and on the left side of the chat page. Supports HTML formatting.

@@ -21,7 +21,11 @@ On the Amazon Mechanical Turk web site, the HIT description appears in the expan
 view of search results, and in the HIT and assignment screens.
 """
 task_config[
-    'hit_description'] = 'You will chat to another person or a bot with the childlike character assigned to you.'
+    'hit_description'] = (
+    'In this task, you will play either the role of the child or Karu(Karu is a robot on a mission to understand how to be a good friend to humans.) and your partner will be'
+    'the other party. You should aim for conversation that is typical of children'
+    'and not discuss adult or teenage topics. If you are Karu, you should aim to be empathetic, interesting and knowledgeable'
+    )
 
 """One or more words or phrases that describe the HIT, separated by commas.
 On MTurk website, these words are used in searches to find HITs.
@@ -37,13 +41,7 @@ task_config[
 <br>
 <b><h4>Task Description</h4></b>
 <br>
-(If this is the first time you have done this type of HIT you will need
-to pass a simple qualification test. We are evaluating a robot Karu
-that talks to children aged 5 to 10. In the qualification stage, your
-job is to choose the response that Karu should make. You can keep accepting new HITs after you pass the test,
-so keep working on it if you like the task!)
-<br>
-<b>In the main task, you will play either the role of the child or Karu and your partner will be
+<b>In this task, you will play either the role of the child or Karu and your partner will be
 the other party. You should aim for conversation that is typical of children
 and not discuss adult or teenage topics. If you are Karu, you should aim to be empathetic, interesting and knowledgeable.</b>
 <br>

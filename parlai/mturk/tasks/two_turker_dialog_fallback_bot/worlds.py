@@ -170,7 +170,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
     def get_instruction(self, tag, agent=None):
         if tag == 'start':
             return (
-                    '\nSuccessfully matched. Now let\'s get to know each other '
+                    '\nNow let\'s get to know each other '
                     'through the chat! \nYou need to finish at least <b>'
                     + str(self.n_turn)
                     + ' chat turns</b>, after that you can click the "Done" button '

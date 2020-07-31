@@ -4,7 +4,6 @@ import yaml
 import random
 
 from parlai.core.params import ParlaiParser
-from parlai.mturk.core import mturk_utils
 from parlai.mturk.tasks.two_turker_dialog.worlds import (
     TwoTurkerDialogWorld
 )
@@ -56,42 +55,20 @@ def main():
     opt.update(cfg)
 
     mturk_agent_ids = ['CHILD', 'KARU']
-    # bot_agent_id = 'PERSON_2'
     mturk_manager = MturkManagerWithWaitingPoolTimeout(opt=opt,
                                                        mturk_agent_ids=mturk_agent_ids[:1] if opt.get(
                                                            'force_bot') else mturk_agent_ids,
                                                        use_db=True)
     mturk_manager.setup_server()
 
-    qual_pass_name = f'{opt["qual_test_qualification"]}Pass'
-    qual_pass_desc = (
-        'Qualification for a worker correctly completing the '
-        'child companion dialog qualification test task.'
-    )
-    pass_qual_id = mturk_utils.find_or_create_qualification(
-        qual_pass_name, qual_pass_desc, opt['is_sandbox']
-    )
-    print('Created pass qualification: ', pass_qual_id)
-
-    qual_fail_name = f'{opt["qual_test_qualification"]}Fail'
-    qual_fail_desc = (
-        'Qualification for a worker not correctly completing the '
-        'child companion dialog qualification test task.'
-    )
-    fail_qual_id = mturk_utils.find_or_create_qualification(
-        qual_fail_name, qual_fail_desc, opt['is_sandbox']
-    )
-    print('Created fail qualification: ', fail_qual_id)
-
     def run_onboard(worker):
         world = TwoTurkerDialogFallbackBotOnboardWorld(opt=opt,
-                                                       mturk_agent=worker,
-                                                       pass_qual_id=pass_qual_id,
-                                                       fail_qual_id=fail_qual_id)
+                                                       mturk_agent=worker)
         while not world.episode_done():
             world.parley()
         world.shutdown()
         worker.onboard_leave_time = time.time()
+        return world.prep_save_data([worker])
 
     mturk_manager.set_onboard_function(onboard_function=run_onboard)
 
@@ -99,13 +76,7 @@ def main():
         mturk_manager.start_new_run()
         mturk_manager.ready_to_accept_workers()
 
-        agent_qualifications = [
-            {
-                'QualificationTypeId': fail_qual_id,
-                'Comparator': 'DoesNotExist',
-                'ActionsGuarded': 'DiscoverPreviewAndAccept',
-            },
-        ]
+        agent_qualifications = []
         if not opt['is_sandbox']:
             agent_qualifications.extend([
                 {
@@ -156,9 +127,6 @@ def main():
     except BaseException:
         raise
     finally:
-        if opt.get("delete_qual_test_qualification"):
-            mturk_utils.delete_qualification(pass_qual_id, opt['is_sandbox'])
-            mturk_utils.delete_qualification(fail_qual_id, opt['is_sandbox'])
         mturk_manager.expire_all_unassigned_hits()
         mturk_manager.shutdown()
 

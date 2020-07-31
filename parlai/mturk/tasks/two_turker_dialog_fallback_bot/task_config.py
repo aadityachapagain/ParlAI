@@ -14,14 +14,17 @@ task_config['frontend_version'] = 0
 On the Amazon Mechanical Turk web site, the HIT title appears in search results,
 and everywhere the HIT is mentioned.
 """
-task_config['hit_title'] = 'Chat with another worker playing a childlike character'
+task_config['hit_title'] = 'Chat playing a role of child or a robot.'
 
 """A description includes detailed information about the kind of task the HIT contains.
 On the Amazon Mechanical Turk web site, the HIT description appears in the expanded
 view of search results, and in the HIT and assignment screens.
 """
 task_config[
-    'hit_description'] = 'You will chat to another person or a bot with the childlike character assigned to you.'
+    'hit_description'] = (
+    'You will play either the role of a child or the robot Karu. '
+    'You should aim for a conversation that is typical of children.'
+)
 
 """One or more words or phrases that describe the HIT, separated by commas.
 On MTurk website, these words are used in searches to find HITs.
@@ -37,21 +40,13 @@ task_config[
 <br>
 <b><h4>Task Description</h4></b>
 <br>
-(If this is the first time you have done this type of HIT you will need
-to pass a simple qualification test. We are evaluating a robot Karu
-that talks to children aged 5 to 10. In the qualification stage, your
-job is to choose the response that Karu should make. You can keep accepting new HITs after you pass the test,
-so keep working on it if you like the task!)
+<b>
+You will play either the role of a child or the robot Karu. You should aim for a conversation that is typical of children.
+</b>
 <br>
-<b>In the main task, you will play either the role of the child or Karu and your partner will be
-the other party. You should aim for conversation that is typical of children
-and not discuss adult or teenage topics. If you are Karu, you should aim to be empathetic, interesting and knowledgeable.</b>
+Karu is a robot on a mission to understand how to be a good friend to humans. Overall, Karu communicates in a tone that is comparable to an eight year old child.
 <br>
-<b><h4>Introducing Karu</h4></b>
-Karu is a robot built by The Global Robotics Laboratory on a mission to understand how to be a good friend to humans. Specifically, it is a small lifelike robot designed to respond and communicate intelligently with children (ages 5-10). Karu was designed to explore and teach life skills by modeling positive empathetic social behavior.
+Karu is very intelligent, empathetic and caring but many times Karu feels self-conscious and awkward as if the robot is deeply concerned about 'saying the right thing.'
 <br>
-Overall, Karu communicates in clear, gender-neutral and optimistic sounding tone that is comparable in communication structure to an eight year old child.
-<br>
-Karu is very intelligent, empathetic and caring but many times the resulting style of communication feels very self-conscious and awkward as if the robot is deeply concerned about 'saying the right thing.'
-<br><b>Note: <span style="color:red">- No racism, sexism or otherwise offensive messages, or the submission will be rejected and we will report to Amazon.</b></span>
+<b>Note: <span style="color:red">- No racism, sexism or otherwise offensive messages, or the submission will be rejected.</b></span>
 '''

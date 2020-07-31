@@ -101,15 +101,16 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
             'qual_test_pass': True,
             'text': message,
             'onboard_message': (
+                '<br>'
                 '<b><h4>Task Instruction</h4></b>'
                 '<br>'
                 f'Once you\'re paired with a turker you will be assigned a character. Chat with another worker as if '
                 'you\'ve that character.'
             )
         })
-        agent_act = self.mturk_agent.act(timeout=self.opt['max_onboard_resp_time'])
-        if self.check_timeout(agent_act):
-            return
+        self.mturk_agent.act()
+        # if self.check_timeout(agent_act):
+        #     return
 
     def check_timeout(self, act):
         if act['text'] == TIMEOUT_MESSAGE and act['episode_done']:
@@ -161,9 +162,8 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
         if tag == 'no_qualification':
             return (
                 'Thank you for accepting the HITs. '
-                'Please read the instruction carefully and <b>when you are ready '
+                '<b>Please read the instruction carefully and when you are ready '
                 'send anything to continue.</b>.'
-                'After your response, you\'ll be paired with another turker. It will not take more than a minute.'
             )
 
 
@@ -286,7 +286,7 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
                     if other_agent != agent:
                         other_agent.observe(validate(acts[agent.id]))
 
-    def get_instruction(self, agent=None, tag='first'):
+    def get_instruction(self, agent=None, tag='first', agent_id=None):
         if tag == 'start':
             return (
                     '\nSuccessfully matched. Now let\'s get to know each other '
@@ -315,7 +315,7 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
         if tag == 'timeout':
             return (
                 '<b>{}</b> is timeout. Please click the "Done with this HIT" '
-                'button below to exit this HIT. No rejections.'.format(agent.id)
+                'button below to exit this HIT. No rejections.'.format(agent_id)
             )
 
         if tag == 'exceed_min_turns':

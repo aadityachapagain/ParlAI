@@ -1,13 +1,10 @@
-import time
 import random
 import numpy as np
 
 from joblib import Parallel, delayed
 from parlai.core.worlds import validate
-from parlai.mturk.core import mturk_utils
-from parlai.mturk.core.agents import TIMEOUT_MESSAGE, MTURK_DISCONNECT_MESSAGE, RETURN_MESSAGE
+from parlai.mturk.core.agents import TIMEOUT_MESSAGE
 from parlai.mturk.core.worlds import MTurkOnboardWorld, MTurkTaskWorld
-from .qual_question import questions
 from .robot_persona_list import robot_personas
 from .child_personas import gen_child_persona_sentence
 
@@ -16,82 +13,8 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
     def __init__(self, opt, mturk_agent):
         super(TwoTurkerDialogOnboardWorld, self).__init__(opt, mturk_agent)
         self.opt = opt
-        # self.pass_qual_id = pass_qual_id
-        # self.fail_qual_id = fail_qual_id
-        # self.first_time = not mturk_utils.check_worker_qualification_exist(
-        #     self.pass_qual_id,
-        #     self.mturk_agent.worker_id,
-        #     is_sandbox=self.opt['is_sandbox']
-        # )
-        # self.pass_qual_test = None if self.first_time else True  # None==>neither pass nor fail(first time in this HIT)
 
     def parley(self):
-        # if self.first_time:
-        #     # Present worker the qualification task
-        #     self.mturk_agent.observe({
-        #         'id': 'SYSTEM',
-        #         'require_test': True,
-        #         'text': (
-        #             'You\'re here for the first time. We need you to complete a '
-        #             'qualification test before you proceed to the main task. \n'
-        #             'Read the qualification test instruction carefully. \n'
-        #             'Choose the response that Karu would most likely say for the given text. '
-        #             f'<b>{self.opt["number_of_qualification_questions"]} queries</b> will be sent to you one by one.\n'
-        #             'Careful once you submit the answer you cannot change the answer'
-        #         ),
-        #         'onboard_message': (
-        #             "<b><h4>Qualification Test</h4></b>"
-        #             "<br>"
-        #             "In this qualification task, we would like to assess if you can successfully identify Karu's "
-        #             "personality in its responses to specific questions that a human child would ask Karu. "
-        #             "Specifically, you are asked to identify which response fits best to Karu's personality as "
-        #             "described above."
-        #             "<br>"
-        #         )
-        #     })
-        #     time.sleep(4.0)
-        #     # Generate and send qualification questions one by one
-        #     correct_answers = 0
-        #     for quest_no, quest in enumerate(random.sample(questions,
-        #                                                    self.opt['number_of_qualification_questions']
-        #                                                    )):
-        #         choice_answer = random.sample(list(zip(quest['choices'], quest['answer'])), len(quest['choices']))
-        #         correct_answer_index = list(map(lambda x: x[1], choice_answer)).index(1) + 1
-        #         choice_list_html = ''.join(['<li>' + ch + '</li>' for ch, _ in choice_answer])
-        #         self.mturk_agent.observe({
-        #             'id': 'SYSTEM',
-        #             'text': (
-        #                 f'<br><b>Question to Karu:</b> {quest["question"]}'
-        #                 '<br>'
-        #                 f'<ol>{choice_list_html}</ol>'
-        #                 '<br>'
-        #                 f'Choose the response that Karu would most likely say. Only numbers from {1} to {len(choice_answer)} are valid.'
-        #             )
-        #         })
-        #         agent_act = self.mturk_agent.act()
-        #         while agent_act['text'].strip() not in [str(i + 1) for i in range(len(choice_answer))]:
-        #             self.mturk_agent.observe({
-        #                 'id': 'SYSTEM',
-        #                 'text': f'Only numbers from {1} to {len(choice_answer)} are valid.\n Resubmit your answer.'
-        #             })
-        #             agent_act = self.mturk_agent.act()
-        #
-        #         if agent_act['text'] == str(correct_answer_index):
-        #             correct_answers += 1
-        #
-        #     # Check qualification result
-        #     if correct_answers >= self.opt['min_pass_qual_quests']:
-        #         self.pass_qual_test = True
-        #         self.send_task_instruction(self.get_instruction('passed_first_time'))
-        #     else:
-        #         self.pass_qual_test = False
-        #         # if Failed expire hit
-        #         self.expire_hit((
-        #             'Sorry you\'ve failed our qualification test task. You cannot proceed to main task and other subsequent HITs,\n'
-        #             'This HIT is now expired'
-        #         ))
-        # else:
-        #     # Worker is good to go to main task
         self.send_task_instruction(self.get_instruction('no_qualification'))
         self.episodeDone = True
 
@@ -108,9 +31,9 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
                 'you\'ve that character.'
             )
         })
-        self.mturk_agent.act()
-        # if self.check_timeout(agent_act):
-        #     return
+        agent_act = self.mturk_agent.act(timeout=self.opt["max_resp_time"])
+        if self.check_timeout(agent_act):
+            return
 
     def check_timeout(self, act):
         if act['text'] == TIMEOUT_MESSAGE and act['episode_done']:
@@ -120,22 +43,6 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
             return False
 
     def shutdown(self):
-        # if self.pass_qual_test:
-        #     if self.first_time:
-        #         mturk_utils.give_worker_qualification(
-        #             self.mturk_agent.worker_id,
-        #             self.pass_qual_id,
-        #             is_sandbox=self.opt['is_sandbox']
-        #         )
-        # elif self.pass_qual_test is None:
-        #     self.mturk_agent.shutdown()
-        # else:
-        #     mturk_utils.give_worker_qualification(
-        #         self.mturk_agent.worker_id,
-        #         self.fail_qual_id,
-        #         is_sandbox=self.opt['is_sandbox']
-        #     )
-        #     self.mturk_agent.shutdown()
         pass
 
     def expire_hit(self, message=None):

@@ -97,7 +97,7 @@ class MessengerOverworld(World):
     def __init__(self, opt, agent):
         self.agent = agent
         self.opt = opt
-        self.first_time = False
+        self.first_time = True
         self.episodeDone = False
 
     @staticmethod

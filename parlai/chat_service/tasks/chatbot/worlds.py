@@ -113,25 +113,5 @@ class MessengerOverworld(World):
         return self.episodeDone
 
     def parley(self):
-        if self.first_time:
-            self.agent.observe(
-                {
-                    'id': 'Overworld',
-                    'text': 'Welcome to the overworld for the ParlAI messenger '
-                    'chatbot demo. Please type "begin" to start.',
-                    'quick_replies': ['begin'],
-                }
-            )
-            self.first_time = False
-        a = self.agent.act()
-        if a is not None and a['text'].lower() == 'begin':
-            self.episodeDone = True
-            return 'default'
-        elif a is not None:
-            self.agent.observe(
-                {
-                    'id': 'Overworld',
-                    'text': 'Invalid option. Please type "begin".',
-                    'quick_replies': ['begin'],
-                }
-            )
+        self.episodeDone = True
+        return 'default'

@@ -61,7 +61,9 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             'text': 'your persona: ' + self.parlai_agent.persona_text,
             'persona': True
         })
-        self.parlai_agent.act()
+        personaset_resp = self.parlai_agent.act()
+        if personaset_resp:
+            print("Successfully set persona: ", self.parlai_agent.persona_text)
 
     def parley(self):
         self.turn_index += 1

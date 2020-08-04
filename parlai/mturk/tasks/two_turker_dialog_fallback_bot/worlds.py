@@ -145,12 +145,14 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         self.bot_eval_by_worker[agent.id] = dict()
         for quest in questions:
             if quest["title"] == "Persona":
-                quest["question"] = quest["question"] + "<br><i>" + self.get_opponent(agent).persona_text + "</i>"
+                eval_quest = quest["question"] + "<br><i>" + self.get_opponent(agent).persona_text + "</i>"
+            else:
+                eval_quest = quest["question"]
             choice_list_html = ''.join(['<li>' + ch + '</li>' for ch in ["Yes", "No"]])
             agent.observe(validate({
                 'id': 'SYSTEM',
                 'text': (
-                    f'<b>{quest["question"]}</b>'
+                    f'<b>{eval_quest}</b>'
                     '<br>'
                     f'<ol>{choice_list_html}</ol>'
                     '<br>'

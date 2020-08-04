@@ -57,6 +57,11 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         else:
             self.mturk_agent.persona_text = robot_persona_text
             self.parlai_agent.persona_text = child_persona_text
+        self.parlai_agent.observe({
+            'text': 'your persona: ' + self.parlai_agent.persona_text,
+            'persona': True
+        })
+        self.parlai_agent.act()
 
     def parley(self):
         self.turn_index += 1

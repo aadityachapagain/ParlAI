@@ -14,7 +14,7 @@ block_qualification: null  # Qualification to use for soft blocking users. This
 #  qualification is granted whenever soft_block_worker is
 #  called, and can thus be used to filter workers out from a
 #  single task or group of tasks by noted performance.
-count_complete: False  # continue until the requested number of conversations are completed rather than attempted
+count_complete: True  # continue until the requested number of conversations are completed rather than attempted
 allowed_conversations: 0  # number of concurrent conversations that one mturk worker is able to be involved in, 0 is unlimited
 max_connections: 20  # number of HITs that can be launched at the same time, 0 is unlimited.
 min_messages: 0  # number of messages required to be sent by MTurk agent when

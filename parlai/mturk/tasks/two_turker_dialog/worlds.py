@@ -3,7 +3,7 @@ import numpy as np
 
 from joblib import Parallel, delayed
 from parlai.core.worlds import validate
-from parlai.mturk.core.agents import TIMEOUT_MESSAGE
+from parlai.mturk.core.agents import TIMEOUT_MESSAGE, MTURK_DISCONNECT_MESSAGE, RETURN_MESSAGE
 from parlai.mturk.core.worlds import MTurkOnboardWorld, MTurkTaskWorld
 from .robot_persona_list import robot_personas
 from .child_personas import gen_child_persona_sentence
@@ -36,7 +36,7 @@ class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
             return
 
     def check_timeout(self, act):
-        if act['text'] == TIMEOUT_MESSAGE and act['episode_done']:
+        if act['text'] in [TIMEOUT_MESSAGE, MTURK_DISCONNECT_MESSAGE, RETURN_MESSAGE] and act['episode_done']:
             self.episodeDone = True
             return True
         else:

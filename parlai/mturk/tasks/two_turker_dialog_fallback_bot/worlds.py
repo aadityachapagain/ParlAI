@@ -3,6 +3,7 @@ import random
 import numpy as np
 from parlai.core.worlds import validate
 from parlai.mturk.core.worlds import MTurkTaskWorld
+from parlai.mturk.core.agents import TIMEOUT_MESSAGE, RETURN_MESSAGE, MTURK_DISCONNECT_MESSAGE
 from parlai.mturk.tasks.two_turker_dialog.child_personas import gen_child_persona_sentence
 from parlai.mturk.tasks.two_turker_dialog.robot_persona_list import robot_personas
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.one_sided_acute_eval_questions import ACUTE_EVAL_QUESTIONS
@@ -241,7 +242,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         return False
 
     def check_timeout(self, act):
-        if act['text'] == '[TIMEOUT]' and act['episode_done']:
+        if (act['text'] in [TIMEOUT_MESSAGE, MTURK_DISCONNECT_MESSAGE, RETURN_MESSAGE]) and act['episode_done']:
             self.episodeDone = True
             return True
         else:
@@ -254,6 +255,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         """
         self.mturk_agent.shutdown()
         self.parlai_agent.shutdown()
+        print("World shut down")
 
     def review_work(self):
         if self.opt.get('immediate_assignment_approve'):

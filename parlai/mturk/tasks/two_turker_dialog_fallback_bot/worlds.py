@@ -63,7 +63,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         })
         personaset_resp = self.parlai_agent.act()
         if personaset_resp:
-            print("Successfully set persona: ", self.parlai_agent.persona_text)
+            print(personaset_resp['text'], ' ', self.parlai_agent.persona_text)
 
     def parley(self):
         self.turn_index += 1
@@ -148,7 +148,8 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
                 eval_quest = quest["question"] + "<br><i>" + self.get_opponent(agent).persona_text + "</i>"
             else:
                 eval_quest = quest["question"]
-            choice_list_html = ''.join(['<li>' + ch + '</li>' for ch in ["Yes", "No"]])
+            option_list = random.sample(["Yes", "No"], 2)
+            choice_list_html = ''.join(['<li>' + ch + '</li>' for ch in option_list])
             agent.observe(validate({
                 'id': 'SYSTEM',
                 'text': (
@@ -156,7 +157,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
                     '<br>'
                     f'<ol>{choice_list_html}</ol>'
                     '<br>'
-                    'Please send "<b>1 for Yes</b>" or "<b>2 for No.</b>"'
+                    f'Please send "<b>1 for {option_list[0]}</b>" or "<b>2 for {option_list[1]}.</b>"'
                 ),
                 'episode_done': False
             }))
@@ -166,32 +167,33 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             while eval_act["text"].strip().lower() not in ["1", "2"]:
                 agent.observe(validate({
                     "id": "SYSTEM",
-                    "text": 'Please send "<b>1 for Yes</b>" or "<b>2 for No.</b>"',
+                    "text": f'Please send "<b>1 for {option_list[0]}</b>" or "<b>2 for {option_list[1]}.</b>"',
                     "episode_done": False,
                 }))
                 eval_act = agent.act(timeout=self.opt["max_resp_time"])
                 if self.check_timeout(eval_act):
                     return
+            act_index = int(eval_act["text"])
             self.bot_eval_by_worker[agent.id].update({
-                quest["title"]: int(eval_act["text"])
+                quest["title"]: option_list[act_index - 1]
             })
 
     def get_instruction(self, tag, agent=None):
         if tag == 'start':
             return (
-                    '\nNow let\'s get to know each other '
-                    'through the chat! \nYou need to finish at least <b>'
-                    + str(self.n_turn)
-                    + ' chat turns</b>, after that you can click the "Done" button '
-                      'to end the chat. \n'
-                      '<b>You\'re assigned with following persona:<b>'
-                      f'<br><b><span style="color:blue">{agent.persona_text}</span></b><br>'
-                      '<b>You can also track the character description on the left.</b> '
-                      '\n <span style="color:blue"><b>Please try to speak to the '
-                      'other person as if you\'re the character mentioned .</b></span>'
-                      '\n <span style="color:blue"><b>Do not trivially copy the '
-                      'character descriptions into the message.</b></span> \n'
-                      'Please respond quickly. We need it interactive and real time.'
+                    '\nNow let\'s get to know each other through the chat!'
+                    '\nYou need to finish at least <b>' + str(self.n_turn) +
+                    ' chat turns</b>, after that you can click the "Done" button '
+                    'to end the chat.'
+                    '\n<b>You\'re assigned with following persona:<b>\n'
+                    f'<b><span style="color:blue">{agent.persona_text}</span></b>'
+                    '\n<b>You can also track the character description on the left.</b>'
+                    '\n<span style="color:blue"><b>Please try to speak to the '
+                    'other person as if you\'re the character mentioned .</b></span>'
+                    '\n<span style="color:blue"><b>Do not trivially copy the '
+                    'character descriptions into the message.</b></span>'
+                    '\nPlease try to match the length of other party\'s message. '
+                    'Minimum number of words required in message is 5.'
             )
         if tag == 'end':
             return 'Thanks for taking part in this HIT. If you like you can do more HITs.'
@@ -225,7 +227,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         if msg_len < th_min:
             control_msg['text'] = (
                 'Your message is too short, please make it more than '
-                f'<b><span style="color:red">{th_min} words</span></b>.'
+                f'<b><span style="color:red">{5} words</span></b>.'
             )
             ag.observe(validate(control_msg))
             return True

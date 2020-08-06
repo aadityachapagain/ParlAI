@@ -44,9 +44,9 @@ class APIBotAgent(Agent):
     def shutdown(self):
         super(APIBotAgent, self).shutdown()
         time_log_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                     'run_data', 'bot_response_time.txt')
+                                     'run_data', f'{self.opt["api_log_file"]}_response_time.txt')
         error_counter_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                          'run_data', 'bot_error_counter.txt')
+                                          'run_data', f'{self.opt["api_log_file"]}_error_counter.txt')
         with open(time_log_file, 'a') as f:
             f.write(str(self.bot_response_time) + '\n')
 

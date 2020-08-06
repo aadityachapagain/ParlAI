@@ -31,7 +31,7 @@ def main():
     argparser.add_argument(
         '--bot-port',
         dest='bot_port',
-        default=3000,
+        default=8000,
         help='Port address of Bot agent'
     )
     argparser.add_argument(

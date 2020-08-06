@@ -46,3 +46,4 @@ force_bot: True  # If true force worker to chat with Bot
 qual_test: True  # Whether to include qualification test in Onboarding or not.
 qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
 delete_qual_test_qualification: False  # Delete `qual_test_qualification` after all HITs are complete
+api_log_file: QualBotOnlyRunLogFile

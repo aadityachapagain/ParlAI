@@ -23,7 +23,7 @@ view of search results, and in the HIT and assignment screens.
 task_config[
     'hit_description'] = (
     'You will play either the role of a child or the robot Karu. '
-    'You should aim for a conversation that is typical of children.'
+    'You should aim for a conversation that is typical of children. '
     'First time you perform this HIT you need to pass a qualification test '
     'where your job is to choose the response that Karu should make.'
 )

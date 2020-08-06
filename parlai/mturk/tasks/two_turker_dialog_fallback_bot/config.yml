@@ -1,4 +1,4 @@
-num_conversations: 100 # number of conversations you want to create for this task
+num_conversations: 150 # number of conversations you want to create for this task
 unique_worker: False  # enforce that no worker can work on your task twice
 max_hits_per_worker: 0  # Max number of hits each worker can perform during current group run, 0 means unlimited
 unique_qual_name: null  # qualification name to use for uniqueness between HITs
@@ -35,13 +35,14 @@ auto_approve_delay: 432000  # Auto approve assignment after this much seconds if
 min_num_words_in_message: 3  # Minimum number of words required in the messages[not applied in first turn]
 max_num_words_in_message: 30  # Maximum number of words allowed in the messages
 immediate_assignment_approve: False  # Approve assignment immediately after completion
-number_of_qualification_questions: 7  # Qualifications questions to be asked, available 10
-min_pass_qual_quests: 3  # To perform main HIT need to pass `min_pass_qual_quests` or more qualification questions
+number_of_qualification_questions: 3  # Qualifications questions to be asked, available 10
+min_pass_qual_quests: 2  # To perform main HIT need to pass `min_pass_qual_quests` or more qualification questions
 allowed_countries: [US, CA, GB, AU, NZ, NP]  # List of countries qualification of Turker, defualt list of English Speaking Countries(Except NP)
 waiting_pool_time: null  # If not paired with another worker within this time, talk with the bot, None for not using the feature
 bot_evaluation: True  # Ask turker to rate bot at last if they talk with bot
 #model_file: zoo:blender/blender_90M/model  # Mode to use as the fallback bot(not used since we're now using API)
 hobby: True  # Whether to use heroku app or not
 force_bot: True  # If true force worker to chat with Bot
-#qual_test_qualification: TestChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
-#delete_qual_test_qualification: True  # Delete `qual_test_qualification` after all HITs are complete
+qual_test: True  # Whether to include qualification test in Onboarding or not.
+qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
+delete_qual_test_qualification: False  # Delete `qual_test_qualification` after all HITs are complete

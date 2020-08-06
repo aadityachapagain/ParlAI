@@ -24,6 +24,8 @@ task_config[
     'hit_description'] = (
     'You will play either the role of a child or the robot Karu. '
     'You should aim for a conversation that is typical of children.'
+    'First time you perform this HIT you need to pass a qualification test '
+    'where your job is to choose the response that Karu should make.'
 )
 
 """One or more words or phrases that describe the HIT, separated by commas.
@@ -39,6 +41,9 @@ task_config[
 ] = '''
 <br>
 <b><h4>Task Description</h4></b>
+<br>
+(First time you perform this HIT you need to pass a qualification test 
+where your job is to choose the response that Karu should make.)
 <br>
 <b>
 You will play either the role of a child or the robot Karu. You should aim for a conversation that is typical of children.

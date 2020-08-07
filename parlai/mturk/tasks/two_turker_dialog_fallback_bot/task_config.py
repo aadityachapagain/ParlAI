@@ -37,7 +37,6 @@ and on the left side of the chat page. Supports HTML formatting.
 task_config[
     'task_description'
 ] = '''
-<br>
 <b><h4>Task Description</h4></b>
 <br>
 <b>
@@ -48,5 +47,11 @@ Karu is a robot on a mission to understand how to be a good friend to humans. Ov
 <br>
 Karu is very intelligent, empathetic and caring but many times Karu feels self-conscious and awkward as if the robot is deeply concerned about 'saying the right thing.'
 <br>
-<b>Note: <span style="color:red">- No racism, sexism or otherwise offensive messages, or the submission will be rejected.</b></span>
+<b>Note:</b>
+<ul>
+<li><b><span style="color:red">No racism, sexism or otherwise offensive messages, or the submission will be rejected.</b></span></li>
+<li><b>Please try to speak to the other person as if you're the character mentioned(Child or Karu).</b></li>
+<li><b>Please try to match the length of other party's message.</b></li>
+<li><b>Do not trivially copy the character descriptions into the message.</b></li>
+</ul>
 '''

@@ -1,4 +1,4 @@
-num_conversations: 100 # number of conversations you want to create for this task
+num_conversations: 150 # number of conversations you want to create for this task
 unique_worker: False  # enforce that no worker can work on your task twice
 max_hits_per_worker: 0  # Max number of hits each worker can perform during current group run, 0 means unlimited
 unique_qual_name: null  # qualification name to use for uniqueness between HITs
@@ -32,7 +32,7 @@ max_resp_time: 120  # time limit for entering a dialog message in main world
 max_onboard_resp_time: 240 # time limit for turker in onboarding to response to go into waiting pool
 assignment_duration_in_seconds: 2700  # Duration to complete a assignments in seconds, default 45 minutes
 auto_approve_delay: 432000  # Auto approve assignment after this much seconds if not reviewed, default 5 days
-min_num_words_in_message: 3  # Minimum number of words required in the messages[not applied in first turn]
+min_num_words_in_message: 5  # Minimum number of words required in the messages[not applied in first turn]
 max_num_words_in_message: 30  # Maximum number of words allowed in the messages
 immediate_assignment_approve: False  # Approve assignment immediately after completion
 number_of_qualification_questions: 7  # Qualifications questions to be asked, available 10

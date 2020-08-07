@@ -29,7 +29,7 @@ def main():
     argparser.add_argument(
         '--bot-port',
         dest='bot_port',
-        default=3000,
+        default=8000,
         help='Port address of Bot agent'
     )
     argparser.add_argument(
@@ -106,7 +106,7 @@ def main():
                     bot_agent_id = 'KARU'
                 else:
                     bot_agent_id = 'CHILD'
-                bot_agent = APIBotAgent(opt, bot_agent_id)
+                bot_agent = APIBotAgent(opt, bot_agent_id, mturk_manager.task_group_id)
                 world = InteractParlAIModelWorld(opt, workers[0], bot_agent)
             else:
                 world = TwoTurkerDialogWorld(opt=opt,

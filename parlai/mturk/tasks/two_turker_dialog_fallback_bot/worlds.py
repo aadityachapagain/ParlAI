@@ -76,11 +76,14 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             control_msg['text'] = self.get_instruction(tag='start', agent=self.mturk_agent)
             control_msg['show_persona'] = True
             control_msg['persona_description'] = (
-                '<br>'
-                '<b><h3>Your Persona</h3></b>'
-                f"You're assigned with the following character: <br>"
-                f'<b><span style="color:blue">{self.mturk_agent.persona_text}</span></b>'
-                '<br>'
+                    '<br>'
+                    '<b><h3>Your Persona</h3></b>'
+                    f"<ul><li>You're assigned with the following character: <br>"
+                    f'<b><span style="color:blue">{self.mturk_agent.persona_text}</span></b></li>'
+                    f'<li>You need to finish at least <b>' + str(self.n_turn) +
+                    ' chat turns</b>, after that you can click the "Done" button '
+                    'to end the chat.</li></ul>'
+                    '<br>'
             )
             self.mturk_agent.observe(validate(control_msg))
 
@@ -182,19 +185,12 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
     def get_instruction(self, tag, agent=None):
         if tag == 'start':
             return (
-                    '\nNow let\'s get to know each other through the chat!'
-                    '\nYou need to finish at least <b>' + str(self.n_turn) +
-                    ' chat turns</b>, after that you can click the "Done" button '
-                    'to end the chat.'
-                    '\n<b>You\'re assigned with following persona:<b>\n'
-                    f'<b><span style="color:blue">{agent.persona_text}</span></b>'
-                    '\n<b>You can also track the character description on the left.</b>'
-                    '\n<span style="color:blue"><b>Please try to speak to the '
-                    'other person as if you\'re the character mentioned .</b></span>'
-                    '\n<span style="color:blue"><b>Do not trivially copy the '
-                    'character descriptions into the message.</b></span>'
-                    '\nPlease try to match the length of other party\'s message. '
-                    'Minimum number of words required in message is 5.'
+                    '\nChat with other playing the role having following character:'
+                    f'\n<b><span style="color:blue">{agent.persona_text}</span></b>'
+                    '\nYou can also track the character description on the left.'
+                    '\n<b>Please try to match the length of other party\'s message. '
+                    'Share information relevant to character assigned and try to know other party as much as you can. '
+                    '</b>'
             )
         if tag == 'end':
             return 'Thanks for taking part in this HIT. If you like you can do more HITs.'
@@ -227,15 +223,13 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         msg_len = len(act['text'].split(' '))
         if msg_len < th_min:
             control_msg['text'] = (
-                'Your message is too short, please make it more than '
-                f'<b><span style="color:red">{5} words</span></b>.'
+                'Your message is too short, please make it comparable to opponent message length.'
             )
             ag.observe(validate(control_msg))
             return True
         if msg_len > th_max:
             control_msg['text'] = (
-                'Your message is too long, please make it less than '
-                f'<b><span style="color:red">{th_max} words</span></b>.'
+                'Your message is too long, please make it comparable to opponent message length.'
             )
             ag.observe(validate(control_msg))
             return True

@@ -28,16 +28,17 @@ class APIBotAgent(Agent):
                                            self.opt['bot_password']))
             self.bot_response_time.append(time.time() - t)
             response = json.loads(response.content)
+            response["text"] = response["bot_reply"]["text"]
+            del response["bot_reply"]
             if "session_id" in response:
                 self.session_id = response["session_id"]
             self.resp_queue.put(response)
         except Exception as e:
+            print(repr(e))
             self.bot_request_error_counter += 1
 
     def act(self):
         result = self.resp_queue.get()
-        result["text"] = result["bot_reply"]["text"]
-        del result["bot_reply"]
         result.update({'id': self.id,
                        'episode_done': False})
         return result

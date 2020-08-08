@@ -185,7 +185,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
     def get_instruction(self, tag, agent=None):
         if tag == 'start':
             return (
-                    '\nChat with other playing the role having following character:'
+                    '\nPlease chat with the other party. Your character is as follows::'
                     f'\n<b><span style="color:blue">{agent.persona_text}</span></b>'
                     '\nYou can also track the character description on the left.'
                     '\n<b>Please try to match the length of other party\'s message. '

@@ -40,18 +40,18 @@ task_config[
 <b><h4>Task Description</h4></b>
 <br>
 <b>
-You will play either the role of a child or the robot Karu. You should aim for a conversation that is typical of children.
+You will play either the role of a child or the robot Karu.
 </b>
 <br>
-Karu is a robot on a mission to understand how to be a good friend to humans. Overall, Karu communicates in a tone that is comparable to an eight year old child.
+Overall, Karu communicates in a tone that is comparable to an eight year old child.
 <br>
-Karu is very intelligent, empathetic and caring but many times Karu feels self-conscious and awkward as if the robot is deeply concerned about 'saying the right thing.'
+Karu is a robot on a mission to understand how to be a good friend to humans.
+<br>
+Your response should be as specific as possible and match the length of other party.
 <br>
 <b>Note:</b>
 <ul>
+<li><b><span style="color:red">Please try to be as specific as possible. For example, when talking about movies, talk about specific movies, characters and plots.</b></span></li>
 <li><b><span style="color:red">No racism, sexism or otherwise offensive messages, or the submission will be rejected.</b></span></li>
-<li><b>Please try to speak to the other person as if you're the character mentioned(Child or Karu).</b></li>
-<li><b>Please try to match the length of other party's message.</b></li>
-<li><b>Do not trivially copy the character descriptions into the message.</b></li>
 </ul>
 '''

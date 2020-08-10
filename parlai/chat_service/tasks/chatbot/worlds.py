@@ -37,7 +37,7 @@ class MessengerBotChatTaskWorld(World):
         self.agent = agent
         self.episodeDone = False
         self.model = bot
-        self.first_time = True
+        self.first_time = False
 
     @staticmethod
     def generate_world(opt, agents):
@@ -56,16 +56,16 @@ class MessengerBotChatTaskWorld(World):
         agents[0].disp_id = 'ChatbotAgent'
 
     def parley(self):
-        if self.first_time:
-            self.agent.observe(
-                {
-                    'id': 'World',
-                    'text': 'Welcome to the ParlAI Chatbot demo. '
-                    'You are now paired with a bot - feel free to send a message.'
-                    'Type [DONE] to finish the chat.',
-                }
-            )
-            self.first_time = False
+        # if self.first_time:
+        #     self.agent.observe(
+        #         {
+        #             'id': 'World',
+        #             'text': 'Welcome to the ParlAI Chatbot demo. '
+        #             'You are now paired with a bot - feel free to send a message.'
+        #             'Type [DONE] to finish the chat.',
+        #         }
+        #     )
+        #     self.first_time = False
         a = self.agent.act()
         if a is not None:
             if '[DONE]' in a['text']:
@@ -113,25 +113,5 @@ class MessengerOverworld(World):
         return self.episodeDone
 
     def parley(self):
-        if self.first_time:
-            self.agent.observe(
-                {
-                    'id': 'Overworld',
-                    'text': 'Welcome to the overworld for the ParlAI messenger '
-                    'chatbot demo. Please type "begin" to start.',
-                    'quick_replies': ['begin'],
-                }
-            )
-            self.first_time = False
-        a = self.agent.act()
-        if a is not None and a['text'].lower() == 'begin':
-            self.episodeDone = True
-            return 'default'
-        elif a is not None:
-            self.agent.observe(
-                {
-                    'id': 'Overworld',
-                    'text': 'Invalid option. Please type "begin".',
-                    'quick_replies': ['begin'],
-                }
-            )
+        self.episodeDone = True
+        return 'default'

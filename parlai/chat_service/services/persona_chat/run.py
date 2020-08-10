@@ -2,7 +2,7 @@
 Websocket Runner.
 """
 from parlai.core.params import ParlaiParser
-from parlai.chat_service.services.websocket.websocket_manager import WebsocketManager
+from parlai.chat_service.services.persona_chat.persona_chat_manager import PersonaChatManager
 import parlai.chat_service.utils.config as config_utils
 
 
@@ -23,7 +23,7 @@ def run(opt):
     Run MessengerManager.
     """
     opt['service'] = SERVICE_NAME
-    manager = WebsocketManager(opt)
+    manager = PersonaChatManager(opt)
     try:
         manager.start_task()
     except BaseException:

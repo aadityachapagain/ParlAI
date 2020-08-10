@@ -8,7 +8,7 @@ from copy import deepcopy
 
 from parlai.core.worlds import DialogPartnerWorld, validate
 from parlai.core.message import Message
-
+import timeit
 
 class InteractiveWorld(DialogPartnerWorld):
     """
@@ -75,7 +75,11 @@ class InteractiveWorld(DialogPartnerWorld):
             )
             agents[1].observe(validate(context_act))
         agents[1].observe(validate(act))
+        print("time for bot to run ...")
+        start_time = timeit.default_timer()
         acts[1] = agents[1].act()
+        end_time = timeit.default_timer()
+        print("time taken for prediciton: ", end_time - start_time)
         agents[0].observe(validate(acts[1]))
         self.update_counters()
         self.turn_cnt += 1

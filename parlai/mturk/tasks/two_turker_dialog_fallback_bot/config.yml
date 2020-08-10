@@ -1,0 +1,47 @@
+num_conversations: 150 # number of conversations you want to create for this task
+unique_worker: False  # enforce that no worker can work on your task twice
+max_hits_per_worker: 0  # Max number of hits each worker can perform during current group run, 0 means unlimited
+unique_qual_name: null  # qualification name to use for uniqueness between HITs
+reward: 0.30  # reward for each worker for finishing the conversation, in US dollars
+is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
+hard_block: False  # Hard block disconnecting Turkers from all of your HITs
+disconnect_qualification: null  # qualification to use for soft blocking users for
+#  disconnects. By default
+#  turkers are never blocked, though setting this will allow
+#  you to filter out turkers that have disconnected too many
+#  times on previous HITs where this qualification was set.
+block_qualification: null  # Qualification to use for soft blocking users. This
+#  qualification is granted whenever soft_block_worker is
+#  called, and can thus be used to filter workers out from a
+#  single task or group of tasks by noted performance.
+count_complete: True  # continue until the requested number of conversations are completed rather than attempted
+allowed_conversations: 0  # number of concurrent conversations that one mturk worker is able to be involved in, 0 is unlimited
+max_connections: 20  # number of HITs that can be launched at the same time, 0 is unlimited.
+min_messages: 0  # number of messages required to be sent by MTurk agent when
+#  considering whether to approve a HIT in the event of a
+#  partner disconnect. I.e. if the number of messages
+#  exceeds this number, the turker can submit the HIT.
+local: False  # Run the server locally on this server rather than setting up a heroku server.
+max_time: 0  # Maximum number of seconds per day that a worker is allowed to work on this assignment
+max_time_qual: null  # Qualification to use to share the maximum time requirement with other runs from other machines.
+
+min_turns: 7  # minimum number of turns
+max_turns: 20  # maximal number of chat turns, turker cannot chat more than this number of turns
+range_turn: [7, 12]  # a random number is choosen between this range; after this number of turns turker can submit the HIT
+max_resp_time: 120  # time limit for entering a dialog message in main world
+max_onboard_resp_time: 240 # time limit for turker in onboarding to response to go into waiting pool
+assignment_duration_in_seconds: 2700  # Duration to complete a assignments in seconds, default 45 minutes
+auto_approve_delay: 432000  # Auto approve assignment after this much seconds if not reviewed, default 5 days
+min_num_words_in_message: 7  # Minimum number of words required in the messages[not applied in first turn]
+max_num_words_in_message: 30  # Maximum number of words allowed in the messages
+immediate_assignment_approve: False  # Approve assignment immediately after completion
+number_of_qualification_questions: 7  # Qualifications questions to be asked, available 10
+min_pass_qual_quests: 3  # To perform main HIT need to pass `min_pass_qual_quests` or more qualification questions
+allowed_countries: [US, CA, GB, AU, NZ, NP]  # List of countries qualification of Turker, defualt list of English Speaking Countries(Except NP)
+waiting_pool_time: null  # If not paired with another worker within this time, talk with the bot, None for not using the feature
+bot_evaluation: True  # Ask turker to rate bot at last if they talk with bot
+#model_file: zoo:blender/blender_90M/model  # Mode to use as the fallback bot(not used since we're now using API)
+hobby: True  # Whether to use heroku app or not
+force_bot: True  # If true force worker to chat with Bot
+#qual_test_qualification: TestChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
+#delete_qual_test_qualification: True  # Delete `qual_test_qualification` after all HITs are complete

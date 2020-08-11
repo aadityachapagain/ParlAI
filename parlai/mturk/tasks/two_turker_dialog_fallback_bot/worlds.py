@@ -224,13 +224,13 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         msg_len = len(act['text'].split(' '))
         if msg_len < th_min:
             control_msg['text'] = (
-                'Your message is too short, please make it comparable to opponent message length.'
+                'Your message is too short, please make it comparable to other party\'s message length.'
             )
             ag.observe(validate(control_msg))
             return True
         if msg_len > th_max:
             control_msg['text'] = (
-                'Your message is too long, please make it comparable to opponent message length.'
+                'Your message is too long, please make it comparable to other party\'s message length.'
             )
             ag.observe(validate(control_msg))
             return True

@@ -142,6 +142,7 @@ def run_final_job(manager):
 
 def main(opt):
     for run_idx in range(opt['number_of_runs']):
+        print(f"Launching {run_idx+1} run........")
         old_mturk_manager = single_run(opt)
         # Spawn separate threads for previous run manager
         # final settlement(expiring hits, deleting servers)

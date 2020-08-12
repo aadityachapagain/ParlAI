@@ -253,8 +253,9 @@ class ChatServiceManager(ABC):
             overworld_fut.cancel()
 
         # 5 minute grace period for conversations to finish
+        logging.info("shutting down all the active worlds ...")
         time_passed = 0
-        while time_passed < 5 * 60:
+        while time_passed < 60:
             any_alive = False
             for task_fut in self.active_worlds.values():
                 if task_fut is not None:

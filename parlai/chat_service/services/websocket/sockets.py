@@ -10,7 +10,6 @@ import uuid
 import logging
 import json
 
-
 def get_rand_id():
     return str(uuid.uuid4())
 
@@ -26,6 +25,7 @@ class MessageSocketHandler(WebSocketHandler):
             logging.warn(f"No callback defined for new WebSocket messages.")
 
         self.message_callback = kwargs.pop('message_callback', _default_callback)
+        self.shutdown_message_callback = kwargs.pop('shutdown_message_callback', _default_callback)
         self.sid = get_rand_id()
         super().__init__(*args, **kwargs)
 
@@ -59,13 +59,17 @@ class MessageSocketHandler(WebSocketHandler):
         """
         logging.info('websocket message from client: {}'.format(message_text))
         message = json.loads(message_text)
-        message = {
-            'text': message.get('text', ''),
-            'payload': message.get('payload'),
-            'sender': {'id': self.sid},
-            'recipient': {'id': 0},
-        }
-        self.message_callback(message)
+        # Note restart message is case sensitive
+        if message.get('text','') == RESTART_BOT_SERVER_MESSAGE:
+            self.shutdown_message_callback()
+        else:
+            message = {
+                'text': message.get('text', ''),
+                'payload': message.get('payload'),
+                'sender': {'id': self.sid},
+                'recipient': {'id': 0},
+            }
+            self.message_callback(message)
 
     def check_origin(self, origin):
         return True

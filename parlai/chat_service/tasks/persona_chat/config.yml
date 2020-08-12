@@ -2,14 +2,14 @@ tasks:
   default:
     onboard_world: PersonaChatOnboardWorld
     task_world: PersonaChatTaskWorld
-    timeout: 1800
+    timeout: 540
     agents_required: 1
 task_name: chatbot
 world_module: parlai.chat_service.tasks.persona_chat.worlds
 overworld: PersonaChatOverworld
 max_workers: 30
 opt:
-  debug: True
+  debug: False
   models:
     blender_90M:
       model: transformer/generator

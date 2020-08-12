@@ -2,7 +2,7 @@ import logging
 import json
 
 from parlai.chat_service.services.websocket.sockets import MessageSocketHandler
-
+RESTART_BOT_SERVER_MESSAGE = "[[RESTART_BOT_SERVER_MESSAGE_CRITICAL]]"
 
 class PersonaMessageSocketHandler(MessageSocketHandler):
     def on_message(self, message_text):
@@ -18,9 +18,13 @@ class PersonaMessageSocketHandler(MessageSocketHandler):
         """
         logging.info('websocket message from client: {}'.format(message_text))
         message = json.loads(message_text)
-        message.update({
-            'payload': message.get('payload'),
-            'sender': {'id': self.sid},
-            'recipient': {'id': 0},
-        })
-        self.message_callback(message)
+        # Note restart message is case sensitive
+        if message.get('text','') == RESTART_BOT_SERVER_MESSAGE:
+            self.shutdown_message_callback()
+        else:
+            message.update({
+                'payload': message.get('payload'),
+                'sender': {'id': self.sid},
+                'recipient': {'id': 0},
+            })
+            self.message_callback(message)

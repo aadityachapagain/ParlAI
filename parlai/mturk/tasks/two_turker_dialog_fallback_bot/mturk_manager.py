@@ -182,7 +182,7 @@ class MturkManagerWithWaitingPoolTimeout(MTurkManager):
             if compare_count >= self.num_conversations:
                 self.accepting_workers = False
                 shared_utils.print_and_log(logging.INFO,
-                                           f"Desired {self.num_conversations} number of conversations completed.....",
+                                           f"Desired number of conversations {self.num_conversations} completed.....",
                                            should_print=True)
                 self.expire_all_unassigned_hits()
                 self._expire_onboarding_pool()

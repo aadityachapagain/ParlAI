@@ -134,7 +134,6 @@ def single_run(opt):
     except BaseException:
         raise
     finally:
-        mturk_manager.expire_all_unassigned_hits()
         return mturk_manager
 
 
@@ -151,6 +150,7 @@ def main(opt):
         # final settlement(expiring hits, deleting servers)
         thread = Thread(target=run_final_job, args=(old_mturk_manager,))
         thread.start()
+        shared_utils.print_and_log(logging.INFO, "Sending restart instruction....", should_print=True)
         requests.post(f'http://{opt["bot_host"]}:{str(opt["bot_port"])}/interact',
                       json={'text': '[[RESTART_BOT_SERVER_MESSAGE_CRITICAL]]'},
                       auth=(opt['bot_username'],

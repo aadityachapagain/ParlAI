@@ -1,6 +1,6 @@
 num_conversations: 50 # number of conversations you want to create for this task
 number_of_runs: 3
-sleep_between_run: 1800
+sleep_between_runs: 1200
 unique_worker: False  # enforce that no worker can work on your task twice
 max_hits_per_worker: 0  # Max number of hits each worker can perform during current group run, 0 means unlimited
 unique_qual_name: null  # qualification name to use for uniqueness between HITs

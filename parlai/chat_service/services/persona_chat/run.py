@@ -4,7 +4,8 @@ Websocket Runner.
 from parlai.core.params import ParlaiParser
 from parlai.chat_service.services.persona_chat.persona_chat_manager import PersonaChatManager
 import parlai.chat_service.utils.config as config_utils
-
+import gc
+import time
 
 SERVICE_NAME = 'websocket'
 
@@ -29,7 +30,11 @@ def run(opt):
     except BaseException:
         raise
     finally:
+        print('sutting down everyting ...')
         manager.shutdown()
+    
+    del manager
+    gc.collect()
 
 
 if __name__ == '__main__':

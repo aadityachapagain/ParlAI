@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-from parlai.scripts.script import ParlaiScript
+from parlai.core.script import ParlaiScript
 from parlai.core.agents import create_agent
 from parlai.core.torch_agent import TorchAgent
 from parlai.core.worlds import create_task
@@ -51,6 +51,7 @@ class TokenStats(ParlaiScript):
         if 'ordered' not in self.opt['datatype'] and 'train' in self.opt['datatype']:
             self.opt['datatype'] = self.opt['datatype'] + ':ordered'
         agent = create_agent(self.opt)
+        agent.opt.log()
         num_examples = self.opt['num_examples']
         field = self.opt['field'] + '_vec'
         if num_examples < 0:

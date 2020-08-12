@@ -21,7 +21,6 @@ See below for documentation on each specific tool.
 
 from typing import Dict, Any, Union, List, Tuple, Optional
 from abc import ABC, abstractmethod
-from collections import deque
 import random
 import os
 import torch
@@ -47,8 +46,8 @@ from parlai.core.metrics import (
     Metrics,
     Metric,
     GlobalAverageMetric,
-    GlobalSumMetric,
     GlobalFixedMetric,
+    GlobalTimerMetric,
 )
 from parlai.utils.distributed import is_primary_worker
 from parlai.utils.torch import argsort, compute_grad_norm, padded_tensor, atomic_save
@@ -101,6 +100,7 @@ class Batch(AttrDict):
         the original observations in the batched order
     """
 
+    batchsize: int
     text_vec: Optional[torch.LongTensor]
     text_lengths: Optional[List[int]]
     label_vec: Optional[torch.LongTensor]
@@ -170,11 +170,8 @@ class History(object):
         field in the observation to track over the course of the episode
         (defaults to 'text')
 
-    :param vec_type:
-        specify a 'list' or 'deque' to save the history in this object
-
     :param maxlen:
-        if `vec_type` is 'deque', this sets the maximum length of that object
+        sets the maximum number of tunrs
 
     :param p1_token:
         token indicating 'person 1'; opt must have 'person_tokens' set to True
@@ -192,7 +189,6 @@ class History(object):
         self,
         opt,
         field='text',
-        vec_type='deque',
         maxlen=None,
         size=-1,
         p1_token='__p1__',
@@ -205,14 +201,12 @@ class History(object):
         self.delimiter_tok = self.parse(self.delimiter)
         self.size = size
         self.split_on_newln = opt.get('split_lines', False)
+        self.reversed = opt.get('history_reversed', False)
         self._global_end_token = opt.get('history_add_global_end_token', None)
         if self._global_end_token is not None:
             self._global_end_token = self.dict[self.dict.end_token]
 
         # set up history objects
-        if vec_type != 'deque' and vec_type != 'list':
-            raise RuntimeError('Type {} is not supported for history'.format(vec_type))
-        self.vec_type = vec_type
         self.max_len = maxlen
 
         self.history_strings = []
@@ -270,14 +264,17 @@ class History(object):
         # update history vecs
         self._update_vecs(text)
 
-    def update_history(self, obs, temp_history=None):
+    def update_history(self, obs: Message, temp_history: Optional[str] = None):
         """
         Update the history with the given observation.
 
-        param obs:     Observation used to update the history. param temp_history:
-        Optional temporary string. If it is not None,     this string will be appended
-        to the end of the     history. It will not be in the history on the     next
-        dialogue turn. Set to None to stop adding     to the history.
+        :param obs:
+            Observation used to update the history.
+        :param temp_history:
+            Optional temporary string. If it is not None, this string will be
+            appended to the end of the history. It will not be in the history
+            on the next dialogue turn. Set to None to stop adding to the
+            history.
         """
         if self.field in obs and obs[self.field] is not None:
             if self.split_on_newln:
@@ -302,7 +299,8 @@ class History(object):
         Return the string version of the history.
         """
         if len(self.history_strings) > 0:
-            history = self.delimiter.join(self.history_strings)
+            history = self.history_strings[:]
+            history = self.delimiter.join(history)
             if self.temp_history is not None:
                 history += self.temp_history
             return history
@@ -316,27 +314,20 @@ class History(object):
         if len(self.history_vecs) == 0:
             return None
 
-        if self.vec_type == 'deque':
-            history = deque(maxlen=self.max_len)
-            for vec in self.history_vecs[:-1]:
-                history.extend(vec)
-                history.extend(self.delimiter_tok)
-            history.extend(self.history_vecs[-1])
-            if self.temp_history is not None:
-                history.extend(self.parse(self.temp_history))
-            if self._global_end_token is not None:
-                history.extend([self._global_end_token])
-        else:
-            # vec type is a list
-            history = []
-            for vec in self.history_vecs[:-1]:
-                history += vec
-                history += self.delimiter_tok
-            history += self.history_vecs[-1]
-            if self.temp_history is not None:
-                history.extend(self.parse(self.temp_history))
-            if self._global_end_token is not None:
-                history += [self._global_end_token]
+        # vec type is a list
+        history = []
+        for vec in self.history_vecs[:-1]:
+            history += [vec]
+            history += [self.delimiter_tok]
+        history += [self.history_vecs[-1]]
+        if self.temp_history is not None:
+            history.extend([self.parse(self.temp_history)])
+        if self._global_end_token is not None:
+            history += [[self._global_end_token]]
+
+        history = sum(history, [])
+        if self.reversed:
+            history = list(reversed(history))
 
         return history
 
@@ -503,9 +494,12 @@ class TorchAgent(ABC, Agent):
             '-opt',
             '--optimizer',
             default='sgd',
+            metavar='OPTIMIZER',
             choices=cls.optim_opts(),
-            help='Choose between pytorch optimizers. Any member of torch.optim'
-            ' should be valid.',
+            help=(
+                f'Optimizer choice. Possible values: '
+                f'{", ".join(cls.optim_opts().keys())}.'
+            ),
         )
         optim_group.add_argument(
             '-lr', '--learningrate', type=float, default=1, help='Learning rate'
@@ -595,6 +589,9 @@ class TorchAgent(ABC, Agent):
             type=int,
             help='Label truncation length: if not specified, this will default '
             'to `truncate`',
+        )
+        agent.add_argument(
+            '--history-reversed', default=False, type='bool', help='Reverse the history'
         )
         agent.add_argument(
             '-histsz',
@@ -779,6 +776,7 @@ class TorchAgent(ABC, Agent):
         self.label_truncate = label_truncate if label_truncate >= 0 else None
         # stores up to hist_utt past observations within current dialog
         self.history = self.build_history()
+        self.history_reversed = opt.get('history_reversed', False)
 
         self.is_training = False  # track whether model is training
         self.rank_candidates = opt['rank_candidates']
@@ -1147,9 +1145,8 @@ class TorchAgent(ABC, Agent):
         for dev in devices:
             props = torch.cuda.get_device_properties(dev)
             memory_avail += props.total_memory
-            memory_used += torch.cuda.memory_allocated(dev) + torch.cuda.memory_cached(
-                dev
-            )
+            memory_used += torch.cuda.max_memory_allocated(dev)
+            torch.cuda.reset_max_memory_allocated(dev)
         return memory_used / memory_avail
 
     def receive_metrics(self, metrics_dict):
@@ -1366,10 +1363,14 @@ class TorchAgent(ABC, Agent):
             obs['full_text'] = history_string
             if history_string:
                 obs['text_vec'] = history.get_history_vec()
+                obs['full_text_vec'] = history.get_history_vec()
 
         # check truncation
         if obs.get('text_vec') is not None:
-            truncated_vec = self._check_truncate(obs['text_vec'], truncate, True)
+            truncate_left = not self.history_reversed
+            truncated_vec = self._check_truncate(
+                obs['text_vec'], truncate, truncate_left
+            )
             obs.force_set('text_vec', torch.LongTensor(truncated_vec))
         return obs
 
@@ -1538,12 +1539,12 @@ class TorchAgent(ABC, Agent):
             vectors if available, otherwise uses the label vectors if available.
         """
         if len(obs_batch) == 0:
-            return Batch()
+            return Batch(batchsize=0)
 
         valid_obs = [(i, ex) for i, ex in enumerate(obs_batch) if self.is_valid(ex)]
 
         if len(valid_obs) == 0:
-            return Batch()
+            return Batch(batchsize=0)
 
         valid_inds, exs = zip(*valid_obs)
 
@@ -1589,6 +1590,7 @@ class TorchAgent(ABC, Agent):
             imgs = [ex.get('image', None) for ex in exs]
 
         return Batch(
+            batchsize=len(valid_inds),
             text_vec=xs,
             text_lengths=x_lens,
             label_vec=ys,
@@ -1947,6 +1949,7 @@ class TorchAgent(ABC, Agent):
 
         # create a batch from the vectors
         batch = self.batchify(observations)
+        self.global_metrics.add('exps', GlobalTimerMetric(batch.batchsize))
 
         if (
             'label_vec' in batch
@@ -1957,13 +1960,23 @@ class TorchAgent(ABC, Agent):
             # tokens per batch
             # we divide by the binary is_primary_worker() so that the numerator is
             # num_tokens in all workers, and the denominator is 1.
-            tpb = GlobalAverageMetric(
-                (batch.label_vec != self.NULL_IDX).sum().item(),
-                float(is_primary_worker()),
-            )
-            self.global_metrics.add('tpb', tpb)
+            lt = (batch.label_vec != self.NULL_IDX).sum().item()
+            ltpb = GlobalAverageMetric(lt, float(is_primary_worker()))
+            self.global_metrics.add('ltpb', ltpb)
+            self.global_metrics.add('ltps', GlobalTimerMetric(lt))
+
+            ct = (batch.text_vec != self.NULL_IDX).sum().item()
+            ctpb = GlobalAverageMetric(ct, float(is_primary_worker()))
+            self.global_metrics.add('ctpb', ctpb)
+            self.global_metrics.add('ctps', GlobalTimerMetric(ct))
+
+            ttpb = GlobalAverageMetric(ct + lt, float(is_primary_worker()))
+            self.global_metrics.add('tpb', ttpb)
+            self.global_metrics.add('tps', GlobalTimerMetric(ct + lt))
 
         if self.is_training:
+            # register the start of updates for later counting when they occur
+            self.global_metrics.add('ups', GlobalTimerMetric(0))
             output = self.train_step(batch)
         else:
             with torch.no_grad():
@@ -1986,6 +1999,19 @@ class TorchAgent(ABC, Agent):
                 if 'metrics' not in batch_reply[i]:
                     batch_reply[i]['metrics'] = {}
                 batch_reply[i]['metrics'][k] = value
+
+        # register the end of timers
+        endtimer = GlobalTimerMetric(0)
+        self.global_metrics.add('exps', endtimer)
+        if (
+            'label_vec' in batch
+            and 'text_vec' in batch
+            and batch.label_vec is not None
+            and batch.text_vec is not None
+        ):
+            self.global_metrics.add('ltps', GlobalTimerMetric(0))
+            self.global_metrics.add('ctps', GlobalTimerMetric(0))
+            self.global_metrics.add('tps', GlobalTimerMetric(0))
 
         # Make sure we push all the metrics to main thread in hogwild/workers
         self.global_metrics.flush()
@@ -2097,7 +2123,7 @@ class TorchAgent(ABC, Agent):
         # in distributed mode, all workers step together, but we need to only
         # count it once. Only the primary worker gets to make the count
         if is_primary_worker():
-            self.global_metrics.add('updates', GlobalSumMetric(1))
+            self.global_metrics.add('ups', GlobalTimerMetric(1))
 
         if getattr(self, 'scheduler', None):
             self.scheduler.step(self._number_training_updates)

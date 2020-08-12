@@ -32,7 +32,7 @@ An example sbatch script is below, for a 2-host, 8-GPU setup (16 total gpus):
 """
 
 import parlai.scripts.train_model as single_train
-from parlai.scripts.script import ParlaiScript
+from parlai.core.script import ParlaiScript
 import parlai.utils.distributed as distributed_utils
 
 
@@ -51,9 +51,6 @@ class DistributedTrain(ParlaiScript):
     def run(self):
         with distributed_utils.slurm_distributed_context(self.opt) as opt:
             self.train_loop = single_train.TrainLoop(opt)
-            self.parser = self.parser
-            self.parser.opt = self.train_loop.agent.opt
-            self.parser.print_args()
             return self.train_loop.train()
 
 

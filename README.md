@@ -45,6 +45,12 @@ This is the recommended installation procedure, as it provides ready access to t
 
 All needed data will be downloaded to `~/ParlAI/data`, and any non-data files if requested will be downloaded to `~/ParlAI/downloads`. If you need to clear out the space used by these files, you can safely delete these directories and any files needed will be downloaded again.
 
+In case you still want to install ParlAI using pip (less recommended), you can install it as follows:
+```bash
+pip install parlai
+```
+Though pip install command is easier, it would not give you access to the ready examples and the data present in the repository.
+
 ## Documentation
 
  - [Quick Start](https://parl.ai/docs/tutorial_quick.html)
@@ -65,18 +71,18 @@ Note: If any of these examples fail, check the [requirements section](#requireme
 
 Display 10 random examples from the SQuAD task
 ```bash
-python -m parlai.scripts.display_data -t squad
+parlai display_data -t squad
 ```
 
 Evaluate an IR baseline model on the validation set of the Personachat task:
 ```bash
-python -m parlai.scripts.eval_model -m ir_baseline -t personachat -dt valid
+parlai eval_model -m ir_baseline -t personachat -dt valid
 ```
 
 Train a single layer transformer on PersonaChat (requires pytorch and torchtext).
 Detail: embedding size 300, 4 attention heads,  2 epochs using batchsize 64, word vectors are initialized with fasttext and the other elements of the batch are used as negative during training.
 ```bash
-python -m parlai.scripts.train_model -t personachat -m transformer/ranker -mf /tmp/model_tr6 --n-layers 1 --embedding-size 300 --ffn-size 600 --n-heads 4 --num-epochs 2 -veps 0.25 -bs 64 -lr 0.001 --dropout 0.1 --embedding-type fasttext_cc --candidates batch
+parlai train_model -t personachat -m transformer/ranker -mf /tmp/model_tr6 --n-layers 1 --embedding-size 300 --ffn-size 600 --n-heads 4 --num-epochs 2 -veps 0.25 -bs 64 -lr 0.001 --dropout 0.1 --embedding-type fasttext_cc --candidates batch
 ```
 
 

@@ -153,25 +153,26 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             else:
                 eval_quest = quest["question"]
             option_list = random.sample(["Yes", "No"], 2)
+            valid_answers = random.sample(list(range(1, 6)), 2)
             choice_list_html = ''.join(['<li>' + ch + '</li>' for ch in option_list])
             agent.observe(validate({
                 'id': 'SYSTEM',
                 'text': (
                     f'<b>{eval_quest}</b>'
                     '<br>'
-                    f'<ol>{choice_list_html}</ol>'
+                    f'<ul>{choice_list_html}</ul>'
                     '<br>'
-                    f'Please send "<b>1 for {option_list[0]}</b>" or "<b>2 for {option_list[1]}.</b>"'
+                    f'Please send "<b>{valid_answers[0]} for {option_list[0]}</b>" or "<b>{valid_answers[1]} for {option_list[1]}.</b>"'
                 ),
                 'episode_done': False
             }))
             eval_act = agent.act(timeout=self.opt["max_resp_time"])
             if self.check_timeout(eval_act):
                 return
-            while eval_act["text"].strip().lower() not in ["1", "2"]:
+            while eval_act["text"].strip().lower() not in [str(ans) for ans in valid_answers]:
                 agent.observe(validate({
                     "id": "SYSTEM",
-                    "text": f'Please send "<b>1 for {option_list[0]}</b>" or "<b>2 for {option_list[1]}.</b>"',
+                    "text": f'Please read question carefully and send "<b>{valid_answers[0]} for {option_list[0]}</b>" or "<b>{valid_answers[1]} for {option_list[1]}.</b>"',
                     "episode_done": False,
                 }))
                 eval_act = agent.act(timeout=self.opt["max_resp_time"])
@@ -179,18 +180,18 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
                     return
             act_index = int(eval_act["text"])
             self.bot_eval_by_worker[agent.id].update({
-                quest["title"]: option_list[act_index - 1]
+                quest["title"]: option_list[valid_answers.index(act_index)]
             })
 
     def get_instruction(self, tag, agent=None):
         if tag == 'start':
             return (
-                    '\nPlease chat with the other party. Your character is as follows::'
-                    f'\n<b><span style="color:blue">{agent.persona_text}</span></b>'
-                    '\nYou can also track the character description on the left.'
-                    '\n<b>Please try to match the length of other party\'s message. '
-                    'Share information relevant to character assigned and try to know other party as much as you can. '
-                    '</b>'
+                '\nPlease chat with the other party. Your character is as follows::'
+                f'\n<b><span style="color:blue">{agent.persona_text}</span></b>'
+                '\nYou can also track the character description on the left.'
+                '\n<b>Please try to match the length of other party\'s message. '
+                'Share information relevant to character assigned and try to know other party as much as you can. '
+                '</b>'
             )
         if tag == 'end':
             return 'Thanks for taking part in this HIT. If you like you can do more HITs.'
@@ -223,13 +224,13 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         msg_len = len(act['text'].split(' '))
         if msg_len < th_min:
             control_msg['text'] = (
-                'Your message is too short, please make it comparable to opponent message length.'
+                'Your message is too short, please make it comparable to other party\'s message length.'
             )
             ag.observe(validate(control_msg))
             return True
         if msg_len > th_max:
             control_msg['text'] = (
-                'Your message is too long, please make it comparable to opponent message length.'
+                'Your message is too long, please make it comparable to other party\'s message length.'
             )
             ag.observe(validate(control_msg))
             return True

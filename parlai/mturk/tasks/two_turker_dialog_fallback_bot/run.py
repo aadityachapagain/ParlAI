@@ -2,6 +2,7 @@ import os
 import time
 import yaml
 import random
+from threading import Thread
 
 from parlai.core.params import ParlaiParser
 from parlai.mturk.tasks.two_turker_dialog.worlds import (
@@ -16,7 +17,7 @@ from parlai.mturk.tasks.two_turker_dialog_fallback_bot.task_config import task_c
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.api_bot_agent import APIBotAgent
 
 
-def main():
+def setup_args():
     argparser = ParlaiParser(False, False)
     argparser.add_parlai_data_path()
     argparser.add_mturk_args()
@@ -44,16 +45,19 @@ def main():
         required=True,
         help='password to use for authentication in bot API'
     )
-    opt = argparser.parse_args()
-
+    parsed_args = argparser.parse_args()
     task_dir = os.path.dirname(os.path.abspath(__file__))
-    opt['task'] = os.path.basename(task_dir)
-    opt.update(task_config)
+    parsed_args['task'] = os.path.basename(task_dir)
+    parsed_args.update(task_config)
 
     with open(os.path.join(task_dir, 'config.yml')) as f:
         cfg = yaml.load(f.read(), Loader=yaml.FullLoader)
-    opt.update(cfg)
+    parsed_args.update(cfg)
 
+    return parsed_args
+
+
+def single_run(opt):
     mturk_agent_ids = ['CHILD', 'KARU']
     mturk_manager = MturkManagerWithWaitingPoolTimeout(opt=opt,
                                                        mturk_agent_ids=mturk_agent_ids[:1] if opt.get(
@@ -128,8 +132,25 @@ def main():
         raise
     finally:
         mturk_manager.expire_all_unassigned_hits()
-        mturk_manager.shutdown()
+        return mturk_manager
+
+
+def run_final_job(manager):
+    print("Running Final Job")
+    manager.shutdown()
+
+
+def main(opt):
+    for run_idx in range(opt['number_of_runs']):
+        print(f"Launching {run_idx+1} run........")
+        old_mturk_manager = single_run(opt)
+        # Spawn separate threads for previous run manager
+        # final settlement(expiring hits, deleting servers)
+        thread = Thread(target=run_final_job, args=(old_mturk_manager,))
+        thread.start()
+        time.sleep(opt['sleep_between_run'])
 
 
 if __name__ == '__main__':
-    main()
+    args = setup_args()
+    main(args)

@@ -138,7 +138,7 @@ def single_run(opt):
 
 
 def run_final_job(manager):
-    shared_utils.print_and_log(logging.INFO, "Running Final Job", should_print=True)
+    shared_utils.print_and_log(logging.INFO, f"Running Final Job of run {manager.task_group_id}", should_print=True)
     manager.shutdown()
 
 

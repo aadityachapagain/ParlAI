@@ -4,8 +4,7 @@ import numpy as np
 from parlai.core.worlds import validate
 from parlai.mturk.core.worlds import MTurkTaskWorld
 from parlai.mturk.core.agents import TIMEOUT_MESSAGE, RETURN_MESSAGE, MTURK_DISCONNECT_MESSAGE
-from parlai.mturk.tasks.two_turker_dialog.child_personas import gen_child_persona_sentence
-from parlai.mturk.tasks.two_turker_dialog.robot_persona_list import robot_personas
+from parlai.mturk.tasks.two_turker_dialog.persona import Persona
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.one_sided_acute_eval_questions import ACUTE_EVAL_QUESTIONS
 from parlai.mturk.tasks.two_turker_dialog.worlds import TwoTurkerDialogOnboardWorld
 
@@ -39,6 +38,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         self.dialog = []
         self.n_turn = np.random.randint(self.opt['range_turn'][0],
                                         self.opt['range_turn'][1]) + 1
+        self.persona = Persona()
         self.assign_conv_role()
         self.bot_eval_by_worker = None
 
@@ -46,12 +46,9 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         return self.parlai_agent if agent == self.mturk_agent else self.mturk_agent
 
     def assign_conv_role(self):
-        child_persona_text = gen_child_persona_sentence()
-        robot = random.choice(robot_personas)
-        robot_persona_text = (
-            f'{robot["title"]} Karu. '
-            f'{robot["description"]}'
-        )
+        child_persona_text = self.persona.gen_child_persona()
+        robot_persona_text = self.persona.gen_robot_persona()
+        self.mturk_agent.theme, self.mturk_agent.theme_type, self.mturk_agent.theme_sentence = self.persona.gen_talk_theme()
         if self.mturk_agent.id == 'CHILD':
             self.mturk_agent.persona_text = child_persona_text
             self.parlai_agent.persona_text = robot_persona_text
@@ -79,7 +76,8 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
                     '<br>'
                     '<b><h3>Your Persona</h3></b>'
                     f"<ul><li>You're assigned with the following character: <br>"
-                    f'<b><span style="color:blue">{self.mturk_agent.persona_text}</span></b></li>'
+                    f'<ul><li><b><span style="color:blue">{self.mturk_agent.persona_text}</span></b></li>'
+                    f'<li><b><span style="color:blue">In this conversation, {self.mturk_agent.theme_sentence}</span></b></li></ul></li>'
                     f'<li>You need to finish at least <b>' + str(self.n_turn) +
                     ' chat turns</b>, after that you can click the "Done" button '
                     'to end the chat.</li></ul>'
@@ -188,6 +186,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             return (
                 '\nPlease chat with the other party. Your character is as follows::'
                 f'\n<b><span style="color:blue">{agent.persona_text}</span></b>'
+                f'\n<b><span style="color:blue">In this conversation, {agent.theme_sentence}</span></b>'
                 '\nYou can also track the character description on the left.'
                 '\n<b>Please try to match the length of other party\'s message. '
                 'Share information relevant to character assigned and try to know other party as much as you can. '
@@ -263,6 +262,8 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         return {'conversations': self.dialog,
                 'worker_role': self.mturk_agent.id,
                 'worker_persona': self.mturk_agent.persona_text,
+                'worker_theme_type': self.mturk_agent.theme_type,
+                'worker_theme': self.mturk_agent.theme,
                 'bot_role': self.parlai_agent.id,
                 'bot_persona': self.parlai_agent.persona_text,
                 'bot_eval_by_worker': self.bot_eval_by_worker}

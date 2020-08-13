@@ -5,8 +5,7 @@ from joblib import Parallel, delayed
 from parlai.core.worlds import validate
 from parlai.mturk.core.agents import TIMEOUT_MESSAGE, MTURK_DISCONNECT_MESSAGE, RETURN_MESSAGE
 from parlai.mturk.core.worlds import MTurkOnboardWorld, MTurkTaskWorld
-from .robot_persona_list import robot_personas
-from .child_personas import gen_child_persona_sentence
+from .persona import Persona
 
 
 class TwoTurkerDialogOnboardWorld(MTurkOnboardWorld):
@@ -83,15 +82,12 @@ class TwoTurkerDialogWorld(MTurkTaskWorld):
         self.dialog = []
         self.n_turn = np.random.randint(self.opt['range_turn'][0],
                                         self.opt['range_turn'][1]) + 1
+        self.persona = Persona()
         self.assign_conv_role()
 
     def assign_conv_role(self):
-        child_persona_text = gen_child_persona_sentence()
-        robot = random.choice(robot_personas)
-        robot_persona_text = (
-            f'{robot["title"]} Karu. '
-            f'{robot["description"]}'
-        )
+        child_persona_text = self.persona.gen_child_persona()
+        robot_persona_text = self.persona.gen_robot_persona()
         for agent in self.agents:
             if agent.id == 'CHILD':
                 agent.persona_text = child_persona_text

@@ -143,13 +143,8 @@ def run_final_job(manager):
 
 
 def main(opt):
+    final_job_threads = []
     for run_idx in range(opt['number_of_runs']):
-        shared_utils.print_and_log(logging.INFO, f"Launching {run_idx + 1} run........", should_print=True)
-        old_mturk_manager = single_run(opt)
-        # Spawn separate threads for previous run manager
-        # final settlement(expiring hits, deleting servers)
-        thread = Thread(target=run_final_job, args=(old_mturk_manager,))
-        thread.start()
         shared_utils.print_and_log(logging.INFO, "Sending restart instruction....", should_print=True)
         requests.post(f'http://{opt["bot_host"]}:{str(opt["bot_port"])}/interact',
                       json={'text': '[[RESTART_BOT_SERVER_MESSAGE_CRITICAL]]'},
@@ -157,6 +152,19 @@ def main(opt):
                             opt['bot_password'])
                       )
         time.sleep(opt['sleep_between_runs'])
+        shared_utils.print_and_log(logging.INFO, f"Launching {run_idx + 1} run........", should_print=True)
+        old_mturk_manager = single_run(opt)
+        # Spawn separate threads for previous run manager
+        # final settlement(expiring hits, deleting servers)
+        thread = Thread(target=run_final_job, args=(old_mturk_manager,))
+        thread.daemon = True
+        thread.start()
+        final_job_threads.append(thread)
+
+    shared_utils.print_and_log(logging.INFO, "Waiting all final jobs to finish", should_print=True)
+    for th in final_job_threads:
+        th.join()
+    shared_utils.print_and_log(logging.INFO, "All final jobs finished", should_print=True)
 
 
 if __name__ == '__main__':

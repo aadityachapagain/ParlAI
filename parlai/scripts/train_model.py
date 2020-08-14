@@ -410,9 +410,9 @@ class TrainLoop:
                 self._save_train_stats(suffix)
                 if suffix:
                     suffix = suffix.replace('.','')
-                    storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(opt['run_tag'],suffix+'_'+create_timestamp()))
+                    storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(self.opt['run_tag'],suffix+'_'+create_timestamp()))
                 else:
-                    storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(opt['run_tag'],'train'+'_'+create_timestamp()))
+                    storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(self.opt['run_tag'],'train'+'_'+create_timestamp()))
                 break
             except KeyboardInterrupt:
                 pass

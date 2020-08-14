@@ -1,6 +1,6 @@
 num_conversations: 50 # number of conversations you want to create for this task
 number_of_runs: 3
-sleep_between_run: 1800
+sleep_between_runs: 1200
 unique_worker: False  # enforce that no worker can work on your task twice
 max_hits_per_worker: 0  # Max number of hits each worker can perform during current group run, 0 means unlimited
 unique_qual_name: null  # qualification name to use for uniqueness between HITs
@@ -32,7 +32,7 @@ max_turns: 20  # maximal number of chat turns, turker cannot chat more than this
 range_turn: [7, 12]  # a random number is choosen between this range; after this number of turns turker can submit the HIT
 max_resp_time: 120  # time limit for entering a dialog message in main world
 max_onboard_resp_time: 240 # time limit for turker in onboarding to response to go into waiting pool
-assignment_duration_in_seconds: 2700  # Duration to complete a assignments in seconds, default 45 minutes
+assignment_duration_in_seconds: 1800  # Duration to complete a assignments in seconds, default 45 minutes
 auto_approve_delay: 432000  # Auto approve assignment after this much seconds if not reviewed, default 5 days
 min_num_words_in_message: 5  # Minimum number of words required in the messages[not applied in first turn]
 max_num_words_in_message: 30  # Maximum number of words allowed in the messages

@@ -181,12 +181,21 @@ class MturkManagerWithWaitingPoolTimeout(MTurkManager):
                 compare_count = self.completed_conversations
             if compare_count >= self.num_conversations:
                 self.accepting_workers = False
+                shared_utils.print_and_log(logging.INFO,
+                                           f"In run {self.task_group_id} desired number of conversations {self.num_conversations} completed.....",
+                                           should_print=True)
                 self.expire_all_unassigned_hits()
                 self._expire_onboarding_pool()
                 self._expire_agent_pool()
                 # Wait for all conversations to finish, then break from
                 # the while loop
+                shared_utils.print_and_log(logging.INFO,
+                                           f"Waiting for all conversations to finish in run {self.task_group_id}.....",
+                                           should_print=True)
                 for thread in self.task_threads:
-                    thread.join()
+                    thread.join(timeout=self.opt['assignment_duration_in_seconds'])
+                alive_threads = [thread for thread in self.task_threads if thread.isAlive()]
+                shared_utils.print_and_log(logging.INFO, f"Continuing with {len(alive_threads)} alive threads in run {self.task_group_id}....",
+                                           should_print=True)
                 break
             time.sleep(shared_utils.THREAD_MEDIUM_SLEEP)

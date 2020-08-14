@@ -2,6 +2,8 @@ import os
 import time
 import yaml
 import random
+import requests
+import logging
 from threading import Thread
 
 from parlai.core.params import ParlaiParser
@@ -14,6 +16,7 @@ from parlai.mturk.tasks.two_turker_dialog_fallback_bot.worlds import (
 )
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.mturk_manager import MturkManagerWithWaitingPoolTimeout
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.task_config import task_config
+import parlai.mturk.core.shared_utils as shared_utils
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.api_bot_agent import APIBotAgent
 
 
@@ -131,24 +134,37 @@ def single_run(opt):
     except BaseException:
         raise
     finally:
-        mturk_manager.expire_all_unassigned_hits()
         return mturk_manager
 
 
 def run_final_job(manager):
-    print("Running Final Job")
+    shared_utils.print_and_log(logging.INFO, f"Running Final Job of run {manager.task_group_id}", should_print=True)
     manager.shutdown()
 
 
 def main(opt):
+    final_job_threads = []
     for run_idx in range(opt['number_of_runs']):
-        print(f"Launching {run_idx+1} run........")
+        shared_utils.print_and_log(logging.INFO, "Sending restart instruction....", should_print=True)
+        requests.post(f'http://{opt["bot_host"]}:{str(opt["bot_port"])}/interact',
+                      json={'text': '[[RESTART_BOT_SERVER_MESSAGE_CRITICAL]]'},
+                      auth=(opt['bot_username'],
+                            opt['bot_password'])
+                      )
+        time.sleep(opt['sleep_between_runs'])
+        shared_utils.print_and_log(logging.INFO, f"Launching {run_idx + 1} run........", should_print=True)
         old_mturk_manager = single_run(opt)
         # Spawn separate threads for previous run manager
         # final settlement(expiring hits, deleting servers)
         thread = Thread(target=run_final_job, args=(old_mturk_manager,))
+        thread.daemon = True
         thread.start()
-        time.sleep(opt['sleep_between_run'])
+        final_job_threads.append(thread)
+
+    shared_utils.print_and_log(logging.INFO, "Waiting all final jobs to finish", should_print=True)
+    for th in final_job_threads:
+        th.join()
+    shared_utils.print_and_log(logging.INFO, "All final jobs finished", should_print=True)
 
 
 if __name__ == '__main__':

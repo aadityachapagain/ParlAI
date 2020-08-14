@@ -71,6 +71,11 @@ def setup_args(parser=None) -> ParlaiParser:
         type=str,
         help='specifc tag for training run with specific hyper-paramter or model'
     )
+    storage_tag.add_argument(
+        '--gcs-train-path',
+        type=str,
+        help='path for train data in gcs storage'
+    )
     train = parser.add_argument_group('Training Loop Arguments')
     train.add_argument(
         '-et',
@@ -274,10 +279,11 @@ class TrainLoop:
         # if python is called from a non-interactive shell, like a bash script,
         # it will by-default ignore SIGINTs, and KeyboardInterrupt exceptions are
         # not produced. This line brings them back
+        storage_agent.download_all('train_data', os.path.join(*os.path.split(opt['fromfile_datapath'])[:-1]))
         signal.signal(signal.SIGINT, signal.default_int_handler)
         latest_train_path = get_latest_train(opt['run_tag'])
         if latest_train_path:
-            storage_agent.download_all(latest_train_path, os.path.join(*os.path.split(opt['load_from_checkpoint'])[:-1]))
+            storage_agent.download_all(latest_train_path, os.path.join(*os.path.split(opt['model_file'])[:-1]))
         # Possibly load from checkpoint
         trainstats_suffix = '.trainstats'  # we might load training statistics from here
         if (

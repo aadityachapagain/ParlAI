@@ -258,7 +258,7 @@ def load_eval_worlds(agent, opt, datatype):
 
 def create_timestamp():
     ts = calendar.timegm(time.gmtime())
-    return ts
+    return str(ts)
 
 def get_latest_train(file_path):
     try:

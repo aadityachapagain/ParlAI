@@ -14,7 +14,8 @@ task_config['frontend_version'] = 0
 On the Amazon Mechanical Turk web site, the HIT title appears in search results,
 and everywhere the HIT is mentioned.
 """
-task_config['hit_title'] = 'Chat playing a role of child or a robot.'
+task_config['hit_title'] = ('Chat as a child. Workers who perform well will be reached out to'
+                            'and given more hits at a higher reward level')
 
 """A description includes detailed information about the kind of task the HIT contains.
 On the Amazon Mechanical Turk web site, the HIT description appears in the expanded
@@ -22,8 +23,9 @@ view of search results, and in the HIT and assignment screens.
 """
 task_config[
     'hit_description'] = (
-    'You will play either the role of a child or the robot Karu. '
-    'You should aim for a conversation that is typical of children.'
+    '5 minute task where you will play either the role of a child or the robot Karu. '
+    'You should aim for a conversation that is typical of children. Workers accepting '
+    'HIT for the first time need to pass a qualification test.'
 )
 
 """One or more words or phrases that describe the HIT, separated by commas.
@@ -51,7 +53,7 @@ Karu is a robot on a mission to understand how to be a good friend to humans.
 <br>
 <b>Note:</b>
 <ul>
-<li><b><span style="color:red">Please try to be as specific as possible. For example, when talking about movies, talk about specific movies, characters and plots.</b></span></li>
-<li><b><span style="color:red">No racism, sexism or otherwise offensive messages, or the submission will be rejected.</b></span></li>
+<li><b><span style="color:red">Please try to stick to the theme of conversation and be as specific as possible. For example, when talking about movies, talk about specific movies, characters and plots.</b></span></li>
+<li><b><span style="color:red">Workers who conduct good specific conversations will be eligible for higher pay rate.</b></span></li>
 </ul>
 '''

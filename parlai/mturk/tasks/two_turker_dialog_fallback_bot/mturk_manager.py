@@ -112,6 +112,7 @@ class MturkManagerWithWaitingPoolTimeout(MTurkManager):
 
         if self.db_logger is not None:
             self._maintain_hit_status()
+        started_time_stamp = time.time()
         while not self.is_shutdown:
             if self.has_time_limit:
                 self._check_time_limit()
@@ -148,41 +149,16 @@ class MturkManagerWithWaitingPoolTimeout(MTurkManager):
                     task_thread.daemon = True
                     task_thread.start()
                     self.task_threads.append(task_thread)
-                elif self.opt.get('waiting_pool_time'):
-                    for ag in valid_agents:
-                        if (hasattr(ag, "onboard_leave_time") and (
-                                time.time() - ag.onboard_leave_time > self.opt['waiting_pool_time'])):
-                            # Than make conversation with bot
-                            self.conversation_index += 1
-                            new_conversation_id = 't_bot_{}'.format(self.conversation_index)
-
-                            # Allow task creator to filter out agents and run
-                            # versions of the task that require fewer agents
-                            assign_role_function([ag])
-                            if ag.id is not None:
-                                self.worker_manager.change_agent_conversation(
-                                    agent=ag,
-                                    conversation_id=new_conversation_id,
-                                    new_agent_id=ag.id,
-                                )
-                                self._remove_from_agent_pool(ag)
-                                task_thread = threading.Thread(
-                                    target=_task_function,
-                                    args=(self.opt, [ag], new_conversation_id),
-                                    name='task-bot-{}'.format(new_conversation_id),
-                                )
-                                task_thread.daemon = True
-                                task_thread.start()
-                                self.task_threads.append(task_thread)
 
             # Once we've had enough conversations, finish and break
             compare_count = self.started_conversations
             if self.opt['count_complete']:
                 compare_count = self.completed_conversations
-            if compare_count >= self.num_conversations:
+            if (compare_count >= self.num_conversations) or \
+                    ((time.time() - started_time_stamp) > self.opt['run_timelimit']):
                 self.accepting_workers = False
                 shared_utils.print_and_log(logging.INFO,
-                                           f"In run {self.task_group_id} desired number of conversations {self.num_conversations} completed.....",
+                                           f"Finishing run {self.task_group_id} with {self.num_conversations} complete conversations.....",
                                            should_print=True)
                 self.expire_all_unassigned_hits()
                 self._expire_onboarding_pool()
@@ -195,7 +171,8 @@ class MturkManagerWithWaitingPoolTimeout(MTurkManager):
                 for thread in self.task_threads:
                     thread.join(timeout=self.opt['assignment_duration_in_seconds'])
                 alive_threads = [thread for thread in self.task_threads if thread.isAlive()]
-                shared_utils.print_and_log(logging.INFO, f"Continuing with {len(alive_threads)} alive threads in run {self.task_group_id}....",
+                shared_utils.print_and_log(logging.INFO,
+                                           f"Continuing with {len(alive_threads)} alive threads in run {self.task_group_id}....",
                                            should_print=True)
                 break
             time.sleep(shared_utils.THREAD_MEDIUM_SLEEP)

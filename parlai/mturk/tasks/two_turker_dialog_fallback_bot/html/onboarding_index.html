@@ -94,12 +94,12 @@
 <script type="text/javascript">
     var old_msg_function = handle_new_message
     handle_new_message = function (new_message_id, message) {
-        if  (("require_test" in message) || ("qual_test_pass" in message)) {
+        if  (("onboard_message" in message) || ("qual_test_pass" in message)) {
             $("span#onboard-message").html(message.onboard_message);
         }
 
         if ("qual_test_pass" in message) {
-            $("span#waiting-span_message").text("Waiting for other turker to be paired with you")
+            $("span#waiting-span_message").text("Waiting for system to initiate chat....")
         }
 
 

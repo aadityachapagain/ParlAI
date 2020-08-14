@@ -7,11 +7,9 @@ import logging
 from threading import Thread
 
 from parlai.core.params import ParlaiParser
-from parlai.mturk.tasks.two_turker_dialog.worlds import (
-    TwoTurkerDialogWorld
-)
+from parlai.mturk.core import mturk_utils
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.worlds import (
-    TwoTurkerDialogFallbackBotOnboardWorld,
+    QualificationTestOnboardWorld,
     InteractParlAIModelWorld
 )
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.mturk_manager import MturkManagerWithWaitingPoolTimeout
@@ -60,17 +58,43 @@ def setup_args():
     return parsed_args
 
 
+def create_qualification(opt):
+    qual_pass_name = f'{opt["qual_test_qualification"]}Pass'
+    qual_pass_desc = (
+        'Qualification for a worker correctly completing the '
+        'child companion dialog qualification test task.'
+    )
+    pass_qual_id = mturk_utils.find_or_create_qualification(
+        qual_pass_name, qual_pass_desc, opt['is_sandbox']
+    )
+
+    qual_fail_name = f'{opt["qual_test_qualification"]}Fail'
+    qual_fail_desc = (
+        'Qualification for a worker not correctly completing the '
+        'child companion dialog qualification test task.'
+    )
+    fail_qual_id = mturk_utils.find_or_create_qualification(
+        qual_fail_name, qual_fail_desc, opt['is_sandbox']
+    )
+    shared_utils.print_and_log(logging.INFO,
+                               f"Created Pass Qualification {pass_qual_id} and fail qualification {fail_qual_id}")
+    return pass_qual_id, fail_qual_id
+
+
 def single_run(opt):
     mturk_agent_ids = ['CHILD', 'KARU']
     mturk_manager = MturkManagerWithWaitingPoolTimeout(opt=opt,
-                                                       mturk_agent_ids=mturk_agent_ids[:1] if opt.get(
-                                                           'force_bot') else mturk_agent_ids,
+                                                       mturk_agent_ids=[random.choice(mturk_agent_ids)],
                                                        use_db=True)
     mturk_manager.setup_server()
 
+    pass_qual_id, fail_qual_id = create_qualification(opt)
+
     def run_onboard(worker):
-        world = TwoTurkerDialogFallbackBotOnboardWorld(opt=opt,
-                                                       mturk_agent=worker)
+        world = QualificationTestOnboardWorld(opt=opt,
+                                              mturk_agent=worker,
+                                              pass_qual_id=pass_qual_id,
+                                              fail_qual_id=fail_qual_id)
         while not world.episode_done():
             world.parley()
         world.shutdown()
@@ -83,7 +107,19 @@ def single_run(opt):
         mturk_manager.start_new_run()
         mturk_manager.ready_to_accept_workers()
 
-        agent_qualifications = []
+        agent_qualifications = [
+            {
+                'QualificationTypeId': fail_qual_id,
+                'Comparator': 'DoesNotExist',
+                'ActionsGuarded': 'DiscoverPreviewAndAccept',
+            },
+            # {
+            #     'QualificationTypeId': '3USHAHCQKTJI4JTX5CNFEU1GP95GAN',
+            #     'Comparator': 'GreaterThanOrEqualTo',
+            #     'IntegerValues': opt['min_hit_approval_rate'],
+            #     'ActionsGuarded': 'DiscoverPreviewAndAccept'
+            # }
+        ]
         if not opt['is_sandbox']:
             agent_qualifications.extend([
                 {
@@ -101,23 +137,20 @@ def single_run(opt):
         eligibility_function = {'func': check_workers_eligibility, 'multiple': True}
 
         def assign_worker_roles(workers):
-            roles = random.sample(mturk_agent_ids, len(mturk_agent_ids))
-            for index, worker in enumerate(workers):
-                worker.id = roles[index % len(roles)]
+            for worker in workers:
+                worker.id = worker.role
 
         global run_conversation
 
         def run_conversation(mturk_manager, opt, workers):
-            if len(workers) == 1:
-                if workers[0].id == 'CHILD':
-                    bot_agent_id = 'KARU'
-                else:
-                    bot_agent_id = 'CHILD'
-                bot_agent = APIBotAgent(opt, bot_agent_id, mturk_manager.task_group_id)
-                world = InteractParlAIModelWorld(opt, workers[0], bot_agent)
+            shared_utils.print_and_log(logging.INFO, f"Launching conversation for {workers[0].worker_id}")
+            if workers[0].id == 'CHILD':
+                bot_agent_id = 'KARU'
             else:
-                world = TwoTurkerDialogWorld(opt=opt,
-                                             agents=workers)
+                bot_agent_id = 'CHILD'
+            bot_agent = APIBotAgent(opt, bot_agent_id, mturk_manager.task_group_id)
+            world = InteractParlAIModelWorld(opt, workers[0], bot_agent)
+
             while not world.episode_done():
                 world.parley()
 
@@ -134,6 +167,10 @@ def single_run(opt):
     except BaseException:
         raise
     finally:
+        if opt.get("delete_qual_test_qualification"):
+            mturk_utils.delete_qualification(pass_qual_id, opt['is_sandbox'])
+            mturk_utils.delete_qualification(fail_qual_id, opt['is_sandbox'])
+            shared_utils.print_and_log(logging.INFO, "Deleted qualification..............")
         return mturk_manager
 
 
@@ -146,12 +183,12 @@ def main(opt):
     final_job_threads = []
     for run_idx in range(opt['number_of_runs']):
         shared_utils.print_and_log(logging.INFO, "Sending restart instruction....", should_print=True)
-        requests.post(f'http://{opt["bot_host"]}:{str(opt["bot_port"])}/interact',
-                      json={'text': '[[RESTART_BOT_SERVER_MESSAGE_CRITICAL]]'},
-                      auth=(opt['bot_username'],
-                            opt['bot_password'])
-                      )
-        time.sleep(opt['sleep_between_runs'])
+        # requests.post(f'http://{opt["bot_host"]}:{str(opt["bot_port"])}/interact',
+        #               json={'text': '[[RESTART_BOT_SERVER_MESSAGE_CRITICAL]]'},
+        #               auth=(opt['bot_username'],
+        #                     opt['bot_password'])
+        #               )
+        # time.sleep(opt['sleep_between_runs'])
         shared_utils.print_and_log(logging.INFO, f"Launching {run_idx + 1} run........", should_print=True)
         old_mturk_manager = single_run(opt)
         # Spawn separate threads for previous run manager
@@ -164,7 +201,7 @@ def main(opt):
     shared_utils.print_and_log(logging.INFO, "Waiting all final jobs to finish", should_print=True)
     for th in final_job_threads:
         th.join()
-    shared_utils.print_and_log(logging.INFO, "All final jobs finished", should_print=True)
+    shared_utils.print_and_log(logging.INFO, "All runs finished", should_print=True)
 
 
 if __name__ == '__main__':

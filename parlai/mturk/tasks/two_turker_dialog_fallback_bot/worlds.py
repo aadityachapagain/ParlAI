@@ -1,31 +1,155 @@
 import random
+import logging
 
 import numpy as np
 from parlai.core.worlds import validate
-from parlai.mturk.core.worlds import MTurkTaskWorld
+from parlai.mturk.core.worlds import MTurkTaskWorld, MTurkOnboardWorld
 from parlai.mturk.core.agents import TIMEOUT_MESSAGE, RETURN_MESSAGE, MTURK_DISCONNECT_MESSAGE
-from parlai.mturk.tasks.two_turker_dialog.persona import Persona
+from parlai.mturk.core import mturk_utils
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.one_sided_acute_eval_questions import ACUTE_EVAL_QUESTIONS
-from parlai.mturk.tasks.two_turker_dialog.worlds import TwoTurkerDialogOnboardWorld
+import parlai.mturk.core.shared_utils as shared_utils
+from .context import Context
 
 
-class TwoTurkerDialogFallbackBotOnboardWorld(TwoTurkerDialogOnboardWorld):
-    def send_task_instruction(self, message):
+class QualificationTestOnboardWorld(MTurkOnboardWorld):
+    def __init__(self, opt, mturk_agent, pass_qual_id, fail_qual_id):
+        super(QualificationTestOnboardWorld, self).__init__(opt, mturk_agent)
+        self.opt = opt
+        self.pass_qual_id = pass_qual_id
+        self.fail_qual_id = fail_qual_id
+        self.first_time = not mturk_utils.check_worker_qualification_exist(
+            self.pass_qual_id,
+            self.mturk_agent.worker_id,
+            is_sandbox=self.opt['is_sandbox']
+        )
+        self.pass_qual_test = None if self.first_time else True  # None==>neither pass nor fail(first time in this HIT)
+        self.mturk_agent.context = Context().gen_context()
+        self.mturk_agent.role = random.choice(['CHILD', 'KARU'])
+
+    def parley(self):
+        if self.first_time:
+            # Check qualification result
+            if self.send_qualification_question():
+                shared_utils.print_and_log(logging.INFO,
+                                           f"Worker {self.mturk_agent.worker_id} passed the qualification test.",
+                                           should_print=True)
+                self.pass_qual_test = True
+                self.assign_qualification(self.pass_qual_id)
+                self.send_task_instruction()
+            else:
+                shared_utils.print_and_log(logging.INFO,
+                                           f"Worker {self.mturk_agent.worker_id} failed the qualification test.",
+                                           should_print=True)
+                self.pass_qual_test = False
+                self.assign_qualification(self.fail_qual_id)
+                # if Failed expire hit
+                self.expire_hit((
+                    'Sorry you\'ve failed our qualification test task. You cannot proceed to main task and other subsequent HITs,\n'
+                    'This HIT is now expired. Please return this HIT.'
+                ))
+        else:
+            # Worker is good to go to main task
+            self.send_task_instruction()
+        self.episodeDone = True
+
+    def send_qualification_question(self):
+        choice_answer = random.sample(list(self.mturk_agent.context['conv_theme']['qual_test_choices'].keys()), 3)
+        correct_answer_index = choice_answer.index('correct_option') + 1
+        choice_list_html = ''.join(
+            ['<li>' + self.mturk_agent.context['conv_theme']['qual_test_choices'][op] + '</li>' for op in
+             choice_answer])
+        self.mturk_agent.observe({
+            'id': 'SYSTEM',
+            'text': (
+                'You\'re here for the first time. Please read the description and answer following qualification question.' 
+                '\n'
+                'In the chat, we want you to be as <b>specific</b> and helpful to the child as you can. \n'
+                f'"<b>The other party wants to talk about {self.mturk_agent.context["conv_theme"]["theme"]}"</b>\n'
+                f'Which is the <b>best</b> way to start the conversation?\n'
+                f'<ol>{choice_list_html}</ol>'
+                '<br>'
+                f'Only numbers from <b>{1}</b> to <b>{len(choice_answer)}</b> are valid'
+            ),
+            'onboard_message': (
+                '<br>'
+                '<b><h4>Qualification Test</h4></b>'
+                '<br>'
+                'You\'re here for the first time. We need you to complete a '
+                'qualification test before you proceed to the main task. \n'
+                'Read the qualification test instruction carefully. \n'
+                'Careful once you submit the answer you cannot change the answer.'
+            )
+        })
+        agent_act = self.mturk_agent.act(timeout=300)
+        if self.check_errors(agent_act):
+            return False
+        while agent_act['text'].strip() not in [str(i) for i in range(1, len(choice_answer) + 1)]:
+            self.mturk_agent.observe({
+                'id': 'SYSTEM',
+                'text': f'Only numbers from {1} to {len(choice_answer)} are valid.\nResubmit your answer.'
+            })
+            agent_act = self.mturk_agent.act(timeout=300)
+            if self.check_errors(agent_act):
+                return False
+
+        if agent_act['text'] == str(correct_answer_index):
+            return True
+        else:
+            return False
+
+    def send_task_instruction(self):
+        first_time_message = (
+            'Congratulations you completed qualification task.\n'
+            '<b>Now, Please read the instructions on left carefully and '
+            'keep in mind your persona and conversation theme. When you are ready '
+            'send anything to continue.</b>'
+        )
+        old_turker_message = (
+            'Welcome back! You\'ve already completed our qualification task. \n'
+            '<b>Please read the instructions on left carefully and '
+            'keep in mind your persona and conversation theme. When you are ready '
+            'send anything to continue.</b>'
+        )
         self.mturk_agent.observe({
             'id': 'SYSTEM',
             'qual_test_pass': True,
-            'text': message,
+            'text': first_time_message if self.first_time else old_turker_message,
             'onboard_message': (
-                '<b><h4>Task Instruction</h4></b>'
+                '<b><h3>Task Instruction</h3></b>'
+                f"<ul>"
+                f'<li><b><span style="color:red">In this conversation, {self.mturk_agent.context["conv_theme"]["theme_sentence"]}</li>'
+                f"<li>You're assigned with the following character: <br>"
+                f'<ul><li><b><span style="color:blue">{self.mturk_agent.context["personas"]["child_persona" if self.mturk_agent.role == "CHILD" else "robot_persona"]}</span></b></li></ul>'
+                '<li>Stick to the above character and topic of the conversation.</li>'
+                f'</ul>'
                 '<br>'
-                f'Once the task starts, you will be given a persona for the day. '
-                f'For instance, the persona may say you are a girl that likes Legos and '
-                f'today you are feeling sad. If you got the role of Karu, you should aim to be empathetic, interesting and knowledgeable.'
             )
         })
         agent_act = self.mturk_agent.act(timeout=self.opt['max_onboard_resp_time'])
-        if self.check_timeout(agent_act):
+        if self.check_errors(agent_act):
             return
+
+    def check_errors(self, act):
+        if act['text'] in [TIMEOUT_MESSAGE, RETURN_MESSAGE, MTURK_DISCONNECT_MESSAGE] and act['episode_done']:
+            self.episodeDone = True
+            return True
+        else:
+            return False
+
+    def assign_qualification(self, qaul_id):
+        mturk_utils.give_worker_qualification(
+            self.mturk_agent.worker_id,
+            qaul_id,
+            is_sandbox=self.opt['is_sandbox']
+        )
+        shared_utils.print_and_log(logging.INFO,
+                                   f"Assigning worker {self.mturk_agent.worker_id} {'pass' if qaul_id == self.pass_qual_id else 'fail'} qualification",
+                                   should_print=True)
+
+    def expire_hit(self, message=None):
+        self.mturk_agent.mturk_manager.force_expire_hit(self.mturk_agent.worker_id,
+                                                        self.mturk_agent.assignment_id,
+                                                        text=message)
 
 
 class InteractParlAIModelWorld(MTurkTaskWorld):
@@ -38,7 +162,6 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         self.dialog = []
         self.n_turn = np.random.randint(self.opt['range_turn'][0],
                                         self.opt['range_turn'][1]) + 1
-        self.persona = Persona()
         self.assign_conv_role()
         self.bot_eval_by_worker = None
 
@@ -46,22 +169,25 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         return self.parlai_agent if agent == self.mturk_agent else self.mturk_agent
 
     def assign_conv_role(self):
-        child_persona_text = self.persona.gen_child_persona()
-        robot_persona_text = self.persona.gen_robot_persona()
-        self.mturk_agent.theme, self.mturk_agent.theme_type, self.mturk_agent.theme_sentence = self.persona.gen_talk_theme()
+        child_persona_text = self.mturk_agent.context['personas']['child_persona']
+        robot_persona_text = self.mturk_agent.context['personas']['robot_persona']
+        self.mturk_agent.theme_sentence = self.mturk_agent.context['conv_theme']['theme_sentence']
         if self.mturk_agent.id == 'CHILD':
             self.mturk_agent.persona_text = child_persona_text
             self.parlai_agent.persona_text = robot_persona_text
         else:
             self.mturk_agent.persona_text = robot_persona_text
             self.parlai_agent.persona_text = child_persona_text
+
+        bot_persona = 'your persona: ' + self.mturk_agent.context['conv_theme']['theme_sentence'] \
+                      + ' \\nyour persona: ' + self.parlai_agent.persona_text
         self.parlai_agent.observe({
-            'text': 'your persona: ' + self.parlai_agent.persona_text,
+            'text': bot_persona,
             'persona': True
         })
         personaset_resp = self.parlai_agent.act()
         if personaset_resp:
-            print(personaset_resp['text'], ' ', self.parlai_agent.persona_text)
+            print(personaset_resp['text'], ' ', bot_persona)
 
     def parley(self):
         self.turn_index += 1
@@ -73,15 +199,14 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             control_msg['text'] = self.get_instruction(tag='start', agent=self.mturk_agent)
             control_msg['show_persona'] = True
             control_msg['persona_description'] = (
-                    '<br>'
-                    '<b><h3>Your Persona</h3></b>'
-                    f"<ul><li>You're assigned with the following character: <br>"
-                    f'<ul><li><b><span style="color:blue">{self.mturk_agent.persona_text}</span></b></li>'
-                    f'<li><b><span style="color:blue">In this conversation, {self.mturk_agent.theme_sentence}</span></b></li></ul></li>'
-                    f'<li>You need to finish at least <b>' + str(self.n_turn) +
-                    ' chat turns</b>, after that you can click the "Done" button '
-                    'to end the chat.</li></ul>'
-                    '<br>'
+                '<b><h3>Task Instruction</h3></b>'
+                f"<ul>"
+                f'<li><li><b><span style="color:red">In this conversation, {self.mturk_agent.context["conv_theme"]["theme_sentence"]}</li>'
+                f"<li>You're assigned with the following character: <br>"
+                f'<ul><li><b><span style="color:blue">{self.mturk_agent.context["personas"]["child_persona" if self.mturk_agent.id == "CHILD" else "robot_persona"]}</span></b></li></ul>'
+                '<li>Stick to the above character and topic of the conversation.</li>'
+                f'</ul>'
+                '<br>'
             )
             self.mturk_agent.observe(validate(control_msg))
 
@@ -184,12 +309,13 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
     def get_instruction(self, tag, agent=None):
         if tag == 'start':
             return (
-                '\nPlease chat with the other party. Your character is as follows::'
+                '\nPlease chat with the other party. '
+                f'\n<b><span style="color:red">In this conversation, {agent.theme_sentence}</span></b>'
+                '\nYour character is as follows:'
                 f'\n<b><span style="color:blue">{agent.persona_text}</span></b>'
-                f'\n<b><span style="color:blue">In this conversation, {agent.theme_sentence}</span></b>'
                 '\nYou can also track the character description on the left.'
                 '\n<b>Please try to match the length of other party\'s message. '
-                'Share information relevant to character assigned and try to know other party as much as you can. '
+                'Share information relevant to character assigned and try to know other party as much as you can while adhering to persona and conversation theme. '
                 '</b>'
             )
         if tag == 'end':
@@ -261,9 +387,6 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
     def get_custom_task_data(self):
         return {'conversations': self.dialog,
                 'worker_role': self.mturk_agent.id,
-                'worker_persona': self.mturk_agent.persona_text,
-                'worker_theme_type': self.mturk_agent.theme_type,
-                'worker_theme': self.mturk_agent.theme,
                 'bot_role': self.parlai_agent.id,
-                'bot_persona': self.parlai_agent.persona_text,
+                'context': self.mturk_agent.context,
                 'bot_eval_by_worker': self.bot_eval_by_worker}

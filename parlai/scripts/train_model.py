@@ -279,7 +279,7 @@ class TrainLoop:
         # if python is called from a non-interactive shell, like a bash script,
         # it will by-default ignore SIGINTs, and KeyboardInterrupt exceptions are
         # not produced. This line brings them back
-        storage_agent.download_all('train_data', os.path.join(*os.path.split(opt['fromfile_datapath'])[:-1]))
+        storage_agent.download_all(opt['gcs_train_path'], os.path.join(*os.path.split(opt['fromfile_datapath'])[:-1]))
         signal.signal(signal.SIGINT, signal.default_int_handler)
         latest_train_path = get_latest_train(opt['run_tag'])
         if latest_train_path:

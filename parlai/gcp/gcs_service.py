@@ -14,7 +14,7 @@ FORMAT = '%(asctime)-15s %(name)s %(levelname)s %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger("data.storage.gcp")
 logger.setLevel("INFO")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "gcp/fusemachineschat.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "parlai/gcp/fusemachineschat.json"
 
 
 class GCP_Service(object):
@@ -70,14 +70,27 @@ class GCP_Service(object):
         return file_list
 
     def download_all(self, bucket_dir:str, local_dir:str):
+        print(bucket_dir, local_dir)
         bucket_files = self.list_files(bucket_dir)
         for b_file in bucket_files:
-            self.download(b_file,local_dir)
+            try:
+                blob = self.bucket.blob(b_file)
+                file_name = blob.name.replace(bucket_dir,'')[1:]
+                dest_file = os.path.join(local_dir, file_name)
+                if not os.path.isdir(os.path.dirname(dest_file)):
+                    os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+                blob.download_to_filename(dest_file)
+                logger.info(f'{dest_file} downloaded from bucket.')
+            except:
+                print('raise exception')
+                continue
 
     def download(self, bucket_filename:str, local_dir:str) -> str:
         blob = self.bucket.blob(bucket_filename)
         file_name = blob.name.split('/')[-1]
-        dest_file = os.path.join(local_dir, file_name)
+        if not os.path.isdir(local_dir):
+            os.makedirs(local_dir, exist_ok=True)
+        dest_file = os.path.join(local_dir, os.path.split(blob.name)[-1])
         blob.download_to_filename(dest_file)
         logger.info(f'{file_name} downloaded from bucket.')
         return dest_file

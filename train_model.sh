@@ -1,7 +1,7 @@
 export GOOGLE_APPLICATION_CREDENTIALS="gcp/fusemachineschat.json"
-python scripts/multiprocessing_train.py \
---gcs-train-path train_data \
--t fromfile --fromfile_datapath tmp/train_path/train_data.txt \
+python parlai/scripts/train_model.py \
+--gcs-train-path "train-temp-2" \
+-t fromfile --fromfile_datapath /tmp/train_path/train_data.txt \
 -m transformer/generator \
 --init-model zoo:blender/blender_90M/model \
 --dict-file zoo:blender/blender_90M/model.dict \

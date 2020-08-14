@@ -1,7 +1,7 @@
 export GOOGLE_APPLICATION_CREDENTIALS="gcp/fusemachineschat.json"
 python parlai/scripts/train_model.py \
 --gcs-train-path "train-temp-2" \
--t fromfile --fromfile_datapath /tmp/train_path/train_data.txt \
+-t fromfile --fromfile_datapath /tmp/train_data/train_data.txt \
 -m transformer/generator \
 --init-model zoo:blender/blender_90M/model \
 --dict-file zoo:blender/blender_90M/model.dict \
@@ -21,5 +21,5 @@ python parlai/scripts/train_model.py \
 --skip-generation True -mcs all -vp 15 -stim 60 \
 -vme 20000 -bs 16 -vmt ppl -vmm min \
 --save-after-valid True \
---model-file /tmp/test_train_90M \
+--model-file /tmp/model_file/test_train_90M \
 -tblog True

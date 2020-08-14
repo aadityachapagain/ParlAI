@@ -262,8 +262,8 @@ def create_timestamp():
 
 def get_latest_train(file_path):
     try:
-        cand = list(set([ os.path.join(*os.path.split(l)[:1]) for i in storage_agent.list_files(file_path) if os.path.split(i)[1].strip() !='']))
-        cand = {int(i.slit('_')[-1]):i for i in cand}
+        cand = list(set([ os.path.join(*os.path.split(i)[:1]) for i in storage_agent.list_files(file_path) if os.path.split(i)[1].strip() !='']))
+        cand = {int(i.split('_')[-1]):i for i in cand}
         latest = sorted(list(cand.keys()), reverse=True)[0]
         latest = cand[latest]
         return latest
@@ -672,6 +672,8 @@ class TrainLoop:
 
         if opt['tensorboard_log'] and is_primary_worker():
             self.tb_logger.log_metrics('train', self.parleys, train_report)
+            tensorboard_path = self.opt['model_file']+'.tensorboard'
+            storage_agent.upload_all(tensorboard_path,os.path.join(self.opt['run_tag'],os.path.split(tensorboard_path)[-1]))
 
     def train(self):
         """

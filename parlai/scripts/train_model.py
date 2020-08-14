@@ -31,6 +31,7 @@ import signal
 from typing import Dict
 
 from parlai.core.metrics import Metric
+from parlai.gcp.gcs_service import gcp as storage_agent
 from parlai.core.agents import create_agent, create_agent_from_shared
 from parlai.core.exceptions import StopTrainException
 from parlai.core.logs import TensorboardLogger
@@ -48,6 +49,8 @@ from parlai.utils.distributed import (
 from parlai.utils.misc import Timer, nice_report
 from parlai.core.script import ParlaiScript, register_script
 import parlai.utils.logging as logging
+import time
+import calendar
 
 
 def setup_args(parser=None) -> ParlaiParser:
@@ -62,6 +65,12 @@ def setup_args(parser=None) -> ParlaiParser:
     """
     if parser is None:
         parser = ParlaiParser(True, True, 'Train a model')
+    storage_tag = parser.add_argument_group('Training tag to store training data in gcs')
+    storage_tag.add_argument(
+        '--run-tag',
+        type=str,
+        help='specifc tag for training run with specific hyper-paramter or model'
+    )
     train = parser.add_argument_group('Training Loop Arguments')
     train.add_argument(
         '-et',
@@ -242,6 +251,19 @@ def load_eval_worlds(agent, opt, datatype):
 
     return worlds
 
+def create_timestamp():
+    ts = calendar.timegm(time.gmtime())
+    return ts
+
+def get_latest_train(file_path):
+    try:
+        cand = list(set([ os.path.join(*os.path.split(l)[:1]) for i in storage_agent.list_files(file_path) if os.path.split(i)[1].strip() !='']))
+        cand = {int(i.slit('_')[-1]):i for i in cand}
+        latest = sorted(list(cand.keys()), reverse=True)[0]
+        latest = cand[latest]
+        return latest
+    except:
+        return False
 
 class TrainLoop:
     """
@@ -253,6 +275,9 @@ class TrainLoop:
         # it will by-default ignore SIGINTs, and KeyboardInterrupt exceptions are
         # not produced. This line brings them back
         signal.signal(signal.SIGINT, signal.default_int_handler)
+        latest_train_path = get_latest_train(opt['run_tag'])
+        if latest_train_path:
+            storage_agent.download_all(latest_train_path, os.path.join(*os.path.split(opt['load_from_checkpoint'])[:-1]))
         # Possibly load from checkpoint
         trainstats_suffix = '.trainstats'  # we might load training statistics from here
         if (
@@ -377,6 +402,11 @@ class TrainLoop:
             try:
                 self.agent.save(fn)
                 self._save_train_stats(suffix)
+                if suffix:
+                    suffix = suffix.replace('.','')
+                    storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(opt['run_tag'],suffix+'_'+create_timestamp()))
+                else:
+                    storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(opt['run_tag'],'train'+'_'+create_timestamp()))
                 break
             except KeyboardInterrupt:
                 pass
@@ -469,7 +499,7 @@ class TrainLoop:
             self.impatience = 0
             if opt.get('model_file') and is_primary_worker():
                 logging.info(f"saving best valid model: {opt['model_file']}")
-                self.save_model()
+                self.save_model('.best')
                 self.saved = True
             if (
                 opt['validation_metric'] == 'accuracy'

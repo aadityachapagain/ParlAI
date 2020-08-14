@@ -183,12 +183,12 @@ def main(opt):
     final_job_threads = []
     for run_idx in range(opt['number_of_runs']):
         shared_utils.print_and_log(logging.INFO, "Sending restart instruction....", should_print=True)
-        # requests.post(f'http://{opt["bot_host"]}:{str(opt["bot_port"])}/interact',
-        #               json={'text': '[[RESTART_BOT_SERVER_MESSAGE_CRITICAL]]'},
-        #               auth=(opt['bot_username'],
-        #                     opt['bot_password'])
-        #               )
-        # time.sleep(opt['sleep_between_runs'])
+        requests.post(f'http://{opt["bot_host"]}:{str(opt["bot_port"])}/interact',
+                      json={'text': '[[RESTART_BOT_SERVER_MESSAGE_CRITICAL]]'},
+                      auth=(opt['bot_username'],
+                            opt['bot_password'])
+                      )
+        time.sleep(opt['sleep_between_runs'])
         shared_utils.print_and_log(logging.INFO, f"Launching {run_idx + 1} run........", should_print=True)
         old_mturk_manager = single_run(opt)
         # Spawn separate threads for previous run manager

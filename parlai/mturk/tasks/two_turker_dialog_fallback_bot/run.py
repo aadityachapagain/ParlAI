@@ -5,6 +5,7 @@ import random
 import requests
 import logging
 from threading import Thread
+from tqdm import tqdm
 
 from parlai.core.params import ParlaiParser
 from parlai.mturk.core import mturk_utils
@@ -16,6 +17,7 @@ from parlai.mturk.tasks.two_turker_dialog_fallback_bot.mturk_manager import Mtur
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.task_config import task_config
 import parlai.mturk.core.shared_utils as shared_utils
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.api_bot_agent import APIBotAgent
+from parlai.mturk.tasks.two_turker_dialog_fallback_bot.dedicated_workers import ReviewGSheet
 
 
 def setup_args():
@@ -46,6 +48,12 @@ def setup_args():
         required=True,
         help='password to use for authentication in bot API'
     )
+    argparser.add_argument(
+        '--gsheet-credentials',
+        dest='ghseet_credentials',
+        required=True,
+        help='path to gsheet credentials json file'
+    )
     parsed_args = argparser.parse_args()
     task_dir = os.path.dirname(os.path.abspath(__file__))
     parsed_args['task'] = os.path.basename(task_dir)
@@ -58,7 +66,8 @@ def setup_args():
     return parsed_args
 
 
-def create_qualification(opt):
+def create_passfail_qualification(opt):
+    mturk_utils.setup_aws_credentials()
     qual_pass_name = f'{opt["qual_test_qualification"]}Pass'
     qual_pass_desc = (
         'Qualification for a worker correctly completing the '
@@ -77,18 +86,82 @@ def create_qualification(opt):
         qual_fail_name, qual_fail_desc, opt['is_sandbox']
     )
     shared_utils.print_and_log(logging.INFO,
-                               f"Created Pass Qualification {pass_qual_id} and fail qualification {fail_qual_id}")
+                               f"Created Pass Qualification {pass_qual_id} and fail qualification {fail_qual_id}",
+                               should_print=True)
     return pass_qual_id, fail_qual_id
 
 
-def single_run(opt):
+def create_and_assign_dedicated_worker_qualification(opt, dedicated_workers):
+    qual_name = f'{opt["dedicated_worker_qualification"]}'
+    qual_desc = (
+        'Qualification given to golden workers performing very well in child companion dialog. '
+        'This qualification will be used to allocate HIT to these golden workers.'
+    )
+    qual_id = mturk_utils.find_qualification(qual_name, opt['is_sandbox'])
+    if qual_id:
+        mturk_utils.delete_qualification(qual_id, opt['is_sandbox'])
+        shared_utils.print_and_log(logging.INFO,
+                                   f"Deleted previous dedicated worker qualification {opt['dedicated_worker_qualification']}({qual_id})",
+                                   should_print=True)
+    client = mturk_utils.get_mturk_client(opt['is_sandbox'])
+    qual_id = client.create_qualification_type(
+        Name=qual_name,
+        Description=qual_desc,
+        QualificationTypeStatus='Active',
+    )['QualificationType']['QualificationTypeId']
+    shared_utils.print_and_log(logging.INFO,
+                               f"Created dedicated worker qualification named {qual_name} with id {qual_id}",
+                               should_print=True)
+    shared_utils.print_and_log(logging.INFO,
+                               f"Assigning {len(dedicated_workers)} workers the qualification {qual_id}",
+                               should_print=True)
+    for worker_id in tqdm(dedicated_workers):
+        mturk_utils.give_worker_qualification(worker_id, qual_id, is_sandbox=opt['is_sandbox'])
+
+    return qual_id
+
+
+def email_workers(worker_ids, subject, message_text, is_sandbox):
+    if not isinstance(worker_ids, list):
+        worker_ids = [worker_ids]
+    client = mturk_utils.get_mturk_client(is_sandbox)
+    worker_ids = [worker_ids[i: i + 100] for i in range(0, len(worker_ids), 100)]
+    failures = []
+    shared_utils.print_and_log(logging.INFO,
+                               "Sending email to workers.........")
+    for worker_ids_chunk in tqdm(worker_ids):
+        resp = client.notify_workers(
+            Subject=subject, MessageText=message_text, WorkerIds=worker_ids_chunk
+        )
+        failures.extend(resp['NotifyWorkersFailureStatuses'])
+
+    if failures:
+        shared_utils.print_and_log(logging.WARN,
+                                   f"Sending email to {len(failures)} workers failed...")
+    return failures
+
+
+def get_hit_notification_message(hit_link):
+    subject = "High Rate Mturk HIT Launched for You"
+    message = f"Please complete this HIT. \nLink: {hit_link}"
+    return subject, message
+
+
+def send_hit_notification(worker_ids, hit_link, is_sandbox):
+    subject, message = get_hit_notification_message(hit_link)
+    _ = email_workers(worker_ids, subject, message, is_sandbox)
+
+
+def single_run(opt,
+               pass_qual_id,
+               fail_qual_id,
+               dedicated_worker_qual_id,
+               dedicated_worker_ids):
     mturk_agent_ids = ['CHILD', 'KARU']
     mturk_manager = MturkManagerWithWaitingPoolTimeout(opt=opt,
                                                        mturk_agent_ids=[random.choice(mturk_agent_ids)],
                                                        use_db=True)
     mturk_manager.setup_server()
-
-    pass_qual_id, fail_qual_id = create_qualification(opt)
 
     def run_onboard(worker):
         world = QualificationTestOnboardWorld(opt=opt,
@@ -113,10 +186,15 @@ def single_run(opt):
                 'Comparator': 'DoesNotExist',
                 'ActionsGuarded': 'DiscoverPreviewAndAccept',
             },
-            # {
-            #     'QualificationTypeId': '3USHAHCQKTJI4JTX5CNFEU1GP95GAN',
+            {  # Dedicated worker qualification
+                'QualificationTypeId': dedicated_worker_qual_id,
+                'Comparator': 'Exists',
+                'ActionsGuarded': 'DiscoverPreviewAndAccept'
+            },
+            # {   # Min HIT approval rate
+            #     'QualificationTypeId': '000000000000000000L0',
             #     'Comparator': 'GreaterThanOrEqualTo',
-            #     'IntegerValues': opt['min_hit_approval_rate'],
+            #     'IntegerValues': [opt['min_hit_approval_rate']],
             #     'ActionsGuarded': 'DiscoverPreviewAndAccept'
             # }
         ]
@@ -129,7 +207,9 @@ def single_run(opt):
                     'ActionsGuarded': 'DiscoverPreviewAndAccept',
                 },
             ])
-        mturk_manager.create_hits(qualifications=agent_qualifications)
+        mturk_page_url = mturk_manager.create_hits(qualifications=agent_qualifications)
+
+        send_hit_notification(dedicated_worker_ids, mturk_page_url, opt['is_sandbox'])
 
         def check_workers_eligibility(workers):
             return workers
@@ -164,22 +244,36 @@ def single_run(opt):
             assign_role_function=assign_worker_roles,
             task_function=run_conversation
         )
-    except BaseException:
+    except BaseException as e:
+        shared_utils.print_and_log(logging.WARN, f"Continuing with error: {repr(e)}", should_print=True)
         raise
     finally:
         if opt.get("delete_qual_test_qualification"):
             mturk_utils.delete_qualification(pass_qual_id, opt['is_sandbox'])
             mturk_utils.delete_qualification(fail_qual_id, opt['is_sandbox'])
-            shared_utils.print_and_log(logging.INFO, "Deleted qualification..............")
+            shared_utils.print_and_log(logging.INFO, "Deleted qualification..............", should_print=True)
+        if opt.get("max_hits_limit_in_a_run_only"):
+            max_submission_qual_id = mturk_utils.find_qualification(opt['unique_qual_name'], opt['is_sandbox'])
+            if max_submission_qual_id:
+                mturk_utils.delete_qualification(max_submission_qual_id, opt['is_sandbox'])
+                shared_utils.print_and_log(logging.INFO,
+                                           f"Deleted max submissions qualification {opt['unique_qual_name']}",
+                                           should_print=True)
+
         return mturk_manager
 
 
 def run_final_job(manager):
-    shared_utils.print_and_log(logging.INFO, f"Running Final Job of run {manager.task_group_id}", should_print=True)
+    shared_utils.print_and_log(logging.INFO, f"Running Final Job of {manager.task_group_id}", should_print=True)
     manager.shutdown()
 
 
 def main(opt):
+    # Qualifications
+    pass_qual_id, fail_qual_id = create_passfail_qualification(opt)
+    dedicated_workers_list = ReviewGSheet(opt['ghseet_credentials']).get_golden_workers_list()
+    dedicated_worker_qual_id = create_and_assign_dedicated_worker_qualification(opt, dedicated_workers_list)
+
     final_job_threads = []
     for run_idx in range(opt['number_of_runs']):
         shared_utils.print_and_log(logging.INFO, "Sending restart instruction....", should_print=True)
@@ -188,9 +282,16 @@ def main(opt):
                       auth=(opt['bot_username'],
                             opt['bot_password'])
                       )
+        shared_utils.print_and_log(logging.INFO,
+                                   f"Successfully send restart signal to bot, waiting {opt['sleep_between_runs']} secs before launching run.",
+                                   should_print=True)
         time.sleep(opt['sleep_between_runs'])
         shared_utils.print_and_log(logging.INFO, f"Launching {run_idx + 1} run........", should_print=True)
-        old_mturk_manager = single_run(opt)
+        old_mturk_manager = single_run(opt,
+                                       pass_qual_id,
+                                       fail_qual_id,
+                                       dedicated_worker_qual_id,
+                                       dedicated_workers_list)
         # Spawn separate threads for previous run manager
         # final settlement(expiring hits, deleting servers)
         thread = Thread(target=run_final_job, args=(old_mturk_manager,))

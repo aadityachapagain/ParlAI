@@ -201,7 +201,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             control_msg['persona_description'] = (
                 '<b><h3>Task Instruction</h3></b>'
                 f"<ul>"
-                f'<li><li><b><span style="color:red">In this conversation, {self.mturk_agent.context["conv_theme"]["theme_sentence"]}</li>'
+                f'<li><b><span style="color:red">In this conversation, {self.mturk_agent.context["conv_theme"]["theme_sentence"]}</li>'
                 f"<li>You're assigned with the following character: <br>"
                 f'<ul><li><b><span style="color:blue">{self.mturk_agent.context["personas"]["child_persona" if self.mturk_agent.id == "CHILD" else "robot_persona"]}</span></b></li></ul>'
                 '<li>Stick to the above character and topic of the conversation.</li>'

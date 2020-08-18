@@ -3,7 +3,9 @@ import queue
 import time
 import json
 import requests
+import logging
 from parlai.core.agents import Agent
+import parlai.mturk.core.shared_utils as shared_utils
 
 
 class APIBotAgent(Agent):
@@ -18,6 +20,8 @@ class APIBotAgent(Agent):
         self.run_id = run_id
 
     def observe(self, observation):
+        shared_utils.print_and_log(logging.INFO,
+                                   f"Sending {observation} to bot server......")
         if self.session_id:
             observation.update({'session_id': self.session_id})
         try:

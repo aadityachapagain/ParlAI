@@ -3,8 +3,9 @@ number_of_runs: 1
 sleep_between_runs: 600
 run_timelimit: 21600
 unique_worker: False  # enforce that no worker can work on your task twice
-max_hits_per_worker: 0  # Max number of hits each worker can perform during current group run, 0 means unlimited
-unique_qual_name: null  # qualification name to use for uniqueness between HITs
+max_hits_per_worker: 20  # Max number of hits each worker can perform during current group run, 0 means unlimited
+unique_qual_name: EmbChildCompanionDialogMaxSubmission  # qualification name to use for uniqueness between HITs
+max_hits_limit_in_a_run_only: True
 reward: 0.50  # reward for each worker for finishing the conversation, in US dollars
 is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
 hard_block: False  # Hard block disconnecting Turkers from all of your HITs
@@ -48,3 +49,5 @@ hobby: True  # Whether to use heroku app or not
 force_bot: True  # If true force worker to chat with Bot
 qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
 delete_qual_test_qualification: False  # Delete `qual_test_qualification` after all HITs are complete
+dedicated_worker_qualification: EmbChildCompanionDialogDedicatedWorker
+min_hit_approval_rate: 90

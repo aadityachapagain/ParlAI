@@ -121,6 +121,19 @@ def create_and_assign_dedicated_worker_qualification(opt, dedicated_workers):
     return qual_id
 
 
+def prepare_dedicated_workers(pass_qual_id, dedicated_workers, is_sandbox):
+    """Assign pass qualification if dedicated workers are from non qualification runs"""
+    if len(dedicated_workers) > 20:
+        dedicated_workers = random.sample(dedicated_workers, 20)
+
+    qual_pass_workers = mturk_utils.list_workers_with_qualification_type(pass_qual_id, is_sandbox)
+    for dedicated_worker in dedicated_workers:
+        if dedicated_worker not in qual_pass_workers:
+            mturk_utils.give_worker_qualification(dedicated_worker, pass_qual_id, is_sandbox=is_sandbox)
+
+    return dedicated_workers
+
+
 def email_workers(worker_ids, subject, message_text, is_sandbox):
     if not isinstance(worker_ids, list):
         worker_ids = [worker_ids]
@@ -142,8 +155,16 @@ def email_workers(worker_ids, subject, message_text, is_sandbox):
 
 
 def get_hit_notification_message(hit_link):
-    subject = "High Rate Mturk HIT Launched for You"
-    message = f"Please complete this HIT. \nLink: {hit_link}"
+    subject = "Chat as a Child: High reward HITs exclusive to you"
+    message = (
+        "Thank you for your outstanding performance in the previous HIT you did for us."
+        "You followed the theme of the conversation, were specific and took initiative."
+        "So we have created a set of 20 HITs, only for you."
+        "Please find the HITs using following link."
+        f"\nLink: {hit_link} \n"
+        "Note: If you can't find the HIT please wait for few moments and retry."
+        "Also, above link is valid for 12 hours only."
+    )
     return subject, message
 
 
@@ -252,13 +273,6 @@ def single_run(opt,
             mturk_utils.delete_qualification(pass_qual_id, opt['is_sandbox'])
             mturk_utils.delete_qualification(fail_qual_id, opt['is_sandbox'])
             shared_utils.print_and_log(logging.INFO, "Deleted qualification..............", should_print=True)
-        if opt.get("max_hits_limit_in_a_run_only"):
-            max_submission_qual_id = mturk_utils.find_qualification(opt['unique_qual_name'], opt['is_sandbox'])
-            if max_submission_qual_id:
-                mturk_utils.delete_qualification(max_submission_qual_id, opt['is_sandbox'])
-                shared_utils.print_and_log(logging.INFO,
-                                           f"Deleted max submissions qualification {opt['unique_qual_name']}",
-                                           should_print=True)
 
         return mturk_manager
 
@@ -270,9 +284,21 @@ def run_final_job(manager):
 
 def main(opt):
     # Qualifications
+    mturk_utils.setup_aws_credentials()
+    if opt.get("max_hits_limit_in_a_run_only"):
+        max_submission_qual_id = mturk_utils.find_qualification(opt['unique_qual_name'], opt['is_sandbox'])
+        if max_submission_qual_id:
+            mturk_utils.delete_qualification(max_submission_qual_id, opt['is_sandbox'])
+            shared_utils.print_and_log(logging.INFO,
+                                       f"Deleted max submissions qualification {opt['unique_qual_name']}",
+                                       should_print=True)
+
     pass_qual_id, fail_qual_id = create_passfail_qualification(opt)
     dedicated_workers_list = ReviewGSheet(opt['ghseet_credentials']).get_golden_workers_list()
+    dedicated_workers_list = prepare_dedicated_workers(pass_qual_id, dedicated_workers_list, opt['is_sandbox'])
     dedicated_worker_qual_id = create_and_assign_dedicated_worker_qualification(opt, dedicated_workers_list)
+
+    opt['num_conversations'] = opt['max_hits_per_worker'] * len(dedicated_workers_list)
 
     final_job_threads = []
     for run_idx in range(opt['number_of_runs']):

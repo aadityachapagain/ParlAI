@@ -1,7 +1,7 @@
 num_conversations: 50 # number of conversations you want to create for this task
 number_of_runs: 1
 sleep_between_runs: 600
-run_timelimit: 21600
+run_timelimit: 43200
 unique_worker: False  # enforce that no worker can work on your task twice
 max_hits_per_worker: 20  # Max number of hits each worker can perform during current group run, 0 means unlimited
 unique_qual_name: EmbChildCompanionDialogMaxSubmission  # qualification name to use for uniqueness between HITs
@@ -44,7 +44,6 @@ min_pass_qual_quests: 3  # To perform main HIT need to pass `min_pass_qual_quest
 allowed_countries: [US, CA, GB, AU, NZ, NP]  # List of countries qualification of Turker, defualt list of English Speaking Countries(Except NP)
 waiting_pool_time: null  # If not paired with another worker within this time, talk with the bot, None for not using the feature
 bot_evaluation: True  # Ask turker to rate bot at last if they talk with bot
-#model_file: zoo:blender/blender_90M/model  # Mode to use as the fallback bot(not used since we're now using API)
 hobby: True  # Whether to use heroku app or not
 force_bot: True  # If true force worker to chat with Bot
 qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test

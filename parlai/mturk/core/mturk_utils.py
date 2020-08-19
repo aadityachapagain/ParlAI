@@ -299,6 +299,29 @@ def remove_worker_qualification(
     )
 
 
+def list_workers_with_qualification_type(qual_id, is_sandbox):
+    client = get_mturk_client(is_sandbox)
+    worker_ids = []
+    next_token = None
+    while True:
+        if next_token:
+            resp = client.list_workers_with_qualification_type(
+                QualificationTypeId=qual_id,
+                NextToken=next_token,
+                MaxResults=100
+            )
+        else:
+            resp = client.list_workers_with_qualification_type(
+                QualificationTypeId=qual_id,
+                MaxResults=100
+            )
+        worker_ids.extend([qual['WorkerId'] for qual in resp['Qualifications']])
+        if resp['NumResults'] < 100:
+            break
+        next_token = resp['NextToken']
+    return worker_ids
+
+
 def create_hit_type(
     hit_title,
     hit_description,

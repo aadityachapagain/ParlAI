@@ -61,7 +61,7 @@ class QualificationTestOnboardWorld(MTurkOnboardWorld):
         self.mturk_agent.observe({
             'id': 'SYSTEM',
             'text': (
-                'You\'re here for the first time. Please read the description and answer following qualification question.' 
+                'You\'re here for the first time. Please read the description and answer following qualification question.'
                 '\n'
                 'In the chat, we want you to be as <b>specific</b> and helpful to the child as you can. \n'
                 f'"<b>The other party wants to talk about {self.mturk_agent.context["conv_theme"]["theme"]}"</b>\n'
@@ -233,6 +233,21 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
                 acts[agent.id] = agent.act(timeout=self.opt['max_resp_time'] + (60 if self.turn_index == 1 else 0))
                 if self.check_timeout(acts[agent.id]):
                     return
+                
+                if hasattr(self.parlai_agent, 'check_offensive'):
+                    while self.parlai_agent.check_offensive(acts[agent.id]['text']):
+                        agent.observe({
+                            'id': 'SYSTEM',
+                            'episode_done': False,
+                            'text': (
+                                'Your message was detected offensive. Please follow the instruction '
+                                'and send non-offensive message.'
+                            )
+                        })
+                        acts[agent.id] = agent.act(timeout=self.opt['max_resp_time'])
+                        if self.check_timeout(acts[agent.id]):
+                            return
+
             else:
                 acts[agent.id] = agent.act()
 
@@ -240,6 +255,17 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
                 # only check if message is too short/long except on first message
                 while self.is_msg_tooshortlong(acts[agent.id], agent):
                     acts[agent.id] = agent.act(timeout=self.opt['max_resp_time'])
+                    if hasattr(self.parlai_agent, 'check_offensive'):
+                        while self.parlai_agent.check_offensive(acts[agent.id]['text']):
+                            agent.observe({
+                                'id': 'SYSTEM',
+                                'episode_done': False,
+                                'text': (
+                                    'Your message was detected offensive. Please follow the instruction '
+                                    'and send non-offensive message.'
+                                )
+                            })
+                            acts[agent.id] = agent.act(timeout=self.opt['max_resp_time'])
                     if self.check_timeout(acts[agent.id]):
                         return
             if acts[agent.id]['episode_done']:

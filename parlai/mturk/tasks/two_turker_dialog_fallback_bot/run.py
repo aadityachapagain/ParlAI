@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from parlai.core.params import ParlaiParser
 from parlai.mturk.core import mturk_utils
+from parlai.core.agents import create_agent
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.worlds import (
     QualificationTestOnboardWorld,
     InteractParlAIModelWorld
@@ -16,43 +17,51 @@ from parlai.mturk.tasks.two_turker_dialog_fallback_bot.worlds import (
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.mturk_manager import MturkManagerWithWaitingPoolTimeout
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.task_config import task_config
 import parlai.mturk.core.shared_utils as shared_utils
-from parlai.mturk.tasks.two_turker_dialog_fallback_bot.api_bot_agent import APIBotAgent
+from parlai.mturk.tasks.two_turker_dialog_fallback_bot.agents import BotAgent
 from parlai.mturk.tasks.two_turker_dialog_fallback_bot.dedicated_workers import ReviewGSheet
+from parlai.utils.safety import OffensiveLanguageClassifier
 
 
 def setup_args():
-    argparser = ParlaiParser(False, False)
+    argparser = ParlaiParser(False, True)
     argparser.add_parlai_data_path()
     argparser.add_mturk_args()
-    argparser.add_argument(
-        '--bot-host',
-        dest='bot_host',
-        required=True,
-        help='IP Address of the bot API'
-    )
-    argparser.add_argument(
-        '--bot-port',
-        dest='bot_port',
-        default=8000,
-        help='Port address of Bot agent'
-    )
-    argparser.add_argument(
-        '--bot-username',
-        dest='bot_username',
-        required=True,
-        help='username to use for authentication in bot API'
-    )
-    argparser.add_argument(
-        '--bot-password',
-        dest='bot_password',
-        required=True,
-        help='password to use for authentication in bot API'
-    )
+    # argparser.add_argument(
+    #     '--bot-host',
+    #     dest='bot_host',
+    #     required=True,
+    #     help='IP Address of the bot API'
+    # )
+    # argparser.add_argument(
+    #     '--bot-port',
+    #     dest='bot_port',
+    #     default=8000,
+    #     help='Port address of Bot agent'
+    # )
+    # argparser.add_argument(
+    #     '--bot-username',
+    #     dest='bot_username',
+    #     required=True,
+    #     help='username to use for authentication in bot API'
+    # )
+    # argparser.add_argument(
+    #     '--bot-password',
+    #     dest='bot_password',
+    #     required=True,
+    #     help='password to use for authentication in bot API'
+    # )
     argparser.add_argument(
         '--gsheet-credentials',
         dest='ghseet_credentials',
         required=True,
         help='path to gsheet credentials json file'
+    )
+    argparser.add_argument(
+        '--safety',
+        type=str,
+        default='all',
+        choices={'none', 'string_matcher', 'classifier', 'all'},
+        help='Apply safety filtering to messages',
     )
     parsed_args = argparser.parse_args()
     task_dir = os.path.dirname(os.path.abspath(__file__))
@@ -62,6 +71,11 @@ def setup_args():
     with open(os.path.join(task_dir, 'config.yml')) as f:
         cfg = yaml.load(f.read(), Loader=yaml.FullLoader)
     parsed_args.update(cfg)
+
+    parsed_args_str = '\n'.join([str(k) + ': ' + str(v) for k, v in parsed_args.items()])
+    shared_utils.print_and_log(logging.INFO,
+                               f"Parameters for the run.....\n {parsed_args_str}",
+                               should_print=True)
 
     return parsed_args
 
@@ -162,7 +176,7 @@ def get_hit_notification_message(hit_link):
         "So we have created a set of 20 HITs, only for you."
         "Please find the HITs using following link."
         f"\nLink: {hit_link} \n"
-        "Note: If you can't find the HIT please wait for few moments and retry."
+        "Note: If you can't find the HIT please wait for few moments and retry. "
         "Also, above link is valid for 12 hours only."
     )
     return subject, message
@@ -183,6 +197,9 @@ def single_run(opt,
                                                        mturk_agent_ids=[random.choice(mturk_agent_ids)],
                                                        use_db=True)
     mturk_manager.setup_server()
+
+    bot_agent = create_agent(opt, requireModelExists=True)
+    offensive_language_classifier = OffensiveLanguageClassifier()
 
     def run_onboard(worker):
         world = QualificationTestOnboardWorld(opt=opt,
@@ -249,8 +266,9 @@ def single_run(opt,
                 bot_agent_id = 'KARU'
             else:
                 bot_agent_id = 'CHILD'
-            bot_agent = APIBotAgent(opt, bot_agent_id, mturk_manager.task_group_id)
-            world = InteractParlAIModelWorld(opt, workers[0], bot_agent)
+            bot = BotAgent(opt, bot_agent, bot_agent_id, mturk_manager.task_group_id,
+                           offensive_language_classifier=offensive_language_classifier)
+            world = InteractParlAIModelWorld(opt, workers[0], bot)
 
             while not world.episode_done():
                 world.parley()
@@ -302,16 +320,7 @@ def main(opt):
 
     final_job_threads = []
     for run_idx in range(opt['number_of_runs']):
-        shared_utils.print_and_log(logging.INFO, "Sending restart instruction....", should_print=True)
-        requests.post(f'http://{opt["bot_host"]}:{str(opt["bot_port"])}/interact',
-                      json={'text': '[[RESTART_BOT_SERVER_MESSAGE_CRITICAL]]'},
-                      auth=(opt['bot_username'],
-                            opt['bot_password'])
-                      )
-        shared_utils.print_and_log(logging.INFO,
-                                   f"Successfully send restart signal to bot, waiting {opt['sleep_between_runs']} secs before launching run.",
-                                   should_print=True)
-        time.sleep(opt['sleep_between_runs'])
+
         shared_utils.print_and_log(logging.INFO, f"Launching {run_idx + 1} run........", should_print=True)
         old_mturk_manager = single_run(opt,
                                        pass_qual_id,

@@ -158,7 +158,7 @@ class MturkManagerWithWaitingPoolTimeout(MTurkManager):
                     ((time.time() - started_time_stamp) > self.opt['run_timelimit']):
                 self.accepting_workers = False
                 shared_utils.print_and_log(logging.INFO,
-                                           f"Finishing run {self.task_group_id} with {self.num_conversations} complete conversations.....",
+                                           f"Finishing run {self.task_group_id} with {self.completed_conversations} complete conversations.....",
                                            should_print=True)
                 self.expire_all_unassigned_hits()
                 self._expire_onboarding_pool()

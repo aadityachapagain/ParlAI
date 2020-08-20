@@ -1,4 +1,3 @@
-import os
 import json
 import pandas as pd
 from oauth2client.service_account import ServiceAccountCredentials
@@ -48,6 +47,7 @@ class ReviewGSheet:
 
     def get_golden_workers_list(self, link: str = None, sheets_num: int = None):
         review_df = self.convert_gsheets_to_dataframe(link, sheets_num)
-        golden_workers = review_df[review_df['Points'] == 'Golden']['Worker ID'].dropna().to_list()
-        golden_workers = ['A1MQYCM43Z0844']
+        golden_workers = review_df[(review_df['Points'] == 'Golden') & ~(
+            review_df['Worker ID'].isin(review_df[review_df['Batch'] == 'Golden 20']['Worker ID']))][
+            'Worker ID'].dropna().unique().tolist()
         return golden_workers

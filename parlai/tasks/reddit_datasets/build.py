@@ -23,7 +23,8 @@ from unmark import unmark
 import re
 import traceback
 from parlai.gcp.gcs_service import gcp
-
+import threading
+import random
 
 parser = argparse.ArgumentParser(description='download reddit datasets from pushshift.io')
 parser.add_argument('--dpath', type=str,
@@ -82,23 +83,16 @@ def preprocess_handler(dpath: str):
     return out_file
 
 def preprocess_text(text):
-    # check if there is any url or not
-    if len(find_url(text)) > 0:
-        return False
-    if text.strip() == '':
-        return False
-    if len(text.strip()) <= 5:
-        return False
-    # check if text start with non-ASCII character
-    if text.strip().lower() == '[deleted]' or text.strip().lower() == '[removed]':
-        return False
-    if ord(text[0]) > 128:
-        return False
     # remove mulitple spaces into single space
     text = re.sub('\s+',' ',text)
-    if detect(text) != 'en':
+    # check if there is any url or not
+    # check if text start with non-ASCII character
+    cond = len(find_url(text)) > 0 or text.strip() == '' \
+        or len(text.strip()) <= 5 or text.strip().lower() == '[deleted]' \
+        or text.strip().lower() == '[removed]' or ord(text[0]) > 128 \
+        or detect(text) != 'en'
+    if cond:
         return False
-    # check if there is no spaces in text and no of characeters in it is more than 2040
     if ' ' not in text and len(text) > 2040:
         return False
     return text
@@ -110,7 +104,7 @@ def preprocess_data(data: dict):
             return False
         # convert markdown to plain text
         text_body = preprocess_text(unmark(data['selftext'].strip()))
-        text_title = unmark(data['title'].strip())
+        text_title = preprocess_text(unmark(data['title'].strip()))
         if text_body and text_title:
             return text_title + '\n' + text_body
         elif text_body:
@@ -339,11 +333,9 @@ def get_all_downloadable_links():
             datasets_link[_link]['link'] = os.path.join(reddit_link, _link)
 
 
-if __name__ == "__main__":
-    collect_hash()
-    download_path = args.dpath
-    get_all_downloadable_links()
-    for k,v in datasets_link.items():
+def distributed_download(download_batch: dict):
+    for k in random.sample(list(download_batch.keys()), k=len(list(download_batch.keys()))):
+        v = download_batch[k]
         if v.get('link', False):
             fd = DownloadableFile(
                 v['link'], k, None
@@ -358,3 +350,36 @@ if __name__ == "__main__":
             file_name = os.path.split(outfile)[-1]
             gcs_path = os.path.join(args.gcs_path, file_name)
             gcp.upload_from_filename(outfile, gcs_path)
+
+if __name__ == "__main__":
+    collect_hash()
+    download_path = args.dpath
+    get_all_downloadable_links()
+    batches = [dict(), dict(), dict()]
+    for k,v in datasets_link.items():
+        d_batch = random.choice(batches)
+        d_batch.update({k:v})
+    workers = []
+    for batch in batches:
+        t = threading.Thread(target= distributed_download, args=(batch, ))
+        workers.append(t)
+    for t in workers:
+        t.start()
+    for t in workers:
+        t.join()
+
+    # for k,v in datasets_link.items():
+    #     if v.get('link', False):
+    #         fd = DownloadableFile(
+    #             v['link'], k, None
+    #         )
+    #         gcs_files = gcp.list_files(args.gcs_path)
+    #         target_gcs_file = os.path.join(args.gcs_path, ''.join(k.split('.')[:-1]) + '.txt')
+    #         if target_gcs_file in gcs_files:
+    #             logger.info(f'{k} file is already preprocessed !')
+    #             continue
+    #         outfile = fd.download_file(args.dpath)
+    #         outfile = preprocess_handler(outfile)
+    #         file_name = os.path.split(outfile)[-1]
+    #         gcs_path = os.path.join(args.gcs_path, file_name)
+    #         gcp.upload_from_filename(outfile, gcs_path)

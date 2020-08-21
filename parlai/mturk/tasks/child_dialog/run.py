@@ -141,18 +141,15 @@ def create_and_assign_dedicated_worker_qualification(opt, dedicated_workers):
     return qual_id
 
 
-def prepare_dedicated_workers(pass_qual_id, dedicated_workers, opt):
+def prepare_dedicated_workers(pass_qual_id, dedicated_workers, is_sandbox):
     """Assign pass qualification if dedicated workers are from non qualification runs"""
     if len(dedicated_workers) > 25:
         dedicated_workers = random.sample(dedicated_workers, 25)
 
-    dedicated_workers_qual_id = mturk_utils.find_qualification(opt["dedicated_worker_qualification"], opt['is_sandbox'])
-    dedicated_workers = mturk_utils.list_workers_with_qualification_type(dedicated_workers_qual_id, opt['is_sandbox'])
-
-    qual_pass_workers = mturk_utils.list_workers_with_qualification_type(pass_qual_id, opt['is_sandbox'])
+    qual_pass_workers = mturk_utils.list_workers_with_qualification_type(pass_qual_id, is_sandbox)
     for dedicated_worker in dedicated_workers:
         if dedicated_worker not in qual_pass_workers:
-            mturk_utils.give_worker_qualification(dedicated_worker, pass_qual_id, is_sandbox=opt['is_sandbox'])
+            mturk_utils.give_worker_qualification(dedicated_worker, pass_qual_id, is_sandbox=is_sandbox)
 
     return dedicated_workers
 
@@ -182,7 +179,7 @@ def get_hit_notification_message(hit_link):
     message = (
         "Thank you for your outstanding performance in the previous HIT you did for us."
         "You followed the theme of the conversation, were specific and took initiative."
-        "So we have created a set of 20 HITs, only for you."
+        "So we have created a set of 50 HITs, only for you."
         "Please find the HITs using following link."
         f"\nLink: {hit_link} \n"
         "Note: If you can't find the HIT please wait for few moments and retry. "
@@ -322,7 +319,7 @@ def main(opt):
 
     pass_qual_id, fail_qual_id = create_passfail_qualification(opt)
     dedicated_workers_list = ReviewGSheet(opt['ghseet_credentials']).get_golden_workers_list()
-    dedicated_workers_list = prepare_dedicated_workers(pass_qual_id, dedicated_workers_list, opt)
+    dedicated_workers_list = prepare_dedicated_workers(pass_qual_id, dedicated_workers_list, opt['is_sandbox'])
     dedicated_worker_qual_id = create_and_assign_dedicated_worker_qualification(opt, dedicated_workers_list)
 
     opt['num_conversations'] = opt['max_hits_per_worker'] * len(dedicated_workers_list)

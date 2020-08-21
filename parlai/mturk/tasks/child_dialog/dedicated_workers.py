@@ -47,8 +47,6 @@ class ReviewGSheet:
 
     def get_golden_workers_list(self, link: str = None, sheets_num: int = None):
         review_df = self.convert_gsheets_to_dataframe(link, sheets_num)
-        golden_workers = review_df[(review_df['Points'] == 'Golden') & ~(
-            review_df['Worker ID'].isin(review_df[review_df['Batch'] == 'Golden 20']['Worker ID']))][
+        golden_workers = review_df[review_df['Points'] == 'Golden 50'][
             'Worker ID'].dropna().unique().tolist()
-        golden_workers = ['A19NB3BCWCB8BY']
         return golden_workers

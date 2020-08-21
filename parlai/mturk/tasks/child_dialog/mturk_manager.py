@@ -1,7 +1,9 @@
 import logging
 import time
+import datetime
 import threading
 
+from parlai.mturk.core import mturk_utils
 from parlai.mturk.core.shared_utils import AssignState
 import parlai.mturk.core.shared_utils as shared_utils
 from parlai.mturk.core.mturk_manager import MTurkManager, WORLD_START_TIMEOUT
@@ -9,6 +11,34 @@ from parlai.mturk.core.mturk_data_handler import MTurkDataHandler
 
 
 class MturkManagerWithWaitingPoolTimeout(MTurkManager):
+    def start_new_run(self):
+        """
+        Clear state to prepare for a new run.
+        """
+        assert self.task_state >= self.STATE_SERVER_ALIVE, (
+            'Cannot start a run before having a running server using '
+            '`mturk_manager.setup_server()` first.'
+        )
+        self.run_id = str(int(time.time()))
+        self.task_group_id = '{}_{}'.format(self.opt['task'],
+                                            self.opt['run_name'] + '::' + datetime.datetime.fromtimestamp(int(self.run_id)).isoformat())
+        self._init_state()
+        try:
+            self.topic_arn = mturk_utils.setup_sns_topic(
+                self.opt['task'], self.server_url, self.task_group_id
+            )
+        except Exception as e:
+            self.topic_arn = None
+            shared_utils.print_and_log(
+                logging.WARN,
+                'Botocore couldn\'t subscribe to HIT events, '
+                'perhaps you tried to register to localhost?',
+                should_print=True,
+            )
+            print(repr(e))
+        if self.db_logger is not None:
+            self.db_logger.log_new_run(self.required_hits, self.opt['task'])
+        self.task_state = self.STATE_INIT_RUN
 
     def start_task(self, eligibility_function, assign_role_function, task_function):
         """

@@ -6,7 +6,7 @@ from parlai.core.worlds import validate
 from parlai.mturk.core.worlds import MTurkTaskWorld, MTurkOnboardWorld
 from parlai.mturk.core.agents import TIMEOUT_MESSAGE, RETURN_MESSAGE, MTURK_DISCONNECT_MESSAGE
 from parlai.mturk.core import mturk_utils
-from parlai.mturk.tasks.two_turker_dialog_fallback_bot.one_sided_acute_eval_questions import ACUTE_EVAL_QUESTIONS
+from parlai.mturk.tasks.child_dialog.one_sided_acute_eval_questions import ACUTE_EVAL_QUESTIONS
 import parlai.mturk.core.shared_utils as shared_utils
 from .context import Context
 

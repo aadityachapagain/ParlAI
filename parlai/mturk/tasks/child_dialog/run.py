@@ -9,15 +9,15 @@ from tqdm import tqdm
 from parlai.core.params import ParlaiParser
 from parlai.mturk.core import mturk_utils
 from parlai.core.agents import create_agent
-from parlai.mturk.tasks.two_turker_dialog_fallback_bot.worlds import (
+from parlai.mturk.tasks.child_dialog.worlds import (
     QualificationTestOnboardWorld,
     InteractParlAIModelWorld
 )
-from parlai.mturk.tasks.two_turker_dialog_fallback_bot.mturk_manager import MturkManagerWithWaitingPoolTimeout
-from parlai.mturk.tasks.two_turker_dialog_fallback_bot.task_config import task_config
+from parlai.mturk.tasks.child_dialog.mturk_manager import MturkManagerWithWaitingPoolTimeout
+from parlai.mturk.tasks.child_dialog.task_config import task_config
 import parlai.mturk.core.shared_utils as shared_utils
-from parlai.mturk.tasks.two_turker_dialog_fallback_bot.agents import BotAgent
-from parlai.mturk.tasks.two_turker_dialog_fallback_bot.dedicated_workers import ReviewGSheet
+from parlai.mturk.tasks.child_dialog.agents import BotAgent
+from parlai.mturk.tasks.child_dialog.dedicated_workers import ReviewGSheet
 from parlai.utils.safety import OffensiveLanguageClassifier
 
 

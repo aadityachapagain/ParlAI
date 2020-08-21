@@ -1,4 +1,4 @@
-run_name: Golden20
+run_name: Golden20  # No underscore here please
 num_conversations: 50 # number of conversations you want to create for this task
 number_of_runs: 1
 sleep_between_runs: 600

@@ -128,7 +128,8 @@ class Application(tornado.web.Application):
         self.subs = {}
         self.sources = {}
         self.port = port
-        self.data_handler = MTurkDataHandler(file_name=db_file, custom_data_dir=custom_data_dir)
+        self.custom_data_dir = custom_data_dir
+        self.data_handler = MTurkDataHandler(file_name=db_file, custom_data_dir=self.custom_data_dir)
         self.manager = None  # MTurk manager for demo tasks
         self.mturk_manager = MTurkManager.make_taskless_instance(is_sandbox)
         self.mturk_manager.db_logger = self.data_handler

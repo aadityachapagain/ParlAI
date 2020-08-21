@@ -4,11 +4,11 @@ number_of_runs: 1
 sleep_between_runs: 600
 run_timelimit: 86400
 unique_worker: False  # enforce that no worker can work on your task twice
-max_hits_per_worker: 20  # Max number of hits each worker can perform during current group run, 0 means unlimited
-unique_qual_name: EmbChildCompanionDialogMaxSubmission  # qualification name to use for uniqueness between HITs
+max_hits_per_worker: 10  # Max number of hits each worker can perform during current group run, 0 means unlimited
+unique_qual_name: TestChildCompanionDialogMaxSubmission  # qualification name to use for uniqueness between HITs
 max_hits_limit_in_a_run_only: True
 reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
-is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
+is_sandbox: True  # submit the HITs to MTurk sandbox site, if False go Live
 hard_block: False  # Hard block disconnecting Turkers from all of your HITs
 disconnect_qualification: null  # qualification to use for soft blocking users for
 #  disconnects. By default
@@ -45,10 +45,10 @@ min_pass_qual_quests: 3  # To perform main HIT need to pass `min_pass_qual_quest
 allowed_countries: [US, CA, GB, AU, NZ, NP]  # List of countries qualification of Turker, defualt list of English Speaking Countries(Except NP)
 waiting_pool_time: null  # If not paired with another worker within this time, talk with the bot, None for not using the feature
 bot_evaluation: True  # Ask turker to rate bot at last if they talk with bot
-hobby: True  # Whether to use heroku app or not
+hobby: False  # Whether to use heroku app or not
 force_bot: True  # If true force worker to chat with Bot
-qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
+qual_test_qualification: TestChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
 delete_qual_test_qualification: False  # Delete `qual_test_qualification` after all HITs are complete
-dedicated_worker_qualification: EmbChildCompanionDialogDedicatedWorker
+dedicated_worker_qualification: TestChildCompanionDialogDedicatedWorker
 min_hit_approval_rate: 90
 no_cuda: False

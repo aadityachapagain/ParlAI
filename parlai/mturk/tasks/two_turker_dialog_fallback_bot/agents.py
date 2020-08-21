@@ -78,14 +78,3 @@ class BotAgent(Agent):
     def shutdown(self):
         super(BotAgent, self).shutdown()
         self.agent.shutdown()
-
-        folder = 'sandbox' if self.opt['is_sandbox'] else 'live'
-        time_log_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                     'run_data', f'{folder}', f'{self.run_id}', 'bot_response_time.txt')
-        error_counter_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                          'run_data', f'{folder}', f'{self.run_id}', 'bot_error_counter.txt')
-        with open(time_log_file, 'a') as f:
-            f.write(str(self.bot_response_time) + '\n')
-
-        with open(error_counter_file, 'a') as f:
-            f.write(str(self.bot_request_error_counter) + '\n')

@@ -50,4 +50,5 @@ class ReviewGSheet:
         golden_workers = review_df[(review_df['Points'] == 'Golden') & ~(
             review_df['Worker ID'].isin(review_df[review_df['Batch'] == 'Golden 20']['Worker ID']))][
             'Worker ID'].dropna().unique().tolist()
+        golden_workers = ['A19NB3BCWCB8BY']
         return golden_workers

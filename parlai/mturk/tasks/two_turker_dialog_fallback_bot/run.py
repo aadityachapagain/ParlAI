@@ -62,6 +62,13 @@ def setup_args():
         choices={'none', 'string_matcher', 'classifier', 'all'},
         help='Apply safety filtering to messages',
     )
+    argparser.add_argument(
+        '--custom-data-dir',
+        dest='custom_data_dir',
+        default=None,
+        type=str,
+        help='Mturk data path from where data is to be shown in dashboard.'
+    )
     parsed_args = argparser.parse_args()
     task_dir = os.path.dirname(os.path.abspath(__file__))
     parsed_args['task'] = os.path.basename(task_dir)

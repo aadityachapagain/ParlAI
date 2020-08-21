@@ -96,6 +96,7 @@ class MturkManagerWithWaitingPoolTimeout(MTurkManager):
                     self.task_group_id,
                     conversation_id,
                     sandbox=self.is_sandbox,
+                    custom_data_dir=self.opt['custom_data_dir']
                 )
 
             # Delete extra state data that is now unneeded

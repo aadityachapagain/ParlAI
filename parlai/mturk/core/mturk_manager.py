@@ -243,7 +243,7 @@ class MTurkManager:
         self.last_hit_check = time.time()
         if self.use_db:
             db_filename = 'pmt_sbdata.db' if self.is_sandbox else 'pmt_data.db'
-            self.db_logger = MTurkDataHandler(self.task_group_id, db_filename)
+            self.db_logger = MTurkDataHandler(self.task_group_id, db_filename, custom_data_dir=self.opt['custom_data_dir'])
 
     def _init_logging_config(self):
         """
@@ -833,6 +833,7 @@ class MTurkManager:
                         self.task_group_id,
                         conversation_id,
                         sandbox=self.is_sandbox,
+                        custom_data_dir=self.opt['custom_data_dir']
                     )
                 mturk_agent.clear_messages()
 
@@ -1262,6 +1263,7 @@ class MTurkManager:
                     self.task_group_id,
                     conversation_id,
                     sandbox=self.is_sandbox,
+                    custom_data_dir=self.opt['custom_data_dir']
                 )
 
             # Delete extra state data that is now unneeded

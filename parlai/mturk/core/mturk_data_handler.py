@@ -128,8 +128,11 @@ class MTurkDataHandler:
     processes and for controlled restarts.
     """
 
-    def __init__(self, task_group_id=None, file_name='pmt_data.db'):
-        self.db_path = os.path.join(data_dir, file_name)
+    def __init__(self, task_group_id=None, file_name='pmt_data.db', custom_data_dir=None):
+        if custom_data_dir:
+            os.makedirs(custom_data_dir, exist_ok=True)
+        mturk_data_dir = custom_data_dir if custom_data_dir else data_dir
+        self.db_path = os.path.join(mturk_data_dir, file_name)
         self.conn = {}
         self.task_group_id = task_group_id
         self.table_access_condition = threading.Condition()
@@ -137,12 +140,13 @@ class MTurkDataHandler:
 
     @staticmethod
     def save_world_data(
-        prepped_save_data, task_group_id, conversation_id, sandbox=False
+        prepped_save_data, task_group_id, conversation_id, sandbox=False, custom_data_dir=None
     ):
+        mturk_data_dir = custom_data_dir if custom_data_dir else data_dir
         target = 'sandbox' if sandbox else 'live'
         if task_group_id is None:
             return
-        target_dir = os.path.join(data_dir, target, task_group_id, conversation_id)
+        target_dir = os.path.join(mturk_data_dir, target, task_group_id, conversation_id)
         custom_data = prepped_save_data['custom_data']
         if custom_data is not None:
             target_dir_custom = os.path.join(target_dir, 'custom')
@@ -923,10 +927,11 @@ class MTurkDataHandler:
             return results
 
     @staticmethod
-    def get_conversation_data(task_group_id, conv_id, worker_id, is_sandbox):
+    def get_conversation_data(task_group_id, conv_id, worker_id, is_sandbox, custom_data_dir=None):
         """
         A poorly named function that gets conversation data for a worker.
         """
+        mturk_data_dir = custom_data_dir if custom_data_dir else data_dir
         result = {
             'had_data_dir': False,
             'had_run_dir': False,
@@ -936,7 +941,7 @@ class MTurkDataHandler:
             'data': None,
         }
         target = 'sandbox' if is_sandbox else 'live'
-        search_dir = os.path.join(data_dir, target)
+        search_dir = os.path.join(mturk_data_dir, target)
         if not os.path.exists(search_dir):
             return result
         result['had_data_dir'] = True
@@ -962,14 +967,15 @@ class MTurkDataHandler:
         return result
 
     @staticmethod
-    def get_full_conversation_data(task_group_id, conv_id, is_sandbox):
+    def get_full_conversation_data(task_group_id, conv_id, is_sandbox, custom_data_dir=None):
         """
         Gets all conversation data saved for a world.
         """
+        mturk_data_dir = custom_data_dir if custom_data_dir else data_dir
         target = 'sandbox' if is_sandbox else 'live'
         return_data = {'custom_data': {}, 'worker_data': {}}
 
-        target_dir = os.path.join(data_dir, target, task_group_id, conv_id)
+        target_dir = os.path.join(mturk_data_dir, target, task_group_id, conv_id)
         target_dir_custom = os.path.join(target_dir, 'custom')
         custom_file = os.path.join(target_dir_custom, 'data.json')
         if os.path.exists(custom_file):

@@ -123,12 +123,12 @@ class PacketWrap(object):
 
 
 class Application(tornado.web.Application):
-    def __init__(self, port=DEFAULT_PORT, db_file=DEFAULT_DB_FILE, is_sandbox=False):
+    def __init__(self, port=DEFAULT_PORT, db_file=DEFAULT_DB_FILE, is_sandbox=False, custom_data_dir=None):
         self.state = {'is_sandbox': is_sandbox}
         self.subs = {}
         self.sources = {}
         self.port = port
-        self.data_handler = MTurkDataHandler(file_name=db_file)
+        self.data_handler = MTurkDataHandler(file_name=db_file, custom_data_dir=custom_data_dir)
         self.manager = None  # MTurk manager for demo tasks
         self.mturk_manager = MTurkManager.make_taskless_instance(is_sandbox)
         self.mturk_manager.db_logger = self.data_handler
@@ -305,6 +305,7 @@ class RunHandler(BaseHandler):
         self.sources = app.sources
         self.port = app.port
         self.data_handler = app.data_handler
+        self.custom_data_dir = app.custom_data_dir
 
     def get(self, task_target):
         hits = self.data_handler.get_hits_for_run(task_target)
@@ -327,7 +328,8 @@ class RunHandler(BaseHandler):
             workers.add(worker_id)
             if conversation_id is not None:
                 task_data = MTurkDataHandler.get_conversation_data(
-                    run_id, conversation_id, worker_id, self.state['is_sandbox']
+                    run_id, conversation_id, worker_id, self.state['is_sandbox'],
+                    custom_data_dir=self.custom_data_dir
                 )
                 if task_data['data'] is not None:
                     assignment['received_feedback'] = task_data['data'].get(
@@ -395,6 +397,7 @@ class AssignmentHandler(BaseHandler):
         self.sources = app.sources
         self.port = app.port
         self.data_handler = app.data_handler
+        self.custom_data_dir = app.custom_data_dir
 
     def get(self, assignment_target):
         # Extract assignment
@@ -414,13 +417,15 @@ class AssignmentHandler(BaseHandler):
         onboard_data = None
         if onboarding_id is not None:
             onboard_data = MTurkDataHandler.get_conversation_data(
-                run_id, onboarding_id, worker_id, self.state['is_sandbox']
+                run_id, onboarding_id, worker_id, self.state['is_sandbox'],
+                custom_data_dir=self.custom_data_dir
             )
 
         assignment_content = {
             'onboarding': onboard_data,
             'task': MTurkDataHandler.get_conversation_data(
-                run_id, conversation_id, worker_id, self.state['is_sandbox']
+                run_id, conversation_id, worker_id, self.state['is_sandbox'],
+                custom_data_dir=self.custom_data_dir
             ),
             'task_name': '_'.join(run_id.split('_')[:-1]),
         }
@@ -643,9 +648,10 @@ def start_server(
     hostname=DEFAULT_HOSTNAME,
     db_file=DEFAULT_DB_FILE,
     is_sandbox=False,
+    custom_data_dir=None
 ):
     print("It's Alive!")
-    app = Application(port=port, db_file=db_file, is_sandbox=is_sandbox)
+    app = Application(port=port, db_file=db_file, is_sandbox=is_sandbox, custom_data_dir=custom_data_dir)
     app.listen(port, max_buffer_size=1024 ** 3)
     logging.info("Application Started")
 
@@ -803,6 +809,13 @@ def main():
         help='logging level (default = INFO). Can take logging'
         ' level name or int (example: 20)',
     )
+    parser.add_argument(
+        '--custom-data-dir',
+        dest='custom_data_dir',
+        default=None,
+        type=str,
+        help='Mturk data path from where data is to be shown in dashboard.'
+    )
     FLAGS = parser.parse_args()
 
     if FLAGS.sandbox:
@@ -819,6 +832,7 @@ def main():
         hostname=FLAGS.hostname,
         db_file=FLAGS.db_file,
         is_sandbox=FLAGS.sandbox,
+        custom_data_dir=FLAGS.custom_data_dir
     )
 
 

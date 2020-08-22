@@ -196,8 +196,8 @@ def send_hit_notification(worker_ids, hit_link, is_sandbox):
 def single_run(opt,
                pass_qual_id,
                fail_qual_id,
-               dedicated_worker_qual_id,
-               dedicated_worker_ids):
+               dedicated_worker_qual_id=None,
+               dedicated_worker_ids=None):
     mturk_agent_ids = ['CHILD', 'KARU']
     mturk_manager = MturkManagerWithWaitingPoolTimeout(opt=opt,
                                                        mturk_agent_ids=[random.choice(mturk_agent_ids)],
@@ -230,18 +230,25 @@ def single_run(opt,
                 'Comparator': 'DoesNotExist',
                 'ActionsGuarded': 'DiscoverPreviewAndAccept',
             },
-            {  # Dedicated worker qualification
-                'QualificationTypeId': dedicated_worker_qual_id,
-                'Comparator': 'Exists',
-                'ActionsGuarded': 'DiscoverPreviewAndAccept'
-            },
-            # {   # Min HIT approval rate
-            #     'QualificationTypeId': '000000000000000000L0',
-            #     'Comparator': 'GreaterThanOrEqualTo',
-            #     'IntegerValues': [opt['min_hit_approval_rate']],
-            #     'ActionsGuarded': 'DiscoverPreviewAndAccept'
-            # }
         ]
+        if dedicated_worker_qual_id:
+            agent_qualifications.append(
+                {  # Dedicated worker qualification
+                    'QualificationTypeId': dedicated_worker_qual_id,
+                    'Comparator': 'Exists',
+                    'ActionsGuarded': 'DiscoverPreviewAndAccept'
+                }
+            )
+        else:
+            agent_qualifications.append(
+                {  # Min HIT approval rate
+                    'QualificationTypeId': '000000000000000000L0',
+                    'Comparator': 'GreaterThanOrEqualTo',
+                    'IntegerValues': [opt['min_hit_approval_rate']],
+                    'ActionsGuarded': 'DiscoverPreviewAndAccept'
+                }
+            )
+
         if not opt['is_sandbox']:
             agent_qualifications.extend([
                 {
@@ -253,7 +260,8 @@ def single_run(opt,
             ])
         mturk_page_url = mturk_manager.create_hits(qualifications=agent_qualifications)
 
-        send_hit_notification(dedicated_worker_ids, mturk_page_url, opt['is_sandbox'])
+        if dedicated_worker_ids:
+            send_hit_notification(dedicated_worker_ids, mturk_page_url, opt['is_sandbox'])
 
         def check_workers_eligibility(workers):
             return workers
@@ -309,20 +317,24 @@ def run_final_job(manager):
 def main(opt):
     # Qualifications
     mturk_utils.setup_aws_credentials()
-    if opt.get("max_hits_limit_in_a_run_only"):
-        max_submission_qual_id = mturk_utils.find_qualification(opt['unique_qual_name'], opt['is_sandbox'])
-        if max_submission_qual_id:
-            mturk_utils.delete_qualification(max_submission_qual_id, opt['is_sandbox'])
-            shared_utils.print_and_log(logging.INFO,
-                                       f"Deleted max submissions qualification {opt['unique_qual_name']}",
-                                       should_print=True)
-
     pass_qual_id, fail_qual_id = create_passfail_qualification(opt)
-    dedicated_workers_list = ReviewGSheet(opt['ghseet_credentials']).get_golden_workers_list()
-    dedicated_workers_list = prepare_dedicated_workers(pass_qual_id, dedicated_workers_list, opt['is_sandbox'])
-    dedicated_worker_qual_id = create_and_assign_dedicated_worker_qualification(opt, dedicated_workers_list)
+    if opt.get("dedicated_worker_run"):
+        if opt.get("max_hits_limit_in_a_run_only"):
+            max_submission_qual_id = mturk_utils.find_qualification(opt['unique_qual_name'], opt['is_sandbox'])
+            if max_submission_qual_id:
+                mturk_utils.delete_qualification(max_submission_qual_id, opt['is_sandbox'])
+                shared_utils.print_and_log(logging.INFO,
+                                           f"Deleted max submissions qualification {opt['unique_qual_name']}",
+                                           should_print=True)
 
-    opt['num_conversations'] = opt['max_hits_per_worker'] * len(dedicated_workers_list)
+        dedicated_workers_list = ReviewGSheet(opt['ghseet_credentials']).get_golden_workers_list()
+        dedicated_workers_list = prepare_dedicated_workers(pass_qual_id, dedicated_workers_list, opt['is_sandbox'])
+        dedicated_worker_qual_id = create_and_assign_dedicated_worker_qualification(opt, dedicated_workers_list)
+
+        opt['num_conversations'] = opt['max_hits_per_worker'] * len(dedicated_workers_list)
+    else:
+        dedicated_workers_list = None
+        dedicated_worker_qual_id = None
 
     final_job_threads = []
     for run_idx in range(opt['number_of_runs']):

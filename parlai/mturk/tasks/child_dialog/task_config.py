@@ -15,7 +15,7 @@ On the Amazon Mechanical Turk web site, the HIT title appears in search results,
 and everywhere the HIT is mentioned.
 """
 task_config['hit_title'] = ('Chat as a child. Workers who perform well will be reached out to'
-                            'and given more hits.')
+                            'and given more hits at a higher reward level')
 
 """A description includes detailed information about the kind of task the HIT contains.
 On the Amazon Mechanical Turk web site, the HIT description appears in the expanded

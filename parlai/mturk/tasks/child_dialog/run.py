@@ -194,6 +194,8 @@ def send_hit_notification(worker_ids, hit_link, is_sandbox):
 
 
 def single_run(opt,
+               bot_agent,
+               offensive_language_classifier,
                pass_qual_id,
                fail_qual_id,
                dedicated_worker_qual_id=None,
@@ -203,9 +205,6 @@ def single_run(opt,
                                                        mturk_agent_ids=[random.choice(mturk_agent_ids)],
                                                        use_db=True)
     mturk_manager.setup_server()
-
-    bot_agent = create_agent(opt, requireModelExists=True)
-    offensive_language_classifier = OffensiveLanguageClassifier()
 
     def run_onboard(worker):
         world = QualificationTestOnboardWorld(opt=opt,
@@ -336,11 +335,15 @@ def main(opt):
         dedicated_workers_list = None
         dedicated_worker_qual_id = None
 
+    bot_agent = create_agent(opt, requireModelExists=True)
+    offensive_language_classifier = OffensiveLanguageClassifier()
+
     final_job_threads = []
     for run_idx in range(opt['number_of_runs']):
-
         shared_utils.print_and_log(logging.INFO, f"Launching {run_idx + 1} run........", should_print=True)
         old_mturk_manager = single_run(opt,
+                                       bot_agent,
+                                       offensive_language_classifier,
                                        pass_qual_id,
                                        fail_qual_id,
                                        dedicated_worker_qual_id,

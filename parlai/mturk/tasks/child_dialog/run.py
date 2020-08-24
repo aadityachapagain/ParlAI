@@ -58,7 +58,7 @@ def setup_args():
     argparser.add_argument(
         '--safety',
         type=str,
-        default='all',
+        default='string_matcher',
         choices={'none', 'string_matcher', 'classifier', 'all'},
         help='Apply safety filtering to messages',
     )
@@ -336,7 +336,10 @@ def main(opt):
         dedicated_worker_qual_id = None
 
     bot_agent = create_agent(opt, requireModelExists=True)
-    offensive_language_classifier = OffensiveLanguageClassifier()
+    if opt['safety'] == 'classifier' or opt['safety'] == 'all':
+        offensive_language_classifier = OffensiveLanguageClassifier()
+    else:
+        offensive_language_classifier = None
 
     final_job_threads = []
     for run_idx in range(opt['number_of_runs']):

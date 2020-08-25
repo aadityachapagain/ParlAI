@@ -143,10 +143,10 @@ def create_and_assign_dedicated_worker_qualification(opt, dedicated_workers):
 
 def prepare_dedicated_workers(pass_qual_id, dedicated_workers, is_sandbox):
     """Assign pass qualification if dedicated workers are from non qualification runs"""
-    if len(dedicated_workers) > 25:
+    if len(dedicated_workers) > 20:
         shared_utils.print_and_log(logging.INFO,
                                    "Received more than 25 workers in batch. Selected 25 random workers.......")
-        dedicated_workers = random.sample(dedicated_workers, 25)
+        dedicated_workers = random.sample(dedicated_workers, 20)
 
     qual_pass_workers = mturk_utils.list_workers_with_qualification_type(pass_qual_id, is_sandbox)
     for dedicated_worker in dedicated_workers:

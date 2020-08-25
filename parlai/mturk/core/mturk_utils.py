@@ -520,11 +520,11 @@ def list_all_hits(is_sandbox, client=None):
         hits.extend(resp['HITs'])
         shared_utils.print_and_log(logging.INFO,
                                    f"Received {resp['NumResults']} hits, total {len(hits)} hits received until now.......",
-                                   should_print=False)
+                                   should_print=True)
         if resp['NumResults'] < 100:
             shared_utils.print_and_log(logging.INFO,
                                        'All HITs received.',
-                                       should_print=False)
+                                       should_print=True)
             break
         next_token = resp['NextToken']
     return hits
@@ -560,12 +560,12 @@ def list_workers_assignments(worker_ids, is_sandbox, assignment_status='Submitte
     assignments = []
     shared_utils.print_and_log(logging.INFO,
                                f"Listing assignments from {len(hits)} hits.............",
-                               should_print=False)
+                               should_print=True)
     for hit in tqdm(hits):
         assignments.extend(list_assignments_for_hit(hit['HITId'], is_sandbox, assignment_status, client=client))
     shared_utils.print_and_log(logging.INFO,
                                f'{len(assignments)} assignments collected from {len(hits)} hits.',
-                               should_print=False)
+                               should_print=True)
 
     return {worker_id: [assignment['AssignmentId'] for assignment in assignments if assignment['WorkerId'] == worker_id]
             for worker_id in worker_ids}
@@ -579,7 +579,7 @@ def approve_assignment(assignment_id: str, is_sandbox, client=None):
     except Exception as e:
         shared_utils.print_and_log(logging.WARN,
                                    f"Approving {assignment_id} raises following error {repr(e)}",
-                                   should_print=False)
+                                   should_print=True)
 
 
 def approve_list_of_assignments(assignment_ids, is_sandbox, client=None):
@@ -587,9 +587,9 @@ def approve_list_of_assignments(assignment_ids, is_sandbox, client=None):
         client = get_mturk_client(is_sandbox)
     shared_utils.print_and_log(logging.INFO,
                                f"Approving {len(assignment_ids)} assignments......",
-                               should_print=False)
+                               should_print=True)
     for assignment_id in tqdm(assignment_ids):
         approve_assignment(assignment_id, is_sandbox, client=client)
     shared_utils.print_and_log(logging.INFO,
                                f"{len(assignment_ids)} assignments approved.",
-                               should_print=False)
+                               should_print=True)

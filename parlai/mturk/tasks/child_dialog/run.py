@@ -159,7 +159,7 @@ def prepare_dedicated_workers(pass_qual_id, dedicated_workers, is_sandbox):
         assignments_list = []
         for worker_id, assignments in workers_assignments.items():
             assignments_list.extend(assignments)
-        mturk_utils.approve_assignments(assignments_list, is_sandbox, client=client)
+        mturk_utils.approve_list_of_assignments(assignments_list, is_sandbox, client=client)
     except Exception as e:
         shared_utils.print_and_log(logging.WARN, f"Approving dedicated workers assignments got error: {repr(e)}",
                                    should_print=True)

@@ -574,17 +574,22 @@ def list_workers_assignments(worker_ids, is_sandbox, assignment_status='Submitte
 def approve_assignment(assignment_id: str, is_sandbox, client=None):
     if not client:
         client = get_mturk_client(is_sandbox)
-    client.approve_assignment(AssignmentId=assignment_id)
+    try:
+        client.approve_assignment(AssignmentId=assignment_id)
+    except Exception as e:
+        shared_utils.print_and_log(logging.WARN,
+                                   f"Approving {assignment_id} raises following error {repr(e)}",
+                                   should_print=False)
 
 
-def approve_assignments(assignment_ids, is_sandbox, client=None):
+def approve_list_of_assignments(assignment_ids, is_sandbox, client=None):
     if not client:
         client = get_mturk_client(is_sandbox)
     shared_utils.print_and_log(logging.INFO,
                                f"Approving {len(assignment_ids)} assignments......",
                                should_print=False)
     for assignment_id in tqdm(assignment_ids):
-        approve_assignments(assignment_id, is_sandbox, client=client)
+        approve_assignment(assignment_id, is_sandbox, client=client)
     shared_utils.print_and_log(logging.INFO,
                                f"{len(assignment_ids)} assignments approved.",
                                should_print=False)

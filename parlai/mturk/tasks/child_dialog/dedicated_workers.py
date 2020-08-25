@@ -47,6 +47,9 @@ class ReviewGSheet:
 
     def get_golden_workers_list(self, link: str = None, sheets_num: int = None):
         review_df = self.convert_gsheets_to_dataframe(link, sheets_num)
-        all_golden_50 = review_df[(review_df['Points'] == 'Golden 50') & (review_df['DATE'] == '8/24/2020')]
-        worker_golden50_count = all_golden_50.groupby('Worker ID')['Points'].agg('count')
-        return list(worker_golden50_count[worker_golden50_count > 2].index)
+        worker_list = review_df[(review_df['Points'].isin(['Golden', 'Golden 20']))
+                                & (review_df['DATE'] == '8/25/2020')]['Worker ID'].dropna().unique().tolist()
+        # all_golden_50 = review_df[(review_df['Points'] == 'Golden 50') & (review_df['DATE'] == '8/24/2020')]
+        # worker_golden50_count = all_golden_50.groupby('Worker ID')['Points'].agg('count')
+        # return list(worker_golden50_count[worker_golden50_count > 2].index)
+        return worker_list

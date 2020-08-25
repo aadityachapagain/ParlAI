@@ -193,8 +193,7 @@ def get_hit_notification_message(hit_link):
     subject = "Chat as a Child: High reward HITs exclusive to you"
     message = (
         "Thank you for your outstanding performance in the previous HIT you did for us."
-        "You followed the theme of the conversation, were specific and took initiative."
-        "So we have created a set of 50 HITs, only for you."
+        "You followed the theme of the conversation, were specific and took initiative."        "So we have created a set of 20 HITs, only for you."
         "Please find the HITs using following link."
         f"\nLink: {hit_link} \n"
         "Note: If you can't find the HIT please wait for few moments and retry. "

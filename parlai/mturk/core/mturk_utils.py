@@ -8,10 +8,13 @@ import boto3
 import os
 import json
 import re
+import logging
 from datetime import datetime
+from tqdm import tqdm
 
 from botocore.exceptions import ClientError
 from botocore.exceptions import ProfileNotFound
+import parlai.mturk.core.shared_utils as shared_utils
 
 region_name = 'us-east-1'
 aws_profile_name = 'parlai_mturk'
@@ -502,3 +505,86 @@ def send_test_notif(topic_arn, event_type):
 def delete_sns_topic(topic_arn):
     client = boto3.client('sns', region_name='us-east-1')
     client.delete_topic(TopicArn=topic_arn)
+
+
+def list_all_hits(is_sandbox, client=None):
+    if not client:
+        client = get_mturk_client(is_sandbox)
+    hits = []
+    next_token = None
+    while True:
+        if next_token:
+            resp = client.list_hits(MaxResults=100, NextToken=next_token)
+        else:
+            resp = client.list_hits(MaxResults=100)
+        hits.extend(resp['HITs'])
+        shared_utils.print_and_log(logging.INFO,
+                                   f"Received {resp['NumResults']} hits, total {len(hits)} hits received until now.......",
+                                   should_print=False)
+        if resp['NumResults'] < 100:
+            shared_utils.print_and_log(logging.INFO,
+                                       'All HITs received.',
+                                       should_print=False)
+            break
+        next_token = resp['NextToken']
+    return hits
+
+
+def list_assignments_for_hit(hitid, is_sandbox, assignment_status, client=None):
+    if not isinstance(assignment_status, list):
+        assignment_status = [assignment_status]
+    if not client:
+        client = get_mturk_client(is_sandbox)
+    assignments = []
+    next_token = None
+    while True:
+        if next_token:
+            resp = client.list_assignments_for_hit(HITId=hitid, MaxResults=100, AssignmentStatuses=assignment_status,
+                                                   NextToken=next_token)
+        else:
+            resp = client.list_assignments_for_hit(HITId=hitid, MaxResults=100, AssignmentStatuses=assignment_status)
+        assignments.extend(resp['Assignments'])
+        if resp['NumResults'] < 100:
+            break
+        next_token = resp['NextToken']
+    return assignments
+
+
+def list_workers_assignments(worker_ids, is_sandbox, assignment_status='Submitted', hit_status='Reviewable',
+                             client=None):
+    if not isinstance(worker_ids, list):
+        worker_ids = [worker_ids]
+    hits = list_all_hits(is_sandbox, client=client)
+    if hit_status:
+        hits = [hit for hit in hits if hit['HITStatus'] == hit_status]
+    assignments = []
+    shared_utils.print_and_log(logging.INFO,
+                               f"Listing assignments from {len(hits)} hits.............",
+                               should_print=False)
+    for hit in tqdm(hits):
+        assignments.extend(list_assignments_for_hit(hit['HITId'], is_sandbox, assignment_status, client=client))
+    shared_utils.print_and_log(logging.INFO,
+                               f'{len(assignments)} assignments collected from {len(hits)} hits.',
+                               should_print=False)
+
+    return {worker_id: [assignment['AssignmentId'] for assignment in assignments if assignment['WorkerId'] == worker_id]
+            for worker_id in worker_ids}
+
+
+def approve_assignment(assignment_id: str, is_sandbox, client=None):
+    if not client:
+        client = get_mturk_client(is_sandbox)
+    client.approve_assignment(AssignmentId=assignment_id)
+
+
+def approve_assignments(assignment_ids, is_sandbox, client=None):
+    if not client:
+        client = get_mturk_client(is_sandbox)
+    shared_utils.print_and_log(logging.INFO,
+                               f"Approving {len(assignment_ids)} assignments......",
+                               should_print=False)
+    for assignment_id in tqdm(assignment_ids):
+        approve_assignments(assignment_id, is_sandbox, client=client)
+    shared_utils.print_and_log(logging.INFO,
+                               f"{len(assignment_ids)} assignments approved.",
+                               should_print=False)

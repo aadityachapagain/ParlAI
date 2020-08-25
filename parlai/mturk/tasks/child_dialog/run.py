@@ -144,12 +144,27 @@ def create_and_assign_dedicated_worker_qualification(opt, dedicated_workers):
 def prepare_dedicated_workers(pass_qual_id, dedicated_workers, is_sandbox):
     """Assign pass qualification if dedicated workers are from non qualification runs"""
     if len(dedicated_workers) > 25:
+        shared_utils.print_and_log(logging.INFO,
+                                   "Received more than 25 workers in batch. Selected 25 random workers.......")
         dedicated_workers = random.sample(dedicated_workers, 25)
 
     qual_pass_workers = mturk_utils.list_workers_with_qualification_type(pass_qual_id, is_sandbox)
     for dedicated_worker in dedicated_workers:
         if dedicated_worker not in qual_pass_workers:
             mturk_utils.give_worker_qualification(dedicated_worker, pass_qual_id, is_sandbox=is_sandbox)
+
+    try:
+        client = mturk_utils.get_mturk_client(is_sandbox)
+        workers_assignments = mturk_utils.list_workers_assignments(dedicated_workers, is_sandbox, client=client)
+        assignments_list = []
+        for worker_id, assignments in workers_assignments.items():
+            assignments_list.extend(assignments)
+        mturk_utils.approve_assignments(assignments_list, is_sandbox, client=client)
+    except Exception as e:
+        shared_utils.print_and_log(logging.WARN, f"Approving dedicated workers assignments got error: {repr(e)}",
+                                   should_print=True)
+        shared_utils.print_and_log(logging.WARN, "Continuing without approving dedicated workers assignment...........",
+                                   should_print=True)
 
     return dedicated_workers
 

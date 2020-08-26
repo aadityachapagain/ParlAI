@@ -143,25 +143,25 @@ def create_and_assign_dedicated_worker_qualification(opt, dedicated_workers):
     return qual_id
 
 
-def prepare_dedicated_workers(pass_qual_id, dedicated_workers, is_sandbox):
+def prepare_dedicated_workers(pass_qual_id, dedicated_workers, opt):
     """Assign pass qualification if dedicated workers are from non qualification runs"""
-    if len(dedicated_workers) > 20:
+    if opt.get('number_of_dedicated_workers') and len(dedicated_workers) > opt['number_of_dedicated_workers']:
         shared_utils.print_and_log(logging.INFO,
                                    "Received more than 25 workers in batch. Selected 25 random workers.......")
-        dedicated_workers = random.sample(dedicated_workers, 20)
+        dedicated_workers = random.sample(dedicated_workers, opt['number_of_dedicated_workers'])
 
-    qual_pass_workers = mturk_utils.list_workers_with_qualification_type(pass_qual_id, is_sandbox)
+    qual_pass_workers = mturk_utils.list_workers_with_qualification_type(pass_qual_id, opt['is_sandbox'])
     for dedicated_worker in dedicated_workers:
         if dedicated_worker not in qual_pass_workers:
-            mturk_utils.give_worker_qualification(dedicated_worker, pass_qual_id, is_sandbox=is_sandbox)
+            mturk_utils.give_worker_qualification(dedicated_worker, pass_qual_id, is_sandbox=opt['is_sandbox'])
 
     try:
-        client = mturk_utils.get_mturk_client(is_sandbox)
-        workers_assignments = mturk_utils.list_workers_assignments(dedicated_workers, is_sandbox, client=client)
+        client = mturk_utils.get_mturk_client(opt['is_sandbox'])
+        workers_assignments = mturk_utils.list_workers_assignments(dedicated_workers, opt['is_sandbox'], client=client)
         assignments_list = []
         for worker_id, assignments in workers_assignments.items():
             assignments_list.extend(assignments)
-        mturk_utils.approve_list_of_assignments(assignments_list, is_sandbox, client=client)
+        mturk_utils.approve_list_of_assignments(assignments_list, opt['is_sandbox'], client=client)
     except Exception as e:
         shared_utils.print_and_log(logging.WARN, f"Approving dedicated workers assignments got error: {repr(e)}",
                                    should_print=True)
@@ -343,7 +343,7 @@ def main(opt):
                                            should_print=True)
 
         dedicated_workers_list = ReviewGSheet(opt['ghseet_credentials']).get_golden_workers_list()
-        dedicated_workers_list = prepare_dedicated_workers(pass_qual_id, dedicated_workers_list, opt['is_sandbox'])
+        dedicated_workers_list = prepare_dedicated_workers(pass_qual_id, dedicated_workers_list, opt)
         dedicated_worker_qual_id = create_and_assign_dedicated_worker_qualification(opt, dedicated_workers_list)
 
         opt['num_conversations'] = opt['max_hits_per_worker'] * len(dedicated_workers_list)

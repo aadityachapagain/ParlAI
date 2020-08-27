@@ -90,7 +90,8 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
         Add command line arguments.
         """
         agent = argparser.add_argument_group('Distill generator Agent')
-        super(TorchGeneratorAgent, cls).add_cmdline_args(argparser)
+
+        super(TorchDistillGeneratorAgent, cls).add_cmdline_args(argparser)
         return agent
 
     def __init__(self, opt: Opt, shared=None):

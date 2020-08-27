@@ -6,15 +6,12 @@ from parlai.core.torch_generator_agent import (
     _HypothesisTail,
     GreedySearch,
     BeamSearch,
-    total_parameters,
-    trainable_parameters,
     DelayedBeamSearch,
     NucleusSampling,
     SumMetric,
-    SearchBlocklist
+    SearchBlocklist,
 )
-from parlai.core.torch_agent import TorchAgent, Batch, Output, DictionaryAgent
-from parlai.core.torch_agent import Batch, Output, DictionaryAgent
+from parlai.core.torch_agent import Batch, Output, TorchAgent
 from parlai.utils.distributed import is_distributed, sync_parameters
 
 from parlai.utils.torch import (
@@ -61,21 +58,7 @@ from parlai.core.metrics import (
 )
 from parlai.utils.distributed import is_primary_worker
 from parlai.utils.torch import argsort, compute_grad_norm, padded_tensor, atomic_save
-
-from typing import Dict, Any, Union, List, Tuple, Optional
 from abc import ABC, abstractmethod
-import random
-import os
-import torch
-import parlai.utils.logging as logging
-from torch import optim
-
-from parlai.core.opt import Opt
-from parlai.core.agents import Agent
-from parlai.utils.thread import SharedTable
-from parlai.core.dict import DictionaryAgent
-from parlai.nn.lr_scheduler import ParlAILRScheduler
-from parlai.core.message import Message
 
 try:
     from nltk.translate import bleu_score as nltkbleu

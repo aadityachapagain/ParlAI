@@ -26,7 +26,6 @@ from parlai.core.metrics import aggregate_named_reports, aggregate_unnamed_repor
 from parlai.core.params import ParlaiParser, print_announcements
 from parlai.core.worlds import create_task
 from parlai.scripts.build_dict import build_dict, setup_args as setup_dict_args
-import parlai.chat_service.utils.config as config_utils
 from parlai.utils.distributed import (
     sync_object,
     is_primary_worker,
@@ -816,10 +815,15 @@ class TrainModel(ParlaiScript):
     @classmethod
     def setup_args(cls):
         opt = setup_args()
-        configs = config_utils.parse_configuration_file(opt['config_path'])
-        # opt['student_config'] = configs['student_config']
-        # opt['teacher_config'] = configs['teacher_config']
-        opt.update(configs)
+        if opt.get('config_path', False):
+            print('config path Exists !')
+            with open(opt['config_path']) as fp:
+                configs = yaml.load(fp.read(), Loader=yaml.FullLoader)
+                opt.update(configs)
+                opt['student_config'] = configs['student_config']
+                opt['teacher_config'] = configs['teacher_config']
+        else:
+            print('specify config_path ...')
         return opt
 
     def run(self):

@@ -24,6 +24,7 @@ Examples
 """
 
 import torch
+import yaml
 import random
 import os
 import signal
@@ -85,7 +86,17 @@ def setup_args():
 class MultiProcessTrain(ParlaiScript):
     @classmethod
     def setup_args(cls):
-        return setup_args()
+        opt = setup_args()
+        if opt.get('config_path', False):
+            print('config path Exists !')
+            with open(opt['config_path']) as fp:
+                configs = yaml.load(fp.read(), Loader=yaml.FullLoader)
+                opt.update(configs)
+                opt['student_config'] = configs['student_config']
+                opt['teacher_config'] = configs['teacher_config']
+        else:
+            print('specify config_path ...')
+        return opt
 
     def run(self):
         port = random.randint(32000, 48000)

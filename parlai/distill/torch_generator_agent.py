@@ -83,6 +83,15 @@ except ImportError:
     fairseq_bleu = None
 
 class TorchDistillGeneratorAgent(TorchGeneratorAgent):
+
+    @classmethod
+    def add_cmdline_args(cls, argparser):
+        """
+        Add command line arguments.
+        """
+        super(TorchGeneratorAgent, cls).add_cmdline_args(argparser)
+        return agent
+
     def __init__(self, opt: Opt, shared=None):
         """
         Initialize agent.

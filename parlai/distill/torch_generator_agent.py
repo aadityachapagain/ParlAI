@@ -288,11 +288,6 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
             )
 
         self.reset()
-
-        opt = self.opt
-
-        self.token_criterion = self.build_token_criterion()
-
     
     def state_dict(self):
         """

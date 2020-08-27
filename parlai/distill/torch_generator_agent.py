@@ -17,6 +17,13 @@ from parlai.core.torch_agent import TorchAgent, Batch, Output, DictionaryAgent
 from parlai.core.torch_agent import Batch, Output, DictionaryAgent
 from parlai.utils.distributed import is_distributed, sync_parameters
 
+from parlai.utils.torch import (
+    neginf,
+    total_parameters,
+    trainable_parameters,
+    PipelineHelper,
+)
+
 from typing import TypeVar, List, Dict, Optional, Tuple, Set, Iterable
 import math
 from operator import attrgetter

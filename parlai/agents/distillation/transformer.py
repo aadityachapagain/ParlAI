@@ -25,13 +25,11 @@ def add_common_cmdline_args(argparser):
     argparser.add_argument(
         '--student-config',
         type=dict,
-        required=True,
         help="path to configuration yml file which will contain all the infos of decoder and encoder"
     )
     argparser.add_argument(
         '--teacher-config',
         type=dict,
-        required=True,
         help="path to configuration yml file which will contain all the infos of decoder and encoder"
     )
     argparser.add_argument(

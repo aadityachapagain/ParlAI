@@ -45,10 +45,15 @@ class ReviewGSheet:
         with open(csv_path, 'r') as content:
             self.client.import_csv(sheet_id, content.read())
 
-    def get_golden_workers_list(self, link: str = None, sheets_num: int = None):
-        review_df = self.convert_gsheets_to_dataframe(link, sheets_num)
+    def get_review_data(self, link: str = None, sheets_num: int = None):
+        return self.convert_gsheets_to_dataframe(link, sheets_num)
+
+    def get_golden_workers_list(self, link: str = None, sheets_num: int = None, exclude_workers=[]):
+        review_df = self.get_review_data(link, sheets_num)
         worker_list = review_df[(review_df['Points'].isin(['Golden', 'Golden 20']))
-                                & (review_df['DATE'].isin(['8/25/2020', '8/26/2020']))]['Worker ID'].dropna().unique().tolist()
+                                & (review_df['DATE'].isin(['8/25/2020', '8/26/2020', '8/27/2020']))
+                                & ~(review_df['Worker ID'].isin(exclude_workers))][
+            'Worker ID'].dropna().unique().tolist()
         # all_golden_50 = review_df[(review_df['Points'] == 'Golden 50') & (review_df['DATE'] == '8/24/2020')]
         # worker_golden50_count = all_golden_50.groupby('Worker ID')['Points'].agg('count')
         # return list(worker_golden50_count[worker_golden50_count > 2].index)

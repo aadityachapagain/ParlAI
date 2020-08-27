@@ -88,6 +88,14 @@ def setup_args():
     return parsed_args
 
 
+def get_exclude_workers(opt):
+    exclude_workers = []
+    for exclude_qual in opt['ExcludeWorkerWithQualifications']:
+        qual_id = mturk_utils.find_qualification(exclude_qual, is_sandbox=opt['is_sandbox'])
+        exclude_workers.extend(mturk_utils.list_workers_with_qualification_type(qual_id, is_sandbox=opt['is_sandbox']))
+    return exclude_workers
+
+
 def create_passfail_qualification(opt):
     mturk_utils.setup_aws_credentials()
     qual_pass_name = f'{opt["qual_test_qualification"]}Pass'
@@ -341,8 +349,9 @@ def main(opt):
                 shared_utils.print_and_log(logging.INFO,
                                            f"Deleted max submissions qualification {opt['unique_qual_name']}",
                                            should_print=True)
-
-        dedicated_workers_list = ReviewGSheet(opt['ghseet_credentials']).get_golden_workers_list()
+        exclude_workers = get_exclude_workers(opt)
+        dedicated_workers_list = ReviewGSheet(opt['ghseet_credentials']).get_golden_workers_list(
+            exclude_workers=exclude_workers)
         dedicated_workers_list = prepare_dedicated_workers(pass_qual_id, dedicated_workers_list, opt)
         dedicated_worker_qual_id = create_and_assign_dedicated_worker_qualification(opt, dedicated_workers_list)
 

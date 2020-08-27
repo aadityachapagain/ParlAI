@@ -8,7 +8,6 @@ python parlai/distillation/multiprocessing_distill.py \
 --init-model zoo:blender/blender_3B/model \
 --dict-file zoo:blender/blender_3B/model.dict \
 --skip-generation True \
---model-parallel True \
 --lr-scheduler reduceonplateau \
 --lr-scheduler-patience 4 \
 --load-from-checkpoint True \

@@ -22,7 +22,7 @@ from parlai.core.metrics import Metric
 from parlai.gcp.gcs_service import gcp as storage_agent
 from parlai.core.agents import create_distill_agent, create_agent_from_shared
 from parlai.core.exceptions import StopTrainException
-from parlai.core.logs import TensorboardLogger
+from parlai.distillation.logs import TensorboardLogger
 from parlai.core.metrics import aggregate_named_reports, aggregate_unnamed_reports
 from parlai.core.params import ParlaiParser, print_announcements
 from parlai.core.worlds import create_task

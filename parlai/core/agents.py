@@ -197,6 +197,70 @@ class Agent(object):
         return opt_from_disk
 
 
+def compare_distill_init_model_opts(opt: Opt, curr_opt: Opt):
+    """
+    Print loud warning when `init_model` opts differ from previous configuration.
+    """
+    if opt.get('init_model_student') is None:
+        return
+    opt['init_model_student'] = modelzoo_path(opt['datapath'], opt['init_model_student'])
+    optfile = opt['init_model_student'] + '.opt'
+    if not os.path.isfile(optfile):
+        return
+    init_model_opt = Opt.load(optfile)
+
+    extra_opts = {}
+    different_opts = {}
+    exempt_opts = [
+        'model_file',
+        'dict_file',
+        'override',
+        'starttime',
+        'init_model',
+        'batchindex',
+    ]
+
+    # search through init model opts
+    for k, v in init_model_opt.items():
+        if (
+            k not in exempt_opts
+            and k in init_model_opt
+            and init_model_opt[k] != curr_opt.get(k)
+        ):
+            if isinstance(v, list):
+                if init_model_opt[k] != list(curr_opt[k]):
+                    different_opts[k] = ','.join([str(x) for x in v])
+            else:
+                different_opts[k] = v
+
+    # search through opts to load
+    for k, v in curr_opt.items():
+        if k not in exempt_opts and k not in init_model_opt:
+            if isinstance(v, list):
+                extra_opts[k] = ','.join([str(x) for x in v])
+            else:
+                extra_opts[k] = v
+
+    # print warnings
+    extra_strs = ['{}: {}'.format(k, v) for k, v in extra_opts.items()]
+    if extra_strs:
+        logging.warn(
+            'your model is being loaded with opts that do not '
+            'exist in the model you are initializing the weights with: '
+            '{}'.format(','.join(extra_strs))
+        )
+
+    different_strs = [
+        '--{} {}'.format(k.replace('_', '-'), v) for k, v in different_opts.items()
+    ]
+    if different_strs:
+        logging.warn(
+            'your model is being loaded with opts that differ '
+            'from the model you are initializing the weights with. Add the '
+            'following args to your run command to change this: \n'
+            '{}'.format(' '.join(different_strs))
+        )
+
 def compare_init_model_opts(opt: Opt, curr_opt: Opt):
     """
     Print loud warning when `init_model` opts differ from previous configuration.
@@ -346,6 +410,72 @@ def create_agent_from_opt_file(opt: Opt):
     compare_init_model_opts(opt, opt_from_file)
     return model_class(opt_from_file)
 
+def create_distill_agent_from_opt_file(opt: Opt):
+    """
+    Load agent options and module from file if opt file exists.
+
+    Checks to see if file exists opt['model_file'] + ".opt"; if so, load up the
+    options from the file and use that to create an agent, loading the model
+    type from that file and overriding any options specified in that file when
+    instantiating the agent.
+
+    If that file does not exist, return None.
+    """
+    model_file = opt['student_model_file']
+    optfile = model_file + '.opt'
+
+    if not os.path.isfile(optfile):
+        return None
+
+    opt_from_file = Opt.load(optfile)
+
+    # delete args that we do not want to copy over when loading the model
+    for arg in NOCOPY_ARGS:
+        if arg in opt_from_file:
+            del opt_from_file[arg]
+
+    # only override opts specified in 'override' dict
+    if opt.get('override'):
+        for k, v in opt['override'].items():
+            if k in opt_from_file and str(v) != str(opt_from_file.get(k)):
+                logging.warn(
+                    f'Overriding opt["{k}"] to {v} (previously: {opt_from_file.get(k)})'
+                )
+            opt_from_file[k] = v
+
+    model_class = load_agent_module(opt_from_file['model'])
+
+    if hasattr(model_class, 'upgrade_opt'):
+        opt_from_file = model_class.upgrade_opt(opt_from_file)
+
+    # add model arguments to opt_from_file if they aren't in opt_from_file already
+    for k, v in opt.items():
+        if k not in opt_from_file:
+            opt_from_file[k] = v
+
+    opt_from_file['student_model_file'] = model_file  # update model file path
+
+    # update dict file path
+    if not opt_from_file.get('dict_file'):
+        opt_from_file['dict_file'] = model_file + '.dict'
+    elif opt_from_file.get('dict_file') and not os.path.isfile(
+        opt_from_file['dict_file']
+    ):
+        old_dict_file = opt_from_file['dict_file']
+        opt_from_file['dict_file'] = model_file + '.dict'
+    if not os.path.isfile(opt_from_file['dict_file']):
+        warn_once(
+            'WARNING: Neither the specified dict file ({}) nor the '
+            '`model_file`.dict file ({}) exists, check to make sure either '
+            'is correct. This may manifest as a shape mismatch later '
+            'on.'.format(old_dict_file, opt_from_file['dict_file'])
+        )
+
+    # if we want to load weights from --init-model, compare opts with
+    # loaded ones
+    compare_init_model_opts(opt, opt_from_file)
+    return model_class(opt_from_file)
+
 
 def add_datapath_and_model_args(opt: Opt):
     # add datapath, it is missing
@@ -410,6 +540,52 @@ def create_agent(opt: Opt, requireModelExists=False):
     else:
         raise RuntimeError('Need to set `model` argument to use create_agent.')
 
+def create_distill_agent(opt: Opt, requireModelExists=False):
+    """
+    Create an agent from the options ``model``, ``model_params`` and ``student_model_file``.
+    """
+    if opt.get('datapath', None) is None:
+        add_datapath_and_model_args(opt)
+    
+    if opt.get('model_file'):
+        opt['model_file'] = modelzoo_path(opt.get('datapath'), opt['model_file'])
+        if requireModelExists and not os.path.isfile(opt['model_file']):
+            raise RuntimeError(
+                'WARNING: Model file does not exist, check to make '
+                'sure it is correct: {}'.format(opt['model_file'])
+            )
+        # Attempt to load the model from the model file first (this way we do
+        # not even have to specify the model name as a parameter)
+        create_agent_from_opt_file(opt)
+
+    if opt.get('student_model_file'):
+        opt['student_model_file'] = modelzoo_path(opt.get('datapath'), opt['student_model_file'])
+        if requireModelExists and not os.path.isfile(opt['student_model_file']):
+            raise RuntimeError(
+                'WARNING: Model file does not exist, check to make '
+                'sure it is correct: {}'.format(opt['student_model_file'])
+            )
+        # Attempt to load the model from the model file first (this way we do
+        # not even have to specify the model name as a parameter)
+        model = create_distill_agent_from_opt_file(opt)
+        if model is not None:
+            return model
+        else:
+            logging.info(f"No model with opt yet at: {opt['student_model_file']}(.opt)")
+
+    if opt.get('model'):
+        model_class = load_agent_module(opt['model'])
+        # if we want to load weights from --init-model, compare opts with
+        # loaded ones
+        compare_init_model_opts(opt, opt)
+        compare_distill_init_model_opts(opt, opt)
+        model = model_class(opt)
+        if requireModelExists and hasattr(model, 'load') and not opt.get('student_model_file'):
+            # double check that we didn't forget to set model_file on loadable model
+            logging.warn('student_model_file unset but model has a `load` function.')
+        return model
+    else:
+        raise RuntimeError('Need to set `model` argument to use create_agent.')
 
 # Helper functions to create agent/agents given shared parameters
 # returned from agent.share(). Useful for parallelism, sharing params, etc.

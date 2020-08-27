@@ -19,7 +19,7 @@ from typing import Dict
 
 from parlai.core.metrics import Metric
 from parlai.gcp.gcs_service import gcp as storage_agent
-from parlai.core.agents import create_agent, create_agent_from_shared
+from parlai.core.agents import create_distill_agent, create_agent_from_shared
 from parlai.core.exceptions import StopTrainException
 from parlai.core.logs import TensorboardLogger
 from parlai.core.metrics import aggregate_named_reports, aggregate_unnamed_reports
@@ -320,7 +320,7 @@ class TrainLoop:
             build_dict(opt, skip_if_built=True)
 
         # Create model and assign it to the specified task
-        self.agent = create_agent(opt)
+        self.agent = create_distill_agent(opt)
         self.agent.opt.log()
         self.world = create_task(opt, self.agent)
         # set up timers
@@ -791,7 +791,7 @@ class TrainLoop:
             del self.agent
             del self.valid_worlds
             # reload best validation model
-            self.agent = create_agent(opt)
+            self.agent = create_distill_agent(opt)
 
         # perform final validation/testing
         valid_worlds = load_eval_worlds(self.agent, opt, 'valid')

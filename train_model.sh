@@ -4,7 +4,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --gcs-train-path "train-temp-2" \
 -t fromfile --fromfile_datapath /tmp/train_data/train_data.txt \
 -dt train:stream \
--m transformer/generator \
+--model distillation/generator \
 --init-model zoo:blender/blender_3B/model \
 --dict-file zoo:blender/blender_3B/model.dict \
 --skip-generation True \

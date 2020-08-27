@@ -87,10 +87,9 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
         """
         Initialize agent.
         """
-
+        self.opt = opt
         init_student_model, is_finetune = self._get_student_init_model(opt, shared)
         init_model = self._get_init_model(opt, shared)
-        opt = self.opt
 
         # Safety checkers to ensure TorchAgent assumptions aren't being violated.
         self.__expecting_clear_history = False

@@ -169,7 +169,7 @@ class TransformerGeneratorAgent(TorchDistillGeneratorAgent):
         """
         Build and return model.
         """
-        student_model = TransformerGeneratorAgent(self.opt['student_config'], self.dict)
+        student_model = TransformerGeneratorModel(self.opt['student_config'], self.dict)
         model = TransformerGeneratorModel(self.opt['teacher_config'], self.dict)
         if self.opt['embedding_type'] != 'random':
             self._copy_embeddings(

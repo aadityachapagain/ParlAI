@@ -71,19 +71,19 @@ def setup_args(parser=None) -> ParlaiParser:
     )
     train.add_argument(
         '--student-model-file',
-        type='str',
+        type=str,
         default=None,
         help='student model file to load student from',
     )
     train.add_argument(
         '--init-model-student',
-        type='str',
+        type=str,
         default=None,
         help='load student model from saved model dict',
     )
     train.add_argument(
         '--load-student-from-checkpoint',
-        type='bool',
+        type=bool,
         default=True,
         help='load student model from checkpoint',)
     

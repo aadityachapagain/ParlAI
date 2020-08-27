@@ -90,7 +90,6 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
 
         init_student_model, is_finetune = self._get_student_init_model(opt, shared)
         init_model = self._get_init_model(opt, shared)
-        super().__init__(opt, shared)
         opt = self.opt
 
         # Safety checkers to ensure TorchAgent assumptions aren't being violated.

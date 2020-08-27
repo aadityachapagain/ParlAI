@@ -1,0 +1,26 @@
+student_config:
+  attention_dropout: 0.0
+  embedding_size: 1560
+  ffn_size: 5120
+  variant: prelayernorm
+  n_heads: 32
+  n_positions: 128
+  n_encoder_layers: 2
+  n_decoder_layers: 16
+  learn_positional_embeddings: True
+  dropout: 0.1
+  relu_dropout: 0.0
+  activation: gelu
+teacher_config:
+  attention_dropout: 0.0
+  embedding_size: 2560
+  ffn_size: 10240
+  variant: prelayernorm
+  n_heads: 32
+  n_positions: 128
+  n_encoder_layers: 2
+  n_decoder_layers: 24
+  learn_positional_embeddings: False
+  dropout: 0.1
+  relu_dropout: 0.0
+  activation: gelu

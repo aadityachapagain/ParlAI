@@ -1,25 +1,30 @@
 export GOOGLE_APPLICATION_CREDENTIALS="gcp/fusemachineschat.json"
-python parlai/scripts/train_model.py \
+python parlai/distillation/multiprocessing_distill.py \
+--config-path parlai/distillation/distill_config.yml \
 --gcs-train-path "train-temp-2" \
 -t fromfile --fromfile_datapath /tmp/train_data/train_data.txt \
+-dt train:stream \
 -m transformer/generator \
---init-model zoo:blender/blender_90M/model \
---dict-file zoo:blender/blender_90M/model.dict \
+--init-model zoo:blender/blender_3B/model \
+--dict-file zoo:blender/blender_3B/model.dict \
+--init-model-student \
+--skip-generation true \
+--data-parallel true \
+--model-parallel true \
+--lr-scheduler reduceonplateau \
+--lr-scheduler-patience 4 \
 --load-from-checkpoint True \
---run-tag blenderbot_90M_default \
---embedding-size 512 --n-layers 8 --ffn-size 2048 \
---dropout 0.1 --n-heads 16 \
---learn-positional-embeddings True \
---n-positions 512 --variant xlm \
---activation gelu --skip-generation True \
---fp16 True --text-truncate 512 \
---label-truncate 128 --dict-tokenizer bpe \
---dict-lower True -lr 1e-06 --optimizer adamax \
+--run-tag custom_blenderbot_1 \
+--fp16-impl mem_efficient \
+-warmup_updates 100 \
+--log_every_n_secs 10 \
+--history-add-global-end-token end \
+--fp16 True --text-truncate 128 --truncate 128 \
+--label-truncate 128 --dict-tokenizer bytelevelbpe \
+--dict-lower True -lr 5e-06 --optimizer adam \
 --lr-scheduler reduceonplateau --gradient-clip 0.1 \
 -veps 0.25 --betas 0.9,0.999 --update-freq 1 \
---attention-dropout 0.0 --relu-dropout 0.0 \
---skip-generation True -mcs all -vp 15 -stim 60 \
--vme 20000 -bs 16 -vmt ppl -vmm min \
+--batchsize 32 -vp 10 -vmt ppl -vmm min \
 --save-after-valid True \
---model-file /tmp/model_file/test_train_90M \
+--student-model-file /tmp/model_file/custom_blender_1 \
 -tblog True

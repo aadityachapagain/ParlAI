@@ -169,8 +169,6 @@ class TransformerGeneratorAgent(TorchDistillGeneratorAgent):
         """
         Build and return model.
         """
-        configs = config_utils.parse_configuration_file('config_path')
-        
         student_model = TransformerGeneratorAgent(self.opt['student_config'], self.dict)
         model = TransformerGeneratorModel(self.opt['teacher_config'], self.dict)
         if self.opt['embedding_type'] != 'random':

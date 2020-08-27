@@ -7,15 +7,15 @@ python parlai/distillation/multiprocessing_distill.py \
 -m transformer/generator \
 --init-model zoo:blender/blender_3B/model \
 --dict-file zoo:blender/blender_3B/model.dict \
---skip-generation true \
---data-parallel true \
---model-parallel true \
+--skip-generation True \
+--data-parallel True \
+--model-parallel True \
 --lr-scheduler reduceonplateau \
 --lr-scheduler-patience 4 \
 --load-from-checkpoint True \
 --run-tag custom_blenderbot_1 \
 --fp16-impl mem_efficient \
--warmup_updates 100 \
+--warmup_updates 100 \
 --log_every_n_secs 10 \
 --history-add-global-end-token end \
 --fp16 True --text-truncate 128 --truncate 128 \

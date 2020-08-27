@@ -78,7 +78,7 @@ def setup_args(parser=None) -> ParlaiParser:
     train.add_argument(
         '--init-model-student',
         type=str,
-        default=None,
+        default='',
         help='load student model from saved model dict',
     )
     train.add_argument(

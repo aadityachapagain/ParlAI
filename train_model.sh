@@ -27,4 +27,5 @@ python parlai/distillation/multiprocessing_distill.py \
 --batchsize 32 -vp 10 -vmt ppl -vmm min \
 --save-after-valid True \
 --student-model-file /tmp/model_file/custom_blender_1 \
+--init-model-student /tmp/model_file/custom_blender_1.checkpoint \
 -tblog True

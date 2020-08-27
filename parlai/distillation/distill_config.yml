@@ -1,6 +1,6 @@
 student_config:
   attention_dropout: 0.0
-  embedding_size: 1560
+  embedding_size: 1600
   ffn_size: 5120
   variant: prelayernorm
   n_heads: 32

@@ -432,7 +432,7 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
         This is easily overridable to facilitate transfer of state dicts.
         """
         if not student:
-            super().load_state_dict(self, state_dict)
+            super().load_state_dict(state_dict)
         else:
             try:
                 self.student_model.load_state_dict(state_dict)

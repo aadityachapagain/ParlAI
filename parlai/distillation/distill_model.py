@@ -16,6 +16,7 @@ import numpy as np
 import os
 import signal
 from typing import Dict
+import yaml
 
 from parlai.core.metrics import Metric
 from parlai.gcp.gcs_service import gcp as storage_agent
@@ -814,19 +815,18 @@ class TrainLoop:
 class TrainModel(ParlaiScript):
     @classmethod
     def setup_args(cls):
-        opt = setup_args()
-        if opt.get('config_path', False):
-            print('config path Exists !')
-            with open(opt['config_path']) as fp:
-                configs = yaml.load(fp.read(), Loader=yaml.FullLoader)
-                opt.update(configs)
-                opt['student_config'] = configs['student_config']
-                opt['teacher_config'] = configs['teacher_config']
-        else:
-            print('specify config_path ...')
-        return opt
+        return setup_args()
 
     def run(self):
+        if self.opt.get('config_path', False):
+            print('config path Exists !')
+            with open(self.opt['config_path']) as fp:
+                configs = yaml.load(fp.read(), Loader=yaml.FullLoader)
+                self.opt.update(configs)
+                self.opt['student_config'] = configs['student_config']
+                self.opt['teacher_config'] = configs['teacher_config']
+        else:
+            print('specify config_path ...')
         self.train_loop = TrainLoop(self.opt)
         return self.train_loop.train()
 

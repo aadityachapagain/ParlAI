@@ -7,7 +7,6 @@ python parlai/distillation/multiprocessing_distill.py \
 -m transformer/generator \
 --init-model zoo:blender/blender_3B/model \
 --dict-file zoo:blender/blender_3B/model.dict \
---init-model-student \
 --skip-generation true \
 --data-parallel true \
 --model-parallel true \

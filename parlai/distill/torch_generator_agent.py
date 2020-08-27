@@ -270,7 +270,7 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
                     saved_optim_type=student_states.get('optimizer_type'),
                 )
                 self.build_lr_scheduler(student_states, hard_reset=is_finetune)
-            elif teacher_states.get('optimizer', Flase) and teacher_states.get('optimizer_type', False):
+            elif teacher_states.get('optimizer', False) and teacher_states.get('optimizer_type', False):
                 self.init_optim(
                     [p for p in self.student_model.parameters() if p.requires_grad],
                     optim_states=teacher_states.get('optimizer'),

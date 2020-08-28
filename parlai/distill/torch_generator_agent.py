@@ -398,6 +398,28 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
 
         return init_model
 
+    def _control_local_metrics(self, enabled: bool = False, disabled: bool = False):
+        """
+        Used to temporarily disable local metrics.
+        """
+        if not (enabled ^ disabled):
+            raise ValueError(
+                'You must provide exactly one of enabled or disabled to '
+                '_control_local_metrics.'
+            )
+        self.__local_metrics_enabled = enabled
+
+    def record_local_metric(self, keyname: str, values: List[Metric]):
+        """
+        Record an example-level metric for all items in the batch.
+        """
+        if not self.__local_metrics_enabled:
+            return
+        if keyname in self._local_metrics:
+            # we could relax this already
+            raise KeyError(f"Already recorded metrics for {keyname}")
+        self._local_metrics[keyname] = values
+
     def save(self, path=None):
         """
         Save model parameters to path (or default to model_file arg).
@@ -470,6 +492,140 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
             self.optimizer.load_state_dict(states['optimizer'])
         return states
 
+    def observe(self, observation):
+        """
+        Process incoming message in preparation for producing a response.
+
+        This includes remembering the past history of the conversation.
+        """
+        # TODO: Migration plan: TorchAgent currently supports being passed
+        # observations as vanilla dicts for legacy interop; eventually we
+        # want to remove this behavior and demand that teachers return Messages
+        observation = Message(observation)
+
+        # Sanity check everything is in order
+        self._validate_observe_invariants()
+
+        if observation.get('episode_done'):
+            self.__expecting_clear_history = True
+        elif 'labels' in observation or 'eval_labels' in observation:
+            # make sure we note that we're expecting a reply in the future
+            self.__expecting_to_reply = True
+
+        self.observation = observation
+        # Update the history using the observation.
+        # We may also consider adding a temporary string to the history
+        # using the `get_temp_history()` function: this string will
+        # persist until it is updated.
+        self.history.update_history(
+            observation, temp_history=self.get_temp_history(observation)
+        )
+        return self.vectorize(
+            observation,
+            self.history,
+            text_truncate=self.text_truncate,
+            label_truncate=self.label_truncate,
+        )
+
+    def self_observe(self, self_message: Message) -> None:
+        """
+        Observe one's own utterance.
+
+        This is used so that the agent can incorporate its own response into
+        the dialogue history after a batch_act. Failure to implement this will
+        result in an agent that cannot hear itself speak.
+
+        :param self_message:
+            The message corresponding to the output from batch_act.
+        """
+        use_reply = self.opt.get('use_reply', 'label')
+
+        # quick check everything is in order
+        self._validate_self_observe_invariants()
+
+        assert self.observation is not None
+        if self.observation['episode_done']:
+            # oh this was the last example in the episode. reset the history
+            self.history.reset()
+            # additionally mark the last observation as invalid
+            self.observation = None
+            # and clear the safety check
+            self.__expecting_clear_history = False
+            return
+
+        # We did reply! Safety check is good next round.
+        self.__expecting_to_reply = False
+
+        # actually ingest the label
+        if use_reply == 'none':
+            # we're not including our own responses anyway.
+            return
+        elif use_reply == 'label':
+            # first look for the true label
+            label_key = (
+                'labels'
+                if 'labels' in self.observation
+                else 'eval_labels'
+                if 'eval_labels' in self.observation
+                else None
+            )
+            if label_key is not None:
+                lbls = self.observation[label_key]
+                last_reply = lbls[0] if len(lbls) == 1 else self.random.choice(lbls)
+                self.history.add_reply(last_reply)
+                return
+            # you might expect a hard failure here, but in interactive mode we'll
+            # never get a label
+
+        # otherwise, we use the last output the model generated
+        if self_message is not None:
+            last_reply = self_message['text']
+            self.history.add_reply(last_reply)
+            return
+
+        raise RuntimeError("Unexpected case in self_observe.")
+
+    def _validate_observe_invariants(self):
+        """
+        Check that we properly called self_observe after the last batch_act.
+        """
+        if self.__expecting_to_reply:
+            raise RuntimeError(
+                "Last observe() had a label, but no call to self_observe ever "
+                "happened. You are likely making multiple observe() calls without "
+                "a corresponding act(). This was changed in #2043. File a GitHub "
+                "issue if you require assistance."
+            )
+
+        if self.__expecting_clear_history:
+            raise RuntimeError(
+                "Last observe() was episode_done, but we never saw a corresponding "
+                "self_observe to clear the history, probably because you missed an "
+                "act(). This was changed in #2043. File a GitHub issue if you require "
+                "assistance."
+            )
+
+    def _validate_self_observe_invariants(self):
+        """
+        Check some invariant conditions for self_observe.
+
+        Goal is to catch potential places where we forget to call self_observe.
+        """
+        if self.observation is None:
+            raise RuntimeError(
+                "You're self_observing without having observed something. Check if "
+                "you're missing a step in your observe/act/self_observe loop."
+            )
+
+        if self.observation['episode_done']:
+            if not self.__expecting_clear_history:
+                raise RuntimeError(
+                    "You probably overrode observe() without implementing calling "
+                    "super().observe(). This is unexpected. *If you must* avoid the "
+                    "super call, then you should file a GitHub issue referencing "
+                    "#2043."
+                )
+
     def _create_soft_labels(self, output_vec):
         """
         create soft target labels for student network from teacher network
@@ -493,22 +649,6 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
     def batchify(self, obs_batch, sort=False):
         """
         Create a batch of valid observations from an unchecked batch.
-
-        A valid observation is one that passes the lambda provided to the
-        function, which defaults to checking if the preprocessed 'text_vec'
-        field is present which would have been set by this agent's 'vectorize'
-        function.
-
-        Returns a namedtuple Batch. See original definition above for in-depth
-        explanation of each field.
-
-        If you want to include additonal fields in the batch, you can subclass
-        this function and return your own "Batch" namedtuple: copy the Batch
-        namedtuple at the top of this class, and then add whatever additional
-        fields that you want to be able to access. You can then call
-        super().batchify(...) to set up the original fields and then set up the
-        additional fields in your subclass and return that batch instead.
-
         :param obs_batch:
             List of vectorized observations
 
@@ -1002,6 +1142,18 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
             # gradients are synced on backward, now this model is going to be
             # out of sync! catch up with the other workers
             self._init_cuda_buffer(8, 8, True)
+    
+    def reset(self):
+        """
+        Clear internal states.
+        """
+        # assumption violation trackers
+        self.__expecting_clear_history = False
+        self.__expecting_to_reply = False
+
+        self.observation = None
+        self.history.reset()
+        self.reset_metrics()
     
 
 class DistillGeneratorModel(TorchGeneratorModel, ABC):

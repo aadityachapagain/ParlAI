@@ -75,7 +75,7 @@ class GCP_Service(object):
         for b_file in bucket_files:
             try:
                 blob = self.bucket.blob(b_file)
-                file_name = blob.name.replace(bucket_dir,'')[1:]
+                file_name = blob.name.replace('/','').replace(bucket_dir.replace('/',''),'')
                 dest_file = os.path.join(local_dir, file_name)
                 if not os.path.isdir(os.path.dirname(dest_file)):
                     os.makedirs(os.path.dirname(dest_file), exist_ok=True)

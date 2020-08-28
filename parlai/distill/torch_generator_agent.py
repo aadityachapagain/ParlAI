@@ -52,6 +52,7 @@ from parlai.utils.fp16 import (
 from parlai.core.metrics import (
     Metrics,
     Metric,
+    AverageMetric,
     GlobalAverageMetric,
     GlobalFixedMetric,
     GlobalTimerMetric,

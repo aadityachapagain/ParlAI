@@ -9,7 +9,7 @@ python parlai/distillation/distill_model.py \
 --init-model zoo:blender/blender_3B/model \
 --dict-file zoo:blender/blender_3B/model.dict \
 --skip-generation True \
---model-parallel \
+--model-parallel True \
 --lr-scheduler reduceonplateau \
 --lr-scheduler-patience 4 \
 --load-from-checkpoint True \

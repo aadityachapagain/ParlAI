@@ -263,21 +263,12 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
             if 'optimizer' in shared:
                 self.optimizer = shared['optimizer']
         elif self._should_initialize_optimizer():
-            # do this regardless of share state, but don't
-            if student_states.get('optimizer', False) and student_states.get('optimizer_type', False):
-                self.init_optim(
-                    [p for p in self.student_model.parameters() if p.requires_grad],
-                    optim_states=student_states.get('optimizer'),
-                    saved_optim_type=student_states.get('optimizer_type'),
-                )
-                self.build_lr_scheduler(student_states, hard_reset=is_finetune)
-            elif teacher_states.get('optimizer', False) and teacher_states.get('optimizer_type', False):
-                self.init_optim(
-                    [p for p in self.student_model.parameters() if p.requires_grad],
-                    optim_states=teacher_states.get('optimizer'),
-                    saved_optim_type=teacher_states.get('optimizer_type'),
-                )
-                self.build_lr_scheduler(teacher_states, hard_reset=is_finetune)
+            self.init_optim(
+                [p for p in self.student_model.parameters() if p.requires_grad],
+                optim_states=student_states.get('optimizer'),
+                saved_optim_type=student_states.get('optimizer_type'),
+            )
+            self.build_lr_scheduler(student_states, hard_reset=is_finetune)
 
         if shared is None and is_distributed():
             device_ids = None if self.model_parallel else [self.opt['gpu']]
@@ -323,6 +314,9 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
         """
         Share fields from parent as well as useful objects in this class.
         """
+        shared = {}
+        shared['class'] = type(self)
+
         if self.opt.get('numthreads', 1) > 1 and isinstance(self.metrics, dict):
             # move metrics and model to shared memory
             self.metrics = SharedTable(self.metrics)

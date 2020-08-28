@@ -22,7 +22,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --dict-lower True -lr 5e-06 --optimizer adam \
 --lr-scheduler reduceonplateau --gradient-clip 0.1 \
 -veps 0.25 --betas 0.9,0.999 --update-freq 1 \
---batchsize 32 -vp 10 -vmt ppl -vmm min \
+--batchsize 16 -vp 10 -vmt ppl -vmm min \
 --save-after-valid True \
 --student-model-file /tmp/model_file/custom_blender_1 \
 --init-model-student /tmp/model_file/custom_blender_1.checkpoint \

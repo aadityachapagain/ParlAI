@@ -19,7 +19,7 @@ from parlai.mturk.tasks.child_dialog.mturk_manager import MturkManagerWithWaitin
 from parlai.mturk.tasks.child_dialog.task_config import task_config
 import parlai.mturk.core.shared_utils as shared_utils
 from parlai.mturk.tasks.child_dialog.agents import BotAgent
-from parlai.mturk.tasks.child_dialog.dedicated_workers import ReviewGSheet
+# from parlai.mturk.tasks.child_dialog.dedicated_workers import ReviewGSheet
 from parlai.utils.safety import OffensiveLanguageClassifier
 
 
@@ -349,9 +349,24 @@ def main(opt):
                 shared_utils.print_and_log(logging.INFO,
                                            f"Deleted max submissions qualification {opt['unique_qual_name']}",
                                            should_print=True)
-        exclude_workers = get_exclude_workers(opt)
-        dedicated_workers_list = ReviewGSheet(opt['ghseet_credentials']).get_golden_workers_list(
-            exclude_workers=exclude_workers)
+        # exclude_workers = get_exclude_workers(opt)
+        # dedicated_workers_list = ReviewGSheet(opt['ghseet_credentials']).get_golden_workers_list(
+        #     exclude_workers=exclude_workers)
+        dedicated_workers_list = ['A2HD86WAUM59IP',
+                                  'A2SMPT2VQV8HUI',
+                                  'A2WIEFKYR5LJQ1',
+                                  'A31LNRQZVGM1R6',
+                                  'A34RAQL1JVSK70',
+                                  'A36F8PDK1DMAN1',
+                                  'A36W9YOEXLJLBT',
+                                  'A3KP8KFGG6734Q',
+                                  'A3RKG5PZN97RD5',
+                                  'A3SIETLVZ91G3B',
+                                  'A7SXWHGK8B40R',
+                                  'AKT1DH67LJR9Y',
+                                  'AOAMTLMPOJ7P7',
+                                  'APKTDTD9LK539',
+                                  'AZKX3JFPKFWNC']
         dedicated_workers_list = prepare_dedicated_workers(pass_qual_id, dedicated_workers_list, opt)
         dedicated_worker_qual_id = create_and_assign_dedicated_worker_qualification(opt, dedicated_workers_list)
 

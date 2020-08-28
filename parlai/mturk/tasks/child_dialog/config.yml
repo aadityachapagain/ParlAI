@@ -1,12 +1,12 @@
 run_name: Golden50  # No underscore here please
 dedicated_worker_run: True
 number_of_dedicated_workers : 20
-num_conversations: 50 # number of conversations you want to create for this task
+num_conversations: 50 # number of conversations you want to create for this task, ignored in dedicated run
 number_of_runs: 1
 sleep_between_runs: 600
 run_timelimit: 86400
 unique_worker: False  # enforce that no worker can work on your task twice
-max_hits_per_worker: 20  # Max number of hits each worker can perform during current group run, 0 means unlimited
+max_hits_per_worker: 50  # Max number of hits each worker can perform during current group run, 0 means unlimited
 unique_qual_name: EmbChildCompanionDialogMaxSubmission  # qualification name to use for uniqueness between HITs
 max_hits_limit_in_a_run_only: True
 reward: 0.80  # reward for each worker for finishing the conversation, in US dollars

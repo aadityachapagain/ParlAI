@@ -23,6 +23,8 @@ Examples
   parlai multiprocessing_train -m transformer/generator -bs 16 -t convai2 -mf /tmp/mymodel
 """
 
+import faulthandler; faulthandler.enable()
+
 import torch
 import yaml
 import random

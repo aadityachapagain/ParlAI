@@ -9,7 +9,8 @@ Model distillation script for for blenderbot models.
 
 The standard way to train a model. After training, also computes validation
 and test error.
-"""  
+""" 
+import faulthandler; faulthandler.enable()
 
 import json
 import numpy as np
@@ -291,13 +292,12 @@ class TrainLoop:
         # not produced. This line brings them back
 
         # check if data already exist in the path or not
-        if not opt.get('model_parallel', False):
-            if not os.path.isfile(opt['fromfile_datapath']):
-                storage_agent.download_all(opt['gcs_train_path'], os.path.join(*os.path.split(opt['fromfile_datapath'])[:-1]))
-            signal.signal(signal.SIGINT, signal.default_int_handler)
-            latest_train_path = get_latest_train(opt['run_tag'])
-            if latest_train_path:
-                storage_agent.download_all(latest_train_path, os.path.join(*os.path.split(opt['student_model_file'])[:-1]))
+        if not os.path.isfile(opt['fromfile_datapath']):
+            storage_agent.download_all(opt['gcs_train_path'], os.path.join(*os.path.split(opt['fromfile_datapath'])[:-1]))
+        signal.signal(signal.SIGINT, signal.default_int_handler)
+        latest_train_path = get_latest_train(opt['run_tag'])
+        if latest_train_path:
+            storage_agent.download_all(latest_train_path, os.path.join(*os.path.split(opt['student_model_file'])[:-1]))
         # Possibly load from checkpoint
         trainstats_suffix = '.trainstats'  # we might load training statistics from here
         if (

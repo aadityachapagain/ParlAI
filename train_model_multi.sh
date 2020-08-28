@@ -1,6 +1,6 @@
 export GOOGLE_APPLICATION_CREDENTIALS="gcp/fusemachineschat.json"
 export PYTHONFAULTHANDLER=1
-python parlai/distillation/distill_model.py \
+python parlai/distillation/multiprocessing_distill.py \
 --config-path parlai/distillation/distill_config.yml \
 --gcs-train-path "train-temp-2" \
 -t fromfile --fromfile_datapath /tmp/train_data/train_data.txt \
@@ -9,7 +9,6 @@ python parlai/distillation/distill_model.py \
 --init-model zoo:blender/blender_3B/model \
 --dict-file zoo:blender/blender_3B/model.dict \
 --skip-generation True \
---model-parallel \
 --lr-scheduler reduceonplateau \
 --lr-scheduler-patience 4 \
 --load-from-checkpoint True \

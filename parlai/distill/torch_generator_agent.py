@@ -979,23 +979,12 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
         self.student_model.eval()
         cand_scores = None
         token_losses = None
-
-        if batch.label_vec is not None:
-            # calculate loss on targets with teacher forcing
-            loss, model_output = self.compute_loss(batch, return_output=True)
-            if self.output_token_losses:
-                token_losses = self._construct_token_losses(
-                    batch.label_vec, model_output
-                )
-
         preds = None
-        if self.skip_generation:
-            warn_once("--skip-generation true produces limited metrics")
-        else:
-            maxlen = self.label_truncate or 256
-            beam_preds_scores, _ = self._generate(batch, self.beam_size, maxlen, teacher= False)
-            preds, scores = zip(*beam_preds_scores)
-            self._add_generation_metrics(batch, preds)
+        
+        maxlen = self.label_truncate or 256
+        beam_preds_scores, _ = self._generate(batch, self.beam_size, maxlen, teacher= False)
+        preds, scores = zip(*beam_preds_scores)
+        self._add_generation_metrics(batch, preds)
 
         cand_choices = None
         # TODO: abstract out the scoring here

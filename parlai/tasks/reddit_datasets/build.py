@@ -10,7 +10,7 @@ matcher = '{}-0000[0-4]-of-00005.txt'
 
 def build(opt):
     dpath = os.path.join(opt['datapath'], 'reddit_datasets')
-    dtype = opt.get('datatype', 'train')
+    dtype = 'train' if 'train' in opt.get('datatype','train') else 'valid'
     regex = re.compile(matcher.format(dtype))
     # check if file already exists or not
     exists = True if os.path.isdir(dpath) else False

@@ -59,8 +59,6 @@ def launch_and_train(opt, port):
     """
     Perform a fork() to many processes.
     """
-    if not os.path.isfile(opt['fromfile_datapath']):
-        storage_agent.download_all(opt['gcs_train_path'], os.path.join(*os.path.split(opt['fromfile_datapath'])[:-1]))
     latest_train_path = get_latest_train(opt['run_tag'])
     if latest_train_path:
         storage_agent.download_all(latest_train_path, os.path.join(*os.path.split(opt['student_model_file'])[:-1]))

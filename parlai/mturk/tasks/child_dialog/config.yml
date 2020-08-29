@@ -1,4 +1,4 @@
-run_name: Golden50  # No underscore here please
+run_name: Golden20  # No underscore here please
 dedicated_worker_run: True
 number_of_dedicated_workers : 20
 num_conversations: 50 # number of conversations you want to create for this task, ignored in dedicated run
@@ -6,7 +6,7 @@ number_of_runs: 1
 sleep_between_runs: 600
 run_timelimit: 86400
 unique_worker: False  # enforce that no worker can work on your task twice
-max_hits_per_worker: 50  # Max number of hits each worker can perform during current group run, 0 means unlimited
+max_hits_per_worker: 20  # Max number of hits each worker can perform during current group run, 0 means unlimited
 unique_qual_name: EmbChildCompanionDialogMaxSubmission  # qualification name to use for uniqueness between HITs
 max_hits_limit_in_a_run_only: True
 reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
@@ -51,7 +51,7 @@ hobby: True  # Whether to use heroku app or not
 force_bot: True  # If true force worker to chat with Bot
 qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
 delete_qual_test_qualification: False  #  TODO if True might throw error(need fixing), Delete `qual_test_qualification` after all HITs are complete
-dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITsWorkerBatch08282020
+dedicated_worker_qualification: EmbChildCompanionDialogDedicated20HITsWorkerBatch08292020
 ExcludeWorkerWithQualifications: []
 min_hit_approval_rate: 90
 no_cuda: False

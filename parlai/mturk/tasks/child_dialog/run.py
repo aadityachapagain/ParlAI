@@ -199,12 +199,13 @@ def email_workers(worker_ids, subject, message_text, is_sandbox):
     return failures
 
 
-def get_hit_notification_message(hit_link):
+def get_hit_notification_message(hit_link, max_hits):
     subject = "Chat as a Child: High reward HITs exclusive to you"
     message = (
-        "Thank you for your outstanding performance in the previous HIT you did for us."
-        "You followed the theme of the conversation, were specific and took initiative."        "So we have created a set of 20 HITs, only for you."
-        "Please find the HITs using following link."
+        "Thank you for your outstanding performance in the previous HIT you did for us. "
+        "You followed the theme of the conversation, were specific and took initiative. "
+        f"So we have created a set of {max_hits} HITs, only for you. "
+        "Please find the HITs using following link. "
         f"\nLink: {hit_link} \n"
         "Note: If you can't find the HIT please wait for few moments and retry. "
         "Also, above link is valid for 24 hours only."
@@ -212,8 +213,8 @@ def get_hit_notification_message(hit_link):
     return subject, message
 
 
-def send_hit_notification(worker_ids, hit_link, is_sandbox):
-    subject, message = get_hit_notification_message(hit_link)
+def send_hit_notification(worker_ids, hit_link, is_sandbox, max_hits):
+    subject, message = get_hit_notification_message(hit_link, max_hits)
     _ = email_workers(worker_ids, subject, message, is_sandbox)
 
 
@@ -284,7 +285,7 @@ def single_run(opt,
         mturk_page_url = mturk_manager.create_hits(qualifications=agent_qualifications)
 
         if dedicated_worker_ids:
-            send_hit_notification(dedicated_worker_ids, mturk_page_url, opt['is_sandbox'])
+            send_hit_notification(dedicated_worker_ids, mturk_page_url, opt['is_sandbox'], opt['max_hits_per_worker'])
 
         def check_workers_eligibility(workers):
             return workers
@@ -352,21 +353,31 @@ def main(opt):
         # exclude_workers = get_exclude_workers(opt)
         # dedicated_workers_list = ReviewGSheet(opt['ghseet_credentials']).get_golden_workers_list(
         #     exclude_workers=exclude_workers)
-        dedicated_workers_list = ['A2HD86WAUM59IP',
-                                  'A2SMPT2VQV8HUI',
-                                  'A2WIEFKYR5LJQ1',
-                                  'A31LNRQZVGM1R6',
-                                  'A34RAQL1JVSK70',
-                                  'A36F8PDK1DMAN1',
-                                  'A36W9YOEXLJLBT',
-                                  'A3KP8KFGG6734Q',
-                                  'A3RKG5PZN97RD5',
-                                  'A3SIETLVZ91G3B',
-                                  'A7SXWHGK8B40R',
-                                  'AKT1DH67LJR9Y',
-                                  'AOAMTLMPOJ7P7',
-                                  'APKTDTD9LK539',
-                                  'AZKX3JFPKFWNC']
+        dedicated_workers_list = ['AH09FJKSPTRLV',
+                                  'A2LR7SJZAS4KA3',
+                                  'A1V4BLIC5U5HPX',
+                                  'A1ATH9VLW2YGER',
+                                  'AD0ZYMRVMTPAJ',
+                                  'A2D6VL5XE0O4D3',
+                                  'AJ9356RKKZTY4',
+                                  'A2LR1HKNOVDTJ8',
+                                  'A1RYZBXR1TYIXU',
+                                  'A21ZK49H9LSSRY',
+                                  'A3V4940A748HMO',
+                                  'A1PLZ8RM4NW43J',
+                                  'AB1GNKQ0KS4R9',
+                                  'A15T3DN1SC5YOL',
+                                  'A23LS0RHIS1GAD',
+                                  'A299R3LQG6L195',
+                                  'A2R7YCDDDYIFE',
+                                  'A2XKP0ZXMZ34MS',
+                                  'A14KDNZSWDFIE7',
+                                  'A2GXR1E1FJGU59',
+                                  'A2BBHN6QH66V93',
+                                  'A398CYX8HBSNKQ',
+                                  'A3GHLKX4ZUSJH0',
+                                  'A1WKYNPQBNMA8U',
+                                  'AIBSOKUXEJBPL']
         dedicated_workers_list = prepare_dedicated_workers(pass_qual_id, dedicated_workers_list, opt)
         dedicated_worker_qual_id = create_and_assign_dedicated_worker_qualification(opt, dedicated_workers_list)
 

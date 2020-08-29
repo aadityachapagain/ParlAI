@@ -2,8 +2,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="gcp/fusemachineschat.json"
 export PYTHONFAULTHANDLER=1
 python parlai/distillation/distill_model.py \
 --config-path parlai/distillation/distill_config.yml \
---gcs-train-path "train-temp-2" \
--t fromfile --fromfile_datapath /tmp/train_data/train_data.txt \
+-t reddit_datasets \
 -dt train:stream \
 --model distillation/generator \
 --init-model zoo:blender/blender_3B/model \

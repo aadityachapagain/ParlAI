@@ -91,9 +91,12 @@ class GCP_Service(object):
         if not os.path.isdir(local_dir):
             os.makedirs(local_dir, exist_ok=True)
         dest_file = os.path.join(local_dir, os.path.split(blob.name)[-1])
-        blob.download_to_filename(dest_file)
-        logger.info(f'{file_name} downloaded from bucket.')
-        return dest_file
+        try:
+            blob.download_to_filename(dest_file)
+            logger.info(f'{file_name} downloaded from bucket.')
+            return dest_file
+        except:
+            logger.warn(f'{bucket_filename} not found in {self.bucket_name}')
 
     def delete(self, bucket_filename:str):
         self.bucket.delete_blob(bucket_filename)

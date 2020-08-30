@@ -356,6 +356,7 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
                 opt.get('load_from_checkpoint')
                 and opt.get('init_model_student')
                 and opt['init_model_student'].endswith('.checkpoint')
+                and os.path.isfile(opt['init_model_student'])
             ):
                 # but if we're loading from a checkpoint, we should explicitly load
                 # from that point

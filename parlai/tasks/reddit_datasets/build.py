@@ -19,7 +19,6 @@ def get_latest_train(file_path):
         return False
 
 def build(opt):
-    print('Building reddit datasets ...')
     dpath = os.path.join(opt['datapath'], 'reddit_datasets/train_data')
     dtype = 'train' if 'train' in opt.get('datatype','train') else 'valid'
 

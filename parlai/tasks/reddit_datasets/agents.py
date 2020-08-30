@@ -15,8 +15,6 @@ class RedditTeacher(DialogTeacher):
 
     def __init__(self, opt, shared=None):
         self.key_value = ':key-value' in opt['task']
-        if 'stream' in opt['datatype']:
-            print('streaming datasets ....')
         opt['task'] = 'reddit_datasets:chunks'
         build(opt)
         self.opt = opt
@@ -28,7 +26,6 @@ class RedditTeacher(DialogTeacher):
         super().__init__(opt, shared)
 
     def setup_data(self, path):
-        print('loading: ' + path)
         for subdir in os.listdir(path):
             conds = (subdir == 'README.md' or ".lengths" in subdir or \
                     self.not_datasets_type in subdir or os.path.isdir(os.path.join(path, subdir)) or \

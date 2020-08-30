@@ -33,17 +33,6 @@ import signal
 import parlai.distillation.distill_model as single_train
 import parlai.utils.distributed as distributed_utils
 from parlai.core.script import ParlaiScript, register_script
-from parlai.gcp.gcs_service import gcp as storage_agent
-
-def get_latest_train(file_path):
-    try:
-        cand = list(set([ os.path.join(*os.path.split(i)[:1]) for i in storage_agent.list_files(file_path) if os.path.split(i)[1].strip() !='']))
-        cand = {int(i.split('_')[-1]):i for i in cand}
-        latest = sorted(list(cand.keys()), reverse=True)[0]
-        latest = cand[latest]
-        return latest
-    except:
-        return False
 
 def multiprocess_train(
     rank, opt, port=61337, rank_offset=0, gpu=None, hostname='localhost'
@@ -59,9 +48,6 @@ def launch_and_train(opt, port):
     """
     Perform a fork() to many processes.
     """
-    latest_train_path = get_latest_train(opt['run_tag'])
-    if latest_train_path:
-        storage_agent.download_all(latest_train_path, os.path.join(*os.path.split(opt['student_model_file'])[:-1]))
     # Launch multiple subprocesses
     spawncontext = torch.multiprocessing.spawn(
         multiprocess_train,

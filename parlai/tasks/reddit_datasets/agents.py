@@ -22,7 +22,7 @@ class RedditTeacher(DialogTeacher):
         self.opt = opt
         self.not_datasets_type = 'valid' if 'train' in opt['datatype'] else 'train'
         opt['datafile'] = os.path.join(
-            opt['datapath'], 'reddit_datasets'
+            opt['datapath'], 'reddit_datasets/train_data'
         )
         self.id = 'reddit_datasets'
         super().__init__(opt, shared)

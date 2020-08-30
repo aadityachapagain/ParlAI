@@ -271,16 +271,6 @@ def create_timestamp():
     ts = calendar.timegm(time.gmtime())
     return str(ts)
 
-def get_latest_train(file_path):
-    try:
-        cand = list(set([ os.path.join(*os.path.split(i)[:1]) for i in storage_agent.list_files(file_path) if os.path.split(i)[1].strip() !='']))
-        cand = {int(i.split('_')[-1]):i for i in cand}
-        latest = sorted(list(cand.keys()), reverse=True)[0]
-        latest = cand[latest]
-        return latest
-    except:
-        return False
-
 class TrainLoop:
     """
     TrainLoop contains the core training loop logic.
@@ -291,10 +281,6 @@ class TrainLoop:
         # it will by-default ignore SIGINTs, and KeyboardInterrupt exceptions are
         # not produced. This line brings them back
         signal.signal(signal.SIGINT, signal.default_int_handler)
-        if not opt.get('distributed_world_size', False):
-            latest_train_path = get_latest_train(opt['run_tag'])
-            if latest_train_path:
-                storage_agent.download_all(latest_train_path, os.path.join(*os.path.split(opt['student_model_file'])[:-1]))
         # Possibly load from checkpoint
         trainstats_suffix = '.trainstats'  # we might load training statistics from here
         if (

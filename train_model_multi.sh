@@ -11,7 +11,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --lr-scheduler reduceonplateau \
 --lr-scheduler-patience 4 \
 --load-from-checkpoint True \
---run-tag custom_blenderbot_1 \
+--run-tag karu_bot_v0 \
 --fp16-impl mem_efficient \
 --warmup_updates 100 \
 --log_every_n_secs 10*60 \
@@ -22,9 +22,10 @@ python parlai/distillation/multiprocessing_distill.py \
 --lr-scheduler reduceonplateau --gradient-clip 0.1 \
 -veps 0.25 --betas 0.9,0.999 --update-freq 1 \
 --batchsize 8 -vp 10 -vmt ppl -vmm min \
+--dynamic-batching full \
 --save-after-valid True \
---student-model-file /tmp/model_file/custom_blender_1 \
---init-model-student /tmp/model_file/custom_blender_1.checkpoint \
+--student-model-file data/models/karu_bot_v0 \
+--init-model-student data/models/karu_bot_v0.checkpoint \
 --save-every-n-secs 60*60 \
 --validation-every-n-secs 8*60*60 \
 -tblog True

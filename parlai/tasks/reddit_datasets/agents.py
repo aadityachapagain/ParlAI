@@ -60,7 +60,7 @@ class RedditTeacher(DialogTeacher):
                         )
                     if msg:
                         episode_done = msg.get('episode_done', False)
-                        yield (msg['text'], msg'[labels]'), episode_done
+                        yield (msg['text'], msg['labels]'), episode_done
 
 
 class DefaultTeacher(RedditTeacher):

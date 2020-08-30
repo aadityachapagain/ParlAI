@@ -21,11 +21,11 @@ python parlai/distillation/multiprocessing_distill.py \
 --dict-lower True -lr 5e-06 --optimizer adam \
 --lr-scheduler reduceonplateau --gradient-clip 0.1 \
 -veps 0.25 --betas 0.9,0.999 --update-freq 1 \
---batchsize 8 -vp 10 -vmt ppl -vmm min \
+-vp 10 -vmt ppl -vmm min \
 --dynamic-batching full \
 --save-after-valid True \
---student-model-file data/models/karu_bot_v0 \
---init-model-student data/models/karu_bot_v0.checkpoint \
+--student-model-file data/models/Karu/karu_bot_v0 \
+--init-model-student data/models/Karu/karu_bot_v0.checkpoint \
 --save-every-n-secs 3600 \
 --validation-every-n-secs 10800 \
 -tblog True

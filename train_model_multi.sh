@@ -20,9 +20,10 @@ python parlai/distillation/multiprocessing_distill.py \
 --label-truncate 128 --dict-tokenizer bytelevelbpe \
 -lr 5e-06 --optimizer adam \
 --lr-scheduler reduceonplateau --gradient-clip 0.1 \
--veps 0.25 --betas 0.9,0.999 --update-freq 1 \
+-veps 0.25 --betas 0.9,0.999 --update-freq 2 \
 -vp 10 -vmt ppl -vmm min \
 --dynamic-batching full \
+--delimiter '  ' \
 --save-after-valid True \
 --student-model-file data/models/Karu/karu_bot_v0 \
 --init-model-student data/models/Karu/karu_bot_v0.checkpoint \

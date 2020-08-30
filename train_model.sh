@@ -19,7 +19,7 @@ python parlai/distillation/distill_model.py \
 --history-add-global-end-token end \
 --fp16 True --text-truncate 128 --truncate 128 \
 --label-truncate 128 --dict-tokenizer bytelevelbpe \
---dict-lower True -lr 5e-06 --optimizer adam \
+-lr 5e-06 --optimizer adam \
 --lr-scheduler reduceonplateau --gradient-clip 0.1 \
 -veps 0.25 --betas 0.9,0.999 --update-freq 1 \
 -vp 10 -vmt ppl -vmm min \

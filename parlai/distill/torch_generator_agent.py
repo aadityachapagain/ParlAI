@@ -359,7 +359,7 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
             ):
                 # but if we're loading from a checkpoint, we should explicitly load
                 # from that point
-                init_model = opt['init_model']
+                init_model = opt['init_model_student']
 
             if init_model is not None:
                 # if we are loading a model, should load its dict too

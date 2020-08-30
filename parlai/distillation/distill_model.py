@@ -516,7 +516,7 @@ class TrainLoop:
             self.impatience = 0
             if opt.get('student_model_file') and is_primary_worker():
                 logging.info(f"saving best valid model: {opt['student_model_file']}")
-                self.save_model('.best')
+                self.save_model()
                 self.saved = True
             if (
                 opt['validation_metric'] == 'accuracy'

@@ -26,4 +26,6 @@ python parlai/distillation/distill_model.py \
 --save-after-valid True \
 --student-model-file /tmp/model_file/custom_blender_1 \
 --init-model-student /tmp/model_file/custom_blender_1.checkpoint \
+--save-every-n-secs 60*60 \
+--validation-every-n-secs 8*60*60 \
 -tblog True

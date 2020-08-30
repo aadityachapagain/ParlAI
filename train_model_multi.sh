@@ -14,7 +14,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --run-tag karu_bot_v0 \
 --fp16-impl mem_efficient \
 --warmup_updates 100 \
---log_every_n_secs 10*60 \
+--log_every_n_secs 600 \
 --history-add-global-end-token end \
 --fp16 True --text-truncate 128 --truncate 128 \
 --label-truncate 128 --dict-tokenizer bytelevelbpe \
@@ -26,6 +26,6 @@ python parlai/distillation/multiprocessing_distill.py \
 --save-after-valid True \
 --student-model-file data/models/karu_bot_v0 \
 --init-model-student data/models/karu_bot_v0.checkpoint \
---save-every-n-secs 60*60 \
---validation-every-n-secs 8*60*60 \
+--save-every-n-secs 3600 \
+--validation-every-n-secs 10800 \
 -tblog True

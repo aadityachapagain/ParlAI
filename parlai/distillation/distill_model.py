@@ -23,7 +23,7 @@ from parlai.core.metrics import Metric
 from parlai.gcp.gcs_service import gcp as storage_agent
 from parlai.core.agents import create_distill_agent, create_agent_from_shared
 from parlai.core.exceptions import StopTrainException
-from parlai.distillation.logs import TensorboardLogger
+from parlai.distillation.logs import TensorboardLogger, WandbLogger
 from parlai.core.metrics import aggregate_named_reports, aggregate_unnamed_reports
 from parlai.core.params import ParlaiParser, print_announcements
 from parlai.core.worlds import create_task
@@ -219,6 +219,8 @@ def setup_args(parser=None) -> ParlaiParser:
     )
     TensorboardLogger.add_cmdline_args(parser)
 
+    WandbLogger.add_cmdline_args(parser)
+
     parser = setup_dict_args(parser)
     return parser
 
@@ -384,6 +386,7 @@ class TrainLoop:
 
         if opt['tensorboard_log'] and is_primary_worker():
             self.tb_logger = TensorboardLogger(opt)
+            self.wand_logger = WandbLogger(opt)
 
     def save_model(self, suffix=None):
         """
@@ -463,6 +466,7 @@ class TrainLoop:
         if opt['tensorboard_log'] and is_primary_worker():
             valid_report['total_exs'] = self._total_exs
             self.tb_logger.log_metrics('valid', self.parleys, valid_report)
+            self.wand_logger.log_metrics('valid', self.parleys, valid_report)
             # flush on a validation
             self.tb_logger.flush()
         # saving
@@ -669,6 +673,7 @@ class TrainLoop:
 
         if opt['tensorboard_log'] and is_primary_worker():
             self.tb_logger.log_metrics('train', self.parleys, train_report)
+            self.wand_logger.log_metrics('train', self.parleys, train_report)
             tensorboard_path = self.opt['student_model_file']+'.tensorboard'
             storage_agent.upload_all(tensorboard_path,os.path.join(self.opt['run_tag'],os.path.split(tensorboard_path)[-1]))
 

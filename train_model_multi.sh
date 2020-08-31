@@ -14,8 +14,12 @@ python parlai/distillation/multiprocessing_distill.py \
 --run-tag karu_bot_v0 \
 --fp16-impl mem_efficient \
 --warmup_updates 100 \
---log_every_n_secs 600 \
+--wand-project-name "Karu_chatbot_v0" \
+--wand-run-name "656M Model Distillation" \
+--wand-id "656MmodelDistill" \
+--log_every_n_secs 30 \
 --history-add-global-end-token end \
+--evaltask reddit_datasets --eval_batchsize 2 \
 --fp16 True --text-truncate 128 --truncate 128 \
 --label-truncate 128 --dict-tokenizer bytelevelbpe \
 -lr 5e-06 --optimizer adam \
@@ -29,3 +33,5 @@ python parlai/distillation/multiprocessing_distill.py \
 --init-model-student data/models/Karu/karu_bot_v0.checkpoint \
 --save-every-n-secs 3600 \
 -tblog True
+
+# --validation-every-n-secs 14400 \

@@ -2,6 +2,7 @@ student_config:
   attention_dropout: 0.0
   embedding_size: 1600
   ffn_size: 5120
+  embeddings_scale: True
   variant: prelayernorm
   n_heads: 32
   n_positions: 128
@@ -15,6 +16,7 @@ teacher_config:
   attention_dropout: 0.0
   embedding_size: 2560
   ffn_size: 10240
+  embeddings_scale: True
   variant: prelayernorm
   n_heads: 32
   n_positions: 128

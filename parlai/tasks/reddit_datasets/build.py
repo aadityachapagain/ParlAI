@@ -8,6 +8,7 @@ RESOURCES = 'reddit/20200827/'
 file_name = 'train-00001-of-00005.txt'
 matcher = '{}-0000[0-4]-of-00005.txt'
 data_lenghts_count = 'reddit/train_data.lengths'
+data_valid_lenghts_count = 'reddit/train_data.lengths_valid'
 
 def get_latest_train(file_path):
     try:
@@ -48,6 +49,10 @@ def build(opt):
                     gcp.download(os.path.join(RESOURCES, index_fl[0]), dpath)
     else:
         gcp.download_all(RESOURCES, dpath)
+    if not os.path.isfile(os.path.join(opt['datapath'], 'reddit_datasets', 'train_data.lengths')):
+        gcp.download(data_lenghts_count,os.path.join(opt['datapath'], 'reddit_datasets', ))
+
+    if not os.path.isfile(os.path.join(opt['datapath'], 'reddit_datasets', 'train_data.lengths')):
+        gcp.download(data_valid_lenghts_count,os.path.join(opt['datapath'], 'reddit_datasets', ))
     
-    gcp.download(data_lenghts_count,os.path.join(opt['datapath'], 'reddit_datasets'))
     build_data.mark_done(dpath)

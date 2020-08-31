@@ -14,7 +14,6 @@ class RedditTeacher(DialogTeacher):
     """
 
     def __init__(self, opt, shared=None):
-        self.key_value = ':key-value' in opt['task']
         opt['task'] = 'reddit_datasets:chunks'
         build(opt)
         self.opt = opt

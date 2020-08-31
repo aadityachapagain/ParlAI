@@ -23,11 +23,10 @@ python parlai/distillation/distill_model.py \
 --lr-scheduler reduceonplateau --gradient-clip 0.1 \
 -veps 0.25 --betas 0.9,0.999 --update-freq 2 \
 -vp 10 -vmt ppl -vmm min \
---dynamic-batching full \
+--dynamic-batching full --batchsize 16 \
 --save-after-valid True \
 --delimiter '  ' \
 --student-model-file data/models/Karu/karu_bot_v0 \
 --init-model-student data/models/Karu/karu_bot_v0.checkpoint \
 --save-every-n-secs 3600 \
---validation-every-n-secs 10800 \
 -tblog True

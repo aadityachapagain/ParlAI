@@ -975,6 +975,8 @@ class StreamDialogData(DialogData):
         """
         datafiles = self.datafile if type(self.datafile) is tuple else [self.datafile]
         length_file = datafiles[0] + ".lengths"
+        if 'valid' in opt['datatype']:
+            length_file = datafiles[0] + ".lengths_valid"
         if not os.path.isfile(length_file):
             num_eps = 0
             num_exs = 0

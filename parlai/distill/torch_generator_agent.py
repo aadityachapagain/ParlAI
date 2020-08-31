@@ -748,6 +748,9 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
             Message({'id': self.getID(), 'episode_done': False}) for _ in observations
         ]
 
+        # check if there are any labels available, if so we will train on them
+        self.is_training = any('labels' in obs for obs in observations)
+
         # create a batch from the vectors
         batch = self.batchify(observations)
         
@@ -759,11 +762,8 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
         ys, ys_lens = self._create_soft_labels(soft_target_vecs)
 
         # setting teacher labels into batch obj
-        batch.labels = ys
+        batch.label_vec = ys
         batch.label_lengths = ys_lens
-
-        # check if there are any labels available, if so we will train on them
-        self.is_training = True if output.text is not None else False
 
         self.global_metrics.add('exps', GlobalTimerMetric(batch.batchsize))
 

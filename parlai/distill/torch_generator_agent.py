@@ -292,9 +292,9 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
         if hasattr(self, 'student_model'):
             if hasattr(self.model, 'module'):
                 # did we wrap in a DistributedDataParallel
-                states['student_model'] = self.model.module.state_dict()
+                states['student_model'] = self.student_model.module.state_dict()
             else:
-                states['student_model'] = self.model.state_dict()
+                states['student_model'] = self.student_model.state_dict()
 
         if hasattr(self, 'optimizer'):
             # save optimizer params

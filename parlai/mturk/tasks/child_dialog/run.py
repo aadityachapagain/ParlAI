@@ -3,6 +3,7 @@ import faulthandler; faulthandler.enable()
 import os
 import time
 import yaml
+import copy
 import random
 import logging
 from threading import Thread
@@ -27,30 +28,6 @@ def setup_args():
     argparser = ParlaiParser(False, True)
     argparser.add_parlai_data_path()
     argparser.add_mturk_args()
-    # argparser.add_argument(
-    #     '--bot-host',
-    #     dest='bot_host',
-    #     required=True,
-    #     help='IP Address of the bot API'
-    # )
-    # argparser.add_argument(
-    #     '--bot-port',
-    #     dest='bot_port',
-    #     default=8000,
-    #     help='Port address of Bot agent'
-    # )
-    # argparser.add_argument(
-    #     '--bot-username',
-    #     dest='bot_username',
-    #     required=True,
-    #     help='username to use for authentication in bot API'
-    # )
-    # argparser.add_argument(
-    #     '--bot-password',
-    #     dest='bot_password',
-    #     required=True,
-    #     help='password to use for authentication in bot API'
-    # )
     argparser.add_argument(
         '--gsheet-credentials',
         dest='ghseet_credentials',
@@ -78,14 +55,8 @@ def setup_args():
 
     with open(os.path.join(task_dir, 'config.yml')) as f:
         cfg = yaml.load(f.read(), Loader=yaml.FullLoader)
-    parsed_args.update(cfg)
 
-    parsed_args_str = '\n'.join([str(k) + ': ' + str(v) for k, v in parsed_args.items()])
-    shared_utils.print_and_log(logging.INFO,
-                               f"Parameters for the run.....\n {parsed_args_str}",
-                               should_print=True)
-
-    return parsed_args
+    return parsed_args, cfg
 
 
 def get_exclude_workers(opt):
@@ -155,26 +126,13 @@ def prepare_dedicated_workers(pass_qual_id, dedicated_workers, opt):
     """Assign pass qualification if dedicated workers are from non qualification runs"""
     if opt.get('number_of_dedicated_workers') and len(dedicated_workers) > opt['number_of_dedicated_workers']:
         shared_utils.print_and_log(logging.INFO,
-                                   "Received more than 25 workers in batch. Selected 25 random workers.......")
+                                   f"Received more than {opt['number_of_dedicated_workers']} workers in batch. Selected {opt['number_of_dedicated_workers']} random workers.......")
         dedicated_workers = random.sample(dedicated_workers, opt['number_of_dedicated_workers'])
 
     qual_pass_workers = mturk_utils.list_workers_with_qualification_type(pass_qual_id, opt['is_sandbox'])
-    for dedicated_worker in dedicated_workers:
+    for dedicated_worker in tqdm(dedicated_workers):
         if dedicated_worker not in qual_pass_workers:
             mturk_utils.give_worker_qualification(dedicated_worker, pass_qual_id, is_sandbox=opt['is_sandbox'])
-
-    try:
-        client = mturk_utils.get_mturk_client(opt['is_sandbox'])
-        workers_assignments = mturk_utils.list_workers_assignments(dedicated_workers, opt['is_sandbox'], client=client)
-        assignments_list = []
-        for worker_id, assignments in workers_assignments.items():
-            assignments_list.extend(assignments)
-        mturk_utils.approve_list_of_assignments(assignments_list, opt['is_sandbox'], client=client)
-    except Exception as e:
-        shared_utils.print_and_log(logging.WARN, f"Approving dedicated workers assignments got error: {repr(e)}",
-                                   should_print=True)
-        shared_utils.print_and_log(logging.WARN, "Continuing without approving dedicated workers assignment...........",
-                                   should_print=True)
 
     return dedicated_workers
 
@@ -338,11 +296,11 @@ def run_final_job(manager):
     manager.shutdown()
 
 
-def main(opt):
-    # Qualifications
-    mturk_utils.setup_aws_credentials()
+def launch_consecutive_runs(opt,
+                            bot_agent,
+                            offensive_language_classifier):
     pass_qual_id, fail_qual_id = create_passfail_qualification(opt)
-    if opt.get("dedicated_worker_run"):
+    if opt.get('dedicated_worker_run'):
         if opt.get("max_hits_limit_in_a_run_only"):
             max_submission_qual_id = mturk_utils.find_qualification(opt['unique_qual_name'], opt['is_sandbox'])
             if max_submission_qual_id:
@@ -350,40 +308,14 @@ def main(opt):
                 shared_utils.print_and_log(logging.INFO,
                                            f"Deleted max submissions qualification {opt['unique_qual_name']}",
                                            should_print=True)
-        # exclude_workers = get_exclude_workers(opt)
-        # dedicated_workers_list = ReviewGSheet(opt['ghseet_credentials']).get_golden_workers_list(
-        #     exclude_workers=exclude_workers)
-        dedicated_workers_list = ['A1JWEKRBLSPL8S',
-                                  'A2AWSN5CWONM8',
-                                  'A1T6TPNU64ZH9F',
-                                  'AGZ3GHE3N634N',
-                                  'AWNGYC25Q0DTF',
-                                  'A4CHLWPHZIP7Y',
-                                  'A1OONOQKMO9R8L',
-                                  'A1J3XNLXV4JB9R',
-                                  'A1JM5XNB4NCZR6',
-                                  'A21UA6O7ZFAIQJ',
-                                  'A1ZYQOOK33AZAM',
-                                  'A3IDG9C18BCATK',
-                                  'ALSMH6OVJJZ12',
-                                  'A1BUNT3VJFLXD0',
-                                  'A3F51C49T9A34D',
-                                  'A2OX8TSRCU6NKD',
-                                  'A181O7S05HA4CF',
-                                  'A2AT5B7RW4VXBX']
+
+        dedicated_workers_list = opt['dedicated_workers_list']
         dedicated_workers_list = prepare_dedicated_workers(pass_qual_id, dedicated_workers_list, opt)
         dedicated_worker_qual_id = create_and_assign_dedicated_worker_qualification(opt, dedicated_workers_list)
-
-        opt['num_conversations'] = opt['max_hits_per_worker'] * len(dedicated_workers_list)
+        opt['num_conversations'] = len(dedicated_workers_list) * opt['max_hits_per_worker']
     else:
         dedicated_workers_list = None
         dedicated_worker_qual_id = None
-
-    bot_agent = create_agent(opt, requireModelExists=True)
-    if opt['safety'] == 'classifier' or opt['safety'] == 'all':
-        offensive_language_classifier = OffensiveLanguageClassifier()
-    else:
-        offensive_language_classifier = None
 
     final_job_threads = []
     for run_idx in range(opt['number_of_runs']):
@@ -401,6 +333,8 @@ def main(opt):
         thread.daemon = True
         thread.start()
         final_job_threads.append(thread)
+        if opt['number_of_runs'] > 1:
+            time.sleep(opt['sleep_between_runs'])
 
     shared_utils.print_and_log(logging.INFO, "Waiting all final jobs to finish", should_print=True)
     for th in final_job_threads:
@@ -408,6 +342,51 @@ def main(opt):
     shared_utils.print_and_log(logging.INFO, "All runs finished", should_print=True)
 
 
+def main(opt, cfgs):
+    # Qualifications
+    bot_agent = create_agent(opt, requireModelExists=True)
+    if opt['safety'] == 'classifier' or opt['safety'] == 'all':
+        offensive_language_classifier = OffensiveLanguageClassifier()
+    else:
+        offensive_language_classifier = None
+
+    mturk_utils.setup_aws_credentials()
+
+    all_dedicated_workers = []
+    for _, cfg in cfgs.items():
+        if cfg.get('dedicated_worker_run'):
+            all_dedicated_workers.extend(cfg['dedicated_workers_list'])
+
+    if all_dedicated_workers:
+        try:
+            client = mturk_utils.get_mturk_client(opt['is_sandbox'])
+            workers_assignments = mturk_utils.list_workers_assignments(all_dedicated_workers, opt['is_sandbox'],
+                                                                       client=client)
+            assignments_list = []
+            for worker_id, assignments in workers_assignments.items():
+                assignments_list.extend(assignments)
+            mturk_utils.approve_list_of_assignments(assignments_list, opt['is_sandbox'], client=client)
+        except Exception as e:
+            shared_utils.print_and_log(logging.WARN, f"Approving dedicated workers assignments got error: {repr(e)}",
+                                       should_print=True)
+            shared_utils.print_and_log(logging.WARN,
+                                       "Continuing without approving dedicated workers assignment...........",
+                                       should_print=True)
+
+    run_threads = []
+    for _, cfg in cfgs.items():
+        run_opt = copy.deepcopy(opt)
+        run_opt.update(cfg)
+        th = Thread(target=launch_consecutive_runs, args=(run_opt, bot_agent, offensive_language_classifier))
+        th.daemon = True
+        th.start()
+        run_threads.append(th)
+        time.sleep(120)
+
+    for th in run_threads:
+        th.join()
+
+
 if __name__ == '__main__':
-    args = setup_args()
-    main(args)
+    args, cfgs = setup_args()
+    main(args, cfgs)

@@ -134,7 +134,7 @@ class WandbLogger(object):
             'lr_scheduler': opt['lr_scheduler'],
             }
 
-        wandb.init(
+        self.wandrun = wandb.init(
             name= opt['wand_run_name'], resume=True, project=opt['wand_project_name'], 
             id=opt['wand_id'], config=config
         )
@@ -191,4 +191,4 @@ class WandbLogger(object):
                 else:
                     logging.error(f'k {k} v {v} is not a number')
 
-        wandb.log(metrics)
+        self.wandrun.log(metrics)

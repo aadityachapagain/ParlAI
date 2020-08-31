@@ -359,13 +359,13 @@ def main(opt, cfgs):
 
     if all_dedicated_workers:
         try:
-            client = mturk_utils.get_mturk_client(opt['is_sandbox'])
-            workers_assignments = mturk_utils.list_workers_assignments(all_dedicated_workers, opt['is_sandbox'],
+            client = mturk_utils.get_mturk_client(False)
+            workers_assignments = mturk_utils.list_workers_assignments(all_dedicated_workers, False,
                                                                        client=client)
             assignments_list = []
             for worker_id, assignments in workers_assignments.items():
                 assignments_list.extend(assignments)
-            mturk_utils.approve_list_of_assignments(assignments_list, opt['is_sandbox'], client=client)
+            mturk_utils.approve_list_of_assignments(assignments_list, False, client=client)
         except Exception as e:
             shared_utils.print_and_log(logging.WARN, f"Approving dedicated workers assignments got error: {repr(e)}",
                                        should_print=True)

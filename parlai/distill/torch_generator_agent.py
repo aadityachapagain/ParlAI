@@ -761,6 +761,9 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
 
         ys, ys_lens = self._create_soft_labels(soft_target_vecs)
 
+        del batch.label_vec
+        del batch.label_lengths
+
         # setting teacher labels into batch obj
         batch.label_vec = ys
         batch.label_lengths = ys_lens

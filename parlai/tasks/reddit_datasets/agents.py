@@ -3,6 +3,7 @@ from parlai.core.message import Message
 from .build import build, matcher
 import parlai.utils.logging as logging
 from parlai.utils.misc import str_to_msg
+import random
 
 import os
 from typing import List, Tuple
@@ -17,7 +18,7 @@ class RedditTeacher(DialogTeacher):
         opt['task'] = 'reddit_datasets:chunks'
         build(opt)
         self.opt = opt
-        self.not_datasets_type = 'valid' if 'train' in opt['datatype'] else 'train'
+        self.datasets_type = 'train' if 'train' in opt.get('datatype','train') else 'valid'
         opt['datafile'] = os.path.join(
             opt['datapath'], 'reddit_datasets/train_data'
         )
@@ -25,12 +26,10 @@ class RedditTeacher(DialogTeacher):
         super().__init__(opt, shared)
 
     def setup_data(self, path):
-        for subdir in os.listdir(path):
-            conds = (subdir == 'README.md' or ".lengths" in subdir or \
-                    self.not_datasets_type in subdir or os.path.isdir(os.path.join(path, subdir)) or \
-                    not subdir.endswith('.txt') )
-            if conds:
-                continue
+        req_files = random.shuffle([ '{}-0000{}-of-00005.txt'.format(self.datasets_type,i) for i in range(5)])
+        if self.datasets_type == 'valid':
+            req_files = random.sample(req_files, random.randint(1,2))
+        for subdir in req_files:
             subdir_path = os.path.join(path, subdir)
             with open(subdir_path, newline='\n', encoding="utf-8") as read:
                 for line_no, line in enumerate(read, 1):

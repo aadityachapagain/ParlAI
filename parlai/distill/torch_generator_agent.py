@@ -1049,7 +1049,7 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
             # compute additional bleu scores
             self._compute_fairseq_bleu(batch, preds)
             self._compute_nltk_bleu(batch, text)
-        return Output(text, cand_choices, token_losses=token_losses), preds
+        return Output(text, cand_choices, token_losses=token_losses), [self.filter_BOS_token(x) for x in preds]
 
     def compute_loss(self, batch, return_output=False):
         """
@@ -1126,6 +1126,20 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
             # out of sync! catch up with the other workers
             self._init_cuda_buffer(8, 8, True)
     
+    def filter_BOS_token(self, vec):
+        """
+        remove BOS tokens from label vec
+        """
+        new_vec = []
+        if hasattr(vec, 'cpu'):
+            vec = vec.cpu()
+        for i in vec:
+            if i == self.END_IDX:
+                break
+            elif i != self.START_IDX:
+                new_vec.append(i)
+        return new_vec
+
     def reset_metrics(self):
         """
         Reset all TorchAgentMetrics.

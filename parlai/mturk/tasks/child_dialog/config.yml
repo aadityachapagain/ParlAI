@@ -1,17 +1,17 @@
 run_config1:
   run_name: Golden20  # No underscore here please
   dedicated_worker_run: True
-  number_of_dedicated_workers : 18
+  number_of_dedicated_workers : 20
   num_conversations: 50 # number of conversations you want to create for this task, ignored in dedicated run
   number_of_runs: 1
   sleep_between_runs: 600
   run_timelimit: 86400
   unique_worker: False  # enforce that no worker can work on your task twice
-  max_hits_per_worker: 2  # Max number of hits each worker can perform during current group run, 0 means unlimited
-  unique_qual_name: TestChildCompanionDialogMax20Submission08312020  # qualification name to use for uniqueness between HITs
+  max_hits_per_worker: 20  # Max number of hits each worker can perform during current group run, 0 means unlimited
+  unique_qual_name: EmbChildCompanionDialogMax20Submission08312020  # qualification name to use for uniqueness between HITs
   max_hits_limit_in_a_run_only: True
   reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
-  is_sandbox: True  # submit the HITs to MTurk sandbox site, if False go Live
+  is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
   hard_block: False  # Hard block disconnecting Turkers from all of your HITs
   disconnect_qualification: null  # qualification to use for soft blocking users for
   #  disconnects. By default
@@ -48,30 +48,30 @@ run_config1:
   allowed_countries: [US, CA, GB, AU, NZ, NP]  # List of countries qualification of Turker, defualt list of English Speaking Countries(Except NP)
   waiting_pool_time: null  # If not paired with another worker within this time, talk with the bot, None for not using the feature
   bot_evaluation: True  # Ask turker to rate bot at last if they talk with bot
-  hobby: False  # Whether to use heroku app or not
+  hobby: True  # Whether to use heroku app or not
   force_bot: True  # If true force worker to chat with Bot
-  qual_test_qualification: TestChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
+  qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
   delete_qual_test_qualification: False  #  TODO if True might throw error(need fixing), Delete `qual_test_qualification` after all HITs are complete
-  dedicated_worker_qualification: TestChildCompanionDialogDedicated20HITsWorkerBatch08312020
+  dedicated_worker_qualification: EmbChildCompanionDialogDedicated20HITsWorkerBatch08312020
   ExcludeWorkerWithQualifications: []
   min_hit_approval_rate: 90
   no_cuda: False
-  dedicated_workers_list: [A1MQYCM43Z0844]
+  dedicated_workers_list: [A255LLTBJM2NVR, A2POAB7MCEIRVI, A2STG331R3P3FK, AIH3QEU3564PA, A37QYFTDPF1EV5, A1LPCKT97TNRTX, A1U7GJ74U6TR8I, A1PDBRYBFMMFNY, AQ3KPKZ6UIYPF, A27ZMFQJUJA1MV, A1U0KYY1FCJ9FS, A3HSONMX6LNZR4, AU9T7P03693JN, A23Z3YMNRWB7RB, A17VFZIAVVCCSQ, A33UFT5HSU412H, A1MLAXF28U2EYB, A4D99Y82KOLC8, A2470VL9L4QFFS, A1MGERLX60UWDI]
 
 run_config2:
   run_name: Golden50  # No underscore here please
   dedicated_worker_run: True
-  number_of_dedicated_workers : 18
+  number_of_dedicated_workers : 20
   num_conversations: 50 # number of conversations you want to create for this task, ignored in dedicated run
   number_of_runs: 1
   sleep_between_runs: 600
   run_timelimit: 86400
   unique_worker: False  # enforce that no worker can work on your task twice
-  max_hits_per_worker: 3  # Max number of hits each worker can perform during current group run, 0 means unlimited
-  unique_qual_name: TestChildCompanionDialogMax50Submission08312020  # qualification name to use for uniqueness between HITs
+  max_hits_per_worker: 50  # Max number of hits each worker can perform during current group run, 0 means unlimited
+  unique_qual_name: EmbChildCompanionDialogMax50Submission08312020  # qualification name to use for uniqueness between HITs
   max_hits_limit_in_a_run_only: True
   reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
-  is_sandbox: True  # submit the HITs to MTurk sandbox site, if False go Live
+  is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
   hard_block: False  # Hard block disconnecting Turkers from all of your HITs
   disconnect_qualification: null  # qualification to use for soft blocking users for
   #  disconnects. By default
@@ -108,12 +108,12 @@ run_config2:
   allowed_countries: [US, CA, GB, AU, NZ, NP]  # List of countries qualification of Turker, defualt list of English Speaking Countries(Except NP)
   waiting_pool_time: null  # If not paired with another worker within this time, talk with the bot, None for not using the feature
   bot_evaluation: True  # Ask turker to rate bot at last if they talk with bot
-  hobby: False  # Whether to use heroku app or not
+  hobby: True  # Whether to use heroku app or not
   force_bot: True  # If true force worker to chat with Bot
-  qual_test_qualification: TestChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
+  qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
   delete_qual_test_qualification: False  #  TODO if True might throw error(need fixing), Delete `qual_test_qualification` after all HITs are complete
-  dedicated_worker_qualification: TestChildCompanionDialogDedicated50HITsWorkerBatch08312020
+  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITsWorkerBatch08312020
   ExcludeWorkerWithQualifications: []
   min_hit_approval_rate: 90
   no_cuda: False
-  dedicated_workers_list: [A19NB3BCWCB8BY]
+  dedicated_workers_list: [A2HC9549CZAKNN, AGZ3GHE3N634N, A1JWEKRBLSPL8S, A1DNMJE4FXPDZK, A1WKYNPQBNMA8U, A22DTDEFYRTE45, A11W55U13HODN1, A182N7RLXGSCZG, A1WAWEY2810TFN, A4D4NFXD7ALZ6, AOEO9ZV81R0I4, A1T6TPNU64ZH9F, AB1GNKQ0KS4R9, A28HB7240OFGEW, AKCJBOQPEI3AR]

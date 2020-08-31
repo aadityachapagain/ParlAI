@@ -130,7 +130,7 @@ class WandbLogger(object):
             'tokenizer': opt['dict_tokenizer'],
             'fp16': opt['fp16'],
             'fp16_impl': opt['fp16_impl'],
-            'lr': opt['lr'],
+            'learningrate': opt['learningrate'],
             'lr_scheduler': opt['lr_scheduler'],
             }
 

@@ -26,7 +26,7 @@ class RedditTeacher(DialogTeacher):
         super().__init__(opt, shared)
 
     def setup_data(self, path):
-        req_files = random.shuffle([ '{}-0000{}-of-00005.txt'.format(self.datasets_type,i) for i in range(5)])
+        req_files = random.sample([ '{}-0000{}-of-00005.txt'.format(self.datasets_type,i) for i in range(5)], 5)
         if self.datasets_type == 'valid':
             req_files = random.sample(req_files, random.randint(1,2))
         for subdir in req_files:

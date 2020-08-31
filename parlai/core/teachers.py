@@ -895,6 +895,7 @@ class StreamDialogData(DialogData):
     def __init__(self, opt, data_loader=None, cands=None, shared=None, **kwargs):
         # super() call initiates stream in self.data by calling _load()
         super().__init__(opt, data_loader, cands, shared, **kwargs)
+        self.opt = opt.copy()
         self.cycle = kwargs['cycle'] if 'cycle' in kwargs else True
 
         if shared:
@@ -909,6 +910,7 @@ class StreamDialogData(DialogData):
             # main instance holds the stream and shares pointer to it
             self.data_loader = data_loader
             self.datafile = opt['datafile']
+
             self.reset_data = None
             self.is_reset = True
             if opt.get('numthreads', 1) > 1:
@@ -975,7 +977,7 @@ class StreamDialogData(DialogData):
         """
         datafiles = self.datafile if type(self.datafile) is tuple else [self.datafile]
         length_file = datafiles[0] + ".lengths"
-        if 'valid' in opt['datatype']:
+        if 'valid' in self.opt['datatype']:
             length_file = datafiles[0] + ".lengths_valid"
         if not os.path.isfile(length_file):
             num_eps = 0

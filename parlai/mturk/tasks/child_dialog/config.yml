@@ -1,16 +1,16 @@
 run_config1:
-  run_name: Golden20  # No underscore here please
-  dedicated_worker_run: True
+  run_name: OpenBatch  # No underscore here please
+  dedicated_worker_run: False
   number_of_dedicated_workers : 20
-  num_conversations: 50 # number of conversations you want to create for this task, ignored in dedicated run
+  num_conversations: 100 # number of conversations you want to create for this task, ignored in dedicated run
   number_of_runs: 1
   sleep_between_runs: 600
   run_timelimit: 86400
   unique_worker: False  # enforce that no worker can work on your task twice
   max_hits_per_worker: 20  # Max number of hits each worker can perform during current group run, 0 means unlimited
-  unique_qual_name: EmbChildCompanionDialogMax20Submission08312020  # qualification name to use for uniqueness between HITs
+  unique_qual_name: null  # qualification name to use for uniqueness between HITs
   max_hits_limit_in_a_run_only: True
-  reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
+  reward: 0.50  # reward for each worker for finishing the conversation, in US dollars
   is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
   hard_block: False  # Hard block disconnecting Turkers from all of your HITs
   disconnect_qualification: null  # qualification to use for soft blocking users for
@@ -52,11 +52,11 @@ run_config1:
   force_bot: True  # If true force worker to chat with Bot
   qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
   delete_qual_test_qualification: False  #  TODO if True might throw error(need fixing), Delete `qual_test_qualification` after all HITs are complete
-  dedicated_worker_qualification: EmbChildCompanionDialogDedicated20HITsWorkerBatch08312020
+  dedicated_worker_qualification: null
   ExcludeWorkerWithQualifications: []
   min_hit_approval_rate: 90
   no_cuda: False
-  dedicated_workers_list: [AKT1DH67LJR9Y, A25NZKEWQAGAXS, A2I9PUZT19ZBO8, A2STG331R3P3FK, A36U69I2XHMZ46, AXY0D2AMLKE2A, AJBB72MM58BBY, A334J5ISKAC3GN, A17VFZIAVVCCSQ, A3HSONMX6LNZR4, A1MLAXF28U2EYB, A1U0KYY1FCJ9FS, A3NM4Y7V4UEMM3, A30IHPYTKAV6IG, A1LNH5VTNINLY7, A2470VL9L4QFFS, A2XPWASDT8AYXH, A3BSK47WPPE876, A2SX5PTVUNFHB3, A27ZMFQJUJA1MV]
+  dedicated_workers_list: []
 
 run_config2:
   run_name: Golden50  # No underscore here please
@@ -68,7 +68,7 @@ run_config2:
   run_timelimit: 86400
   unique_worker: False  # enforce that no worker can work on your task twice
   max_hits_per_worker: 50  # Max number of hits each worker can perform during current group run, 0 means unlimited
-  unique_qual_name: EmbChildCompanionDialogMax50Submission08312020  # qualification name to use for uniqueness between HITs
+  unique_qual_name: EmbChildCompanionDialogMax50Submission09012020  # qualification name to use for uniqueness between HITs
   max_hits_limit_in_a_run_only: True
   reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
   is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
@@ -112,8 +112,8 @@ run_config2:
   force_bot: True  # If true force worker to chat with Bot
   qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
   delete_qual_test_qualification: False  #  TODO if True might throw error(need fixing), Delete `qual_test_qualification` after all HITs are complete
-  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITsWorkerBatch08312020
+  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITsWorkerBatch09012020
   ExcludeWorkerWithQualifications: []
   min_hit_approval_rate: 90
   no_cuda: False
-  dedicated_workers_list: [A2HC9549CZAKNN, AGZ3GHE3N634N, A1JWEKRBLSPL8S, A1DNMJE4FXPDZK, A1WKYNPQBNMA8U, A22DTDEFYRTE45, A11W55U13HODN1, A182N7RLXGSCZG, A1WAWEY2810TFN, A4D4NFXD7ALZ6, AOEO9ZV81R0I4, A1T6TPNU64ZH9F, AB1GNKQ0KS4R9, A28HB7240OFGEW, AKCJBOQPEI3AR]
+  dedicated_workers_list: [A1PLZ8RM4NW43J, A2LR1HKNOVDTJ8, A2STG331R3P3FK, AA5ZDXAA2DLY1, A2DU0TGJDZWUCV, A1RYZBXR1TYIXU, A1V4BLIC5U5HPX, AI2968D67CF0F, AB1GNKQ0KS4R9, A34RAQL1JVSK70, A7SXWHGK8B40R, AZKX3JFPKFWNC, A1WKYNPQBNMA8U, AKCJBOQPEI3AR, A1T6TPNU64ZH9F]

@@ -176,19 +176,12 @@ class WandbLogger(object):
         """
         metrics = {'Training Step': step}
         for k, v in report.items():
-            if k in self.key_map:
-                if isinstance(v, numbers.Number):
-                    metrics[f'{self.key_map[k]}/{setting}'] = v
-                elif isinstance(v, Metric):
-                    metrics[f'{self.key_map[k]}/{setting}'] = v.value()
-                else:
-                    logging.error(f'k {k} v {v} is not a number')
+            k = self.key_map.get(k,k)
+            if isinstance(v, numbers.Number):
+                metrics[f'{setting}/{k}'] = v
+            elif isinstance(v, Metric):
+                metrics[f'{setting}/{k}'] = v.value()
             else:
-                if isinstance(v, numbers.Number):
-                    metrics[f'{k}/{setting}'] = v
-                elif isinstance(v, Metric):
-                    metrics[f'{k}/{setting}'] = v.value()
-                else:
-                    logging.error(f'k {k} v {v} is not a number')
+                logging.error(f'k {k} v {v} is not a number')
 
         self.wandrun.log(metrics)

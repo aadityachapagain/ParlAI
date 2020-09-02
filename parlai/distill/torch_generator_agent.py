@@ -821,9 +821,6 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
             self.global_metrics.add('ctps', GlobalTimerMetric(0))
             self.global_metrics.add('tps', GlobalTimerMetric(0))
 
-        # Make sure we push all the metrics to main thread in hogwild/workers
-        self.global_metrics.flush()
-
         return batch_reply
 
     def _generate(

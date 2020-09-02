@@ -296,9 +296,9 @@ class TrainLoop:
         latest_train_path = get_latest_train(opt['run_tag'])
 
         model_download_path = os.path.join(*os.path.split(opt['student_model_file'])[:-1])
-        if latest_train_path and not os.path.isfile(os.path.join(model_download_path, '.built')):
+        if latest_train_path:
+            if not os.path.isfile(opt['student_model_file']):
             gcp.download_all(latest_train_path, model_download_path)
-            build_data.mark_done(model_download_path)
         
         signal.signal(signal.SIGINT, signal.default_int_handler)
         # Possibly load from checkpoint

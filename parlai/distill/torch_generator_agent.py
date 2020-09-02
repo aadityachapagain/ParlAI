@@ -37,7 +37,6 @@ from torch import optim
 
 from parlai.core.opt import Opt
 from parlai.core.agents import Agent
-from parlai.utils.thread import SharedTable
 from parlai.core.dict import DictionaryAgent
 from parlai.nn.lr_scheduler import ParlAILRScheduler
 from parlai.core.message import Message
@@ -145,7 +144,7 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
                         self.dict['__FP16_PAD_{}__'.format(i)] = 1
 
             # global_metrics keeps track of batch-level or global-level metrics
-            self.global_metrics = Metrics(opt.get('numthreads', 1) > 1, shared=None)
+            self.global_metrics = Metrics(shared=None)
             # self.metrics is there for legacy reasons
             self.metrics: Dict[str, Any] = {}
         else:
@@ -156,13 +155,7 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
             self.student_model = shared['student_model']
             self.criterion = shared['criterion']
             self.metrics = shared['metrics']
-            self.global_metrics = Metrics(
-                opt.get('numthreads', 1) > 1, shared=shared['global_metrics']
-            )
-
-        if opt.get('numthreads', 1) > 1:
-            torch.set_num_threads(1)
-
+            self.global_metrics = Metrics(shared=shared['global_metrics'])
         # Default to the class name, sans "Agent". child can override
         self.id = type(self).__name__.replace("Agent", "")
 
@@ -226,8 +219,13 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
                 )
             if self.use_cuda:
                 if self.model_parallel:
-                    self.model = PipelineHelper().make_parallel(self.model)
-                    self.student_model = PipelineHelper().make_parallel(self.student_model)
+                    ph1 = PipelineHelper()
+                    ph2 = PipelineHelper()
+                    ph1.check_compatibility(self.opt)
+                    ph2.check_compatibility(self.opt)
+
+                    self.model = ph1.make_parallel(self.model)
+                    self.student_model = ph2.make_parallel(self.student_model)
                 else:
                     self.model.cuda()
                     self.student_model.cuda()
@@ -316,12 +314,6 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
         """
         shared = {}
         shared['class'] = type(self)
-
-        if self.opt.get('numthreads', 1) > 1 and isinstance(self.metrics, dict):
-            # move metrics and model to shared memory
-            self.metrics = SharedTable(self.metrics)
-            self.student_model.share_memory()
-            self.model.share_memory()
         
         shared['metrics'] = self.metrics
         shared['global_metrics'] = self.global_metrics.share()
@@ -335,10 +327,6 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
         shared['beam_block_list'] = self.beam_block_list
         if hasattr(self, 'optimizer'):
             shared['optimizer'] = self.optimizer
-        if self.opt.get('numthreads', 1) > 1:
-            shared['states'] = {  # don't share optimizer states
-                'optimizer_type': self.opt['optimizer']
-            }
         return shared
 
     def _get_student_init_model(self, opt: Opt, shared):

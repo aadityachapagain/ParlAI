@@ -4,7 +4,7 @@ import re
 from parlai.core.build_data import DownloadableFile
 import parlai.core.build_data as build_data
 
-RESOURCES = 'reddit/20200827/'
+gcp_data_path = 'reddit/20200827/'
 file_name = 'train-00001-of-00005.txt'
 matcher = '{}-0000[0-4]-of-00005.txt'
 data_lenghts_count = 'reddit/train_data.lengths'
@@ -21,7 +21,7 @@ def get_latest_train(file_path):
         return False
 
 def build(opt):
-    RESOURCES = opt.get('gcs_data_path', RESOURCES)
+    RESOURCES = opt.get('gcs_data_path', gcp_data_path)
     dpath = os.path.join(opt['datapath'], 'reddit_datasets/train_data')
     dtype = 'train' if 'train' in opt.get('datatype','train') else 'valid'
 

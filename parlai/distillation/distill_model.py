@@ -18,6 +18,7 @@ import os
 import signal
 from typing import Dict
 import yaml
+import traceback
 
 from parlai.core.metrics import Metric
 from parlai.gcp.gcs_service import gcp
@@ -281,6 +282,7 @@ def get_latest_train(file_path):
         latest = cand[latest]
         return latest
     except:
+        traceback.print_exc()
         return False
 
 class TrainLoop:
@@ -298,7 +300,7 @@ class TrainLoop:
         model_download_path = os.path.join(*os.path.split(opt['student_model_file'])[:-1])
         if latest_train_path:
             if not os.path.isfile(opt['student_model_file']):
-            gcp.download_all(latest_train_path, model_download_path)
+                gcp.download_all(latest_train_path, model_download_path)
         
         signal.signal(signal.SIGINT, signal.default_int_handler)
         # Possibly load from checkpoint

@@ -12,7 +12,7 @@ python parlai/distillation/distill_model.py \
 --lr-scheduler reduceonplateau \
 --lr-scheduler-patience 4 \
 --load-from-checkpoint True \
---run-tag karu_bot_v0 \
+--run-tag "karu_bot_v0" \
 --gcs-data-path  "reddit/20200827" \
 --fp16-impl mem_efficient \
 --warmup_updates 100 \

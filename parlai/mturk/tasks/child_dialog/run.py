@@ -354,7 +354,7 @@ def main(opt, cfgs):
 
     all_dedicated_workers = []
     for _, cfg in cfgs.items():
-        if cfg.get('dedicated_worker_run'):
+        if cfg.get('dedicated_worker_run') and cfg.get('approve_pending_assignments'):
             all_dedicated_workers.extend(cfg['dedicated_workers_list'])
 
     if all_dedicated_workers:

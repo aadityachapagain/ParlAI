@@ -61,7 +61,7 @@ def setup_args(parser=None) -> ParlaiParser:
         help='specifc tag for training run with specific hyper-paramter or model'
     )
     storage_tag.add_argument(
-        '--gcs-train-path',
+        '--gcs-data-path',
         type=str,
         help='path for train data in gcs storage'
     )

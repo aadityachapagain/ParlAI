@@ -13,13 +13,14 @@ python parlai/distillation/distill_model.py \
 --lr-scheduler-patience 4 \
 --load-from-checkpoint True \
 --run-tag karu_bot_v0 \
+--gcs-data-path  "reddit/20200827" \
 --fp16-impl mem_efficient \
 --warmup_updates 100 \
 --wand-project-name "Karu_chatbot_v0" \
 --wand-run-name "656M Model Distillation" \
 --wand-id "656MmodelDistill" \
 --log_every_n_secs 30 \
---evaltask reddit_datasets --eval_batchsize 14 \
+--evaltask reddit_datasets --eval_batchsize 12 \
 --history-add-global-end-token end \
 --fp16 True --text-truncate 128 --truncate 128 \
 --label-truncate 128 --dict-tokenizer bytelevelbpe \

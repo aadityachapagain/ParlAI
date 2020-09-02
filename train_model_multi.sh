@@ -12,6 +12,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --lr-scheduler-patience 4 \
 --load-from-checkpoint True \
 --run-tag karu_bot_v0 \
+--gcs-data-path  "reddit/20200827" \
 --fp16-impl mem_efficient \
 --warmup_updates 100 \
 --wand-project-name "Karu_chatbot_v0" \
@@ -26,7 +27,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --lr-scheduler reduceonplateau --gradient-clip 0.1 \
 -veps 0.25 --betas 0.9,0.999 --update-freq 2 \
 -vp 10 -vmt ppl -vmm min \
---dynamic-batching full --batchsize 2 \
+--batchsize 2 \
 --delimiter '  ' \
 --save-after-valid True \
 --student-model-file data/models/Karu/karu_bot_v0 \
@@ -35,3 +36,4 @@ python parlai/distillation/multiprocessing_distill.py \
 -tblog True
 
 # --validation-every-n-secs 14400 \
+# --dynamic-batching full 

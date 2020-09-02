@@ -13,6 +13,7 @@ data_valid_lenghts_count = 'reddit/train_data.lengths_valid'
 def get_latest_train(file_path):
     try:
         cand = list(set([ os.path.join(*os.path.split(i)[:1]) for i in gcp.list_files(file_path) if os.path.split(i)[1].strip() !='']))
+        cand = [i for i in cand if '.tensorboard' not in i ]
         cand = {int(i.split('_')[-1]):i for i in cand}
         latest = sorted(list(cand.keys()), reverse=True)[0]
         latest = cand[latest]

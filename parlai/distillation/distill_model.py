@@ -20,7 +20,7 @@ from typing import Dict
 import yaml
 
 from parlai.core.metrics import Metric
-from parlai.gcp.gcs_service import gcp as storage_agent
+from parlai.gcp.gcs_service import gcp
 from parlai.core.agents import create_distill_agent, create_agent_from_shared
 from parlai.core.exceptions import StopTrainException
 from parlai.distillation.logs import TensorboardLogger, WandbLogger
@@ -273,6 +273,16 @@ def create_timestamp():
     ts = calendar.timegm(time.gmtime())
     return str(ts)
 
+def get_latest_train(file_path):
+    try:
+        cand = list(set([ os.path.join(*os.path.split(i)[:1]) for i in gcp.list_files(file_path) if os.path.split(i)[1].strip() !='']))
+        cand = {int(i.split('_')[-1]):i for i in cand}
+        latest = sorted(list(cand.keys()), reverse=True)[0]
+        latest = cand[latest]
+        return latest
+    except:
+        return False
+
 class TrainLoop:
     """
     TrainLoop contains the core training loop logic.
@@ -282,6 +292,14 @@ class TrainLoop:
         # if python is called from a non-interactive shell, like a bash script,
         # it will by-default ignore SIGINTs, and KeyboardInterrupt exceptions are
         # not produced. This line brings them back
+        # First get model from gcs
+        latest_train_path = get_latest_train(opt['run_tag'])
+
+        model_download_path = os.path.join(*os.path.split(opt['student_model_file'])[:-1])
+        if latest_train_path and not os.path.isfile(os.path.join(model_download_path, '.built')):
+            gcp.download_all(latest_train_path, model_download_path)
+            build_data.mark_done(model_download_path)
+        
         signal.signal(signal.SIGINT, signal.default_int_handler)
         # Possibly load from checkpoint
         trainstats_suffix = '.trainstats'  # we might load training statistics from here

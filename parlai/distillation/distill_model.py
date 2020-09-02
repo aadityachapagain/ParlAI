@@ -300,7 +300,7 @@ class TrainLoop:
 
         model_download_path = os.path.join(*os.path.split(opt['student_model_file'])[:-1])
         if latest_train_path:
-            if not os.path.isfile(opt['student_model_file']):
+            if not os.path.isfile(opt['student_model_file']+'.checkpoint'):
                 gcp.download_all(latest_train_path, model_download_path)
         
         signal.signal(signal.SIGINT, signal.default_int_handler)

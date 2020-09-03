@@ -10,8 +10,6 @@ Model distillation script for for blenderbot models.
 The standard way to train a model. After training, also computes validation
 and test error.
 """ 
-import faulthandler; faulthandler.enable()
-
 import json
 import numpy as np
 import os
@@ -21,7 +19,7 @@ import yaml
 import traceback
 
 from parlai.core.metrics import Metric
-from parlai.gcp.gcs_service import gcp
+from parlai.gcp.gcs_service import gcp as storage_agent
 from parlai.core.agents import create_distill_agent, create_agent_from_shared
 from parlai.core.exceptions import StopTrainException
 from parlai.distillation.logs import TensorboardLogger, WandbLogger
@@ -276,7 +274,7 @@ def create_timestamp():
 
 def get_latest_train(file_path):
     try:
-        cand = list(set([ os.path.join(*os.path.split(i)[:1]) for i in gcp.list_files(file_path) if os.path.split(i)[1].strip() !='']))
+        cand = list(set([ os.path.join(*os.path.split(i)[:1]) for i in storage_agent.list_files(file_path) if os.path.split(i)[1].strip() !='']))
         cand = [i for i in cand if '.tensorboard' not in i ]
         cand = {int(i.split('_')[-1]):i for i in cand}
         latest = sorted(list(cand.keys()), reverse=True)[0]
@@ -301,7 +299,7 @@ class TrainLoop:
         model_download_path = os.path.join(*os.path.split(opt['student_model_file'])[:-1])
         if latest_train_path:
             if not os.path.isfile(opt['student_model_file']+'.checkpoint'):
-                gcp.download_all(latest_train_path, model_download_path)
+                storage_agent.download_all(latest_train_path, model_download_path)
         
         signal.signal(signal.SIGINT, signal.default_int_handler)
         # Possibly load from checkpoint

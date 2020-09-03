@@ -19,7 +19,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --wand-project-name "Karu_chatbot_v0" \
 --wand-run-name "90M Model Distillation" \
 --wand-id "90MmodelDistill" \
---log_every_n_secs 10 \
+--log_every_n_secs 30 \
 --history-add-global-end-token end \
 --evaltask reddit_datasets --eval_batchsize 12 \
 --fp16 True --text-truncate 128 --truncate 128 \

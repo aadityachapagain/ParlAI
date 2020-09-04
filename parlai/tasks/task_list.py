@@ -1240,4 +1240,15 @@ task_list = [
             "human and a virtual assistant."
         ),
     },
+    {
+        "id": "ChildCompanionDialog",
+        "display_name": "Child Companion Dialog",
+        "task": "child_companion_dialog",
+        "tags": ["All", "ChitChat", "Child"],
+        "description": (
+            "A dataset of 5k conversations explicitly designed to exhibit "
+            "child companionship: displaying personality, having empathy, and "
+            "demonstrating knowledge."
+        ),
+    },
 ]

@@ -14,7 +14,7 @@ task_config['frontend_version'] = 0
 On the Amazon Mechanical Turk web site, the HIT title appears in search results,
 and everywhere the HIT is mentioned.
 """
-task_config['hit_title'] = ('Chat as a child. Workers who perform well will be reached out to'
+task_config['hit_title'] = ('Chat as a child companion. Workers who perform well will be reached out to'
                             'and given more hits at a higher reward level')
 
 """A description includes detailed information about the kind of task the HIT contains.
@@ -23,7 +23,7 @@ view of search results, and in the HIT and assignment screens.
 """
 task_config[
     'hit_description'] = (
-    '5 minute task where you will play either the role of a child or the robot Karu. '
+    '5 minute task where you will play the role of a child companion robot, Karu. '
     'You should aim for a conversation that is typical of children. Workers accepting '
     'HIT for the first time need to pass a qualification test.'
 )
@@ -42,7 +42,7 @@ task_config[
 <b><h4>Task Description</h4></b>
 <br>
 <b>
-You will play either the role of a child or the robot Karu.
+You will play the role of a child companion robot, Karu.
 </b>
 <br>
 Overall, Karu communicates in a tone that is comparable to an eight year old child.

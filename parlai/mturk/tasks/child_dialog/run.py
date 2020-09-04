@@ -158,7 +158,7 @@ def email_workers(worker_ids, subject, message_text, is_sandbox):
 
 
 def get_hit_notification_message(hit_link, max_hits):
-    subject = "Chat as a Child: High reward HITs exclusive to you"
+    subject = "Chat as a Child Companion Robot: High reward HITs exclusive to you"
     message = (
         "Thank you for your outstanding performance in the previous HIT you did for us. "
         "You followed the theme of the conversation, were specific and took initiative. "

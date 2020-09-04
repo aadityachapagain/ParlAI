@@ -1,5 +1,5 @@
 run_config1:
-  workers_role: [KARU, CHILD]
+  workers_role: [KARU]
   run_name: Model90MGolden20  # No underscore here please
   dedicated_worker_run: True
   number_of_dedicated_workers : 20

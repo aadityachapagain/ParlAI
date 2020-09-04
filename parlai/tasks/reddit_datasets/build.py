@@ -38,3 +38,6 @@ def build(opt):
         gcp.download(data_valid_lenghts_count,os.path.join(opt['datapath'], 'reddit_datasets', ))
     
     build_data.mark_done(dpath)
+
+if __name__ == "__main__":
+    build({'datapath': 'data', 'datatype': 'train:stream'})

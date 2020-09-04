@@ -1,15 +1,15 @@
 run_config1:
   workers_role: [KARU]
-  run_name: Model90MGolden20  # No underscore here please
+  run_name: KaruOnlyGolden50  # No underscore here please
   dedicated_worker_run: True
-  number_of_dedicated_workers : 20
+  number_of_dedicated_workers : 15
   num_conversations: 50 # number of conversations you want to create for this task, ignored in dedicated run
   number_of_runs: 1
   sleep_between_runs: 600
   run_timelimit: 86400
   unique_worker: False  # enforce that no worker can work on your task twice
-  max_hits_per_worker: 20  # Max number of hits each worker can perform during current group run, 0 means unlimited
-  unique_qual_name: EmbChildCompanionDialogMax20Submission09032020  # qualification name to use for uniqueness between HITs
+  max_hits_per_worker: 50  # Max number of hits each worker can perform during current group run, 0 means unlimited
+  unique_qual_name: EmbChildCompanionDialogMax50Submission09042020  # qualification name to use for uniqueness between HITs
   max_hits_limit_in_a_run_only: True
   reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
   is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
@@ -53,9 +53,9 @@ run_config1:
   force_bot: True  # If true force worker to chat with Bot
   qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
   delete_qual_test_qualification: False  #  TODO if True might throw error(need fixing), Delete `qual_test_qualification` after all HITs are complete
-  dedicated_worker_qualification: EmbChildCompanionDialogDedicated20HITsBatch09032020
+  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITsBatch09042020
   ExcludeWorkerWithQualifications: []
   min_hit_approval_rate: 90
   no_cuda: False
-  dedicated_workers_list: [AWZKK86EMRA52, AV5FCKI1TTSKR, ATJVY9O4CY5EX, AJZEXCH1TSUE1, AHEYDZM01OI6J, AFNUSU88JD9NC, A7P3R1AIA4TVV, A4BDXOXC4D8FX, A49WTQG4MBT9Z, A3VQNWG6KIY4MJ, A3MYPYBVHX7FQ2, A3HWJUL2SS2QNT, A3DELT7BVEPU24, A3DAZYTJQ74UOQ, A394JO4NEPCY3M, A38N05VH5344HC, A36CQIFWEDEECU, A2UKO65AVU38T4, A2T5FIPRX2OF8S, A2RUHO7I7Y4XFA, A2IRBZJJEB9P5E, A2EE85544EAX9R, A2CUAZD7OJDFYR, A27OFCQG73Z4UF, A24RCKH0Q3GMQY, A1VG2ILRJZOWQA, A1TY1T80SHMHQQ, A1TR5V28IAIIBZ, A1SWGSFIMZJQE, A1LAF4EMTC5S0P, A1KQ4XZM996XWW, A1GT4NK0VO5RFQ, A1DRNG1LGX8OA0, A16T3D6VY5WJGJ, A112Q631264BG2]
+  dedicated_workers_list: [A2HC9549CZAKNN, A4D4NFXD7ALZ6, A1DNMJE4FXPDZK, A7SXWHGK8B40R, A31LNRQZVGM1R6, APKTDTD9LK539, AI2968D67CF0F, A2LR1HKNOVDTJ8, A2STG331R3P3FK, AKCJBOQPEI3AR, A3SIETLVZ91G3B, A36W9YOEXLJLBT, A1PLZ8RM4NW43J, A3RKG5PZN97RD5, A11W55U13HODN1]
   approve_pending_assignments: True

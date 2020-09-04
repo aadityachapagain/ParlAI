@@ -15,4 +15,8 @@ ACUTE_EVAL_QUESTIONS = [
         "title": "Empathetic",
         "question": "Did this person sound empathetic?"
     },
+    {
+        "title": "Contradictory",
+        "question": "Did this person repeat themselves or make contradictory statements?"
+    }
 ]

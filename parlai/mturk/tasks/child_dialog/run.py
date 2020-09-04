@@ -183,7 +183,7 @@ def single_run(opt,
                fail_qual_id,
                dedicated_worker_qual_id=None,
                dedicated_worker_ids=None):
-    mturk_agent_ids = ['CHILD', 'KARU']
+    mturk_agent_ids = opt['workers_role']
     mturk_manager = MturkManagerWithWaitingPoolTimeout(opt=opt,
                                                        mturk_agent_ids=[random.choice(mturk_agent_ids)],
                                                        use_db=True)
@@ -193,7 +193,8 @@ def single_run(opt,
         world = QualificationTestOnboardWorld(opt=opt,
                                               mturk_agent=worker,
                                               pass_qual_id=pass_qual_id,
-                                              fail_qual_id=fail_qual_id)
+                                              fail_qual_id=fail_qual_id,
+                                              mturk_agent_role=mturk_agent_ids)
         while not world.episode_done():
             world.parley()
         world.shutdown()

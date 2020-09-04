@@ -12,7 +12,7 @@ from .context import Context
 
 
 class QualificationTestOnboardWorld(MTurkOnboardWorld):
-    def __init__(self, opt, mturk_agent, pass_qual_id, fail_qual_id):
+    def __init__(self, opt, mturk_agent, pass_qual_id, fail_qual_id, mturk_agent_role):
         super(QualificationTestOnboardWorld, self).__init__(opt, mturk_agent)
         self.opt = opt
         self.pass_qual_id = pass_qual_id
@@ -24,7 +24,7 @@ class QualificationTestOnboardWorld(MTurkOnboardWorld):
         )
         self.pass_qual_test = None if self.first_time else True  # None==>neither pass nor fail(first time in this HIT)
         self.mturk_agent.context = Context().gen_context()
-        self.mturk_agent.role = random.choice(['CHILD', 'KARU'])
+        self.mturk_agent.role = random.choice(mturk_agent_role)
 
     def parley(self):
         if self.first_time:

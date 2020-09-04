@@ -83,6 +83,7 @@ class GCP_Service(object):
                 logger.info(f'{dest_file} downloaded from bucket.')
             except:
                 print('raise exception')
+                os.remove(dest_file)
                 continue
 
     def download(self, bucket_filename:str, local_dir:str) -> str:
@@ -96,6 +97,7 @@ class GCP_Service(object):
             logger.info(f'{file_name} downloaded from bucket.')
             return dest_file
         except:
+            os.remove(dest_file)
             logger.warn(f'{bucket_filename} not found in {self.bucket_name}')
 
     def delete(self, bucket_filename:str):

@@ -4,11 +4,10 @@ import re
 from parlai.core.build_data import DownloadableFile
 import parlai.core.build_data as build_data
 
-gcp_data_path = 'reddit/20200827/'
-file_name = 'train-00001-of-00005.txt'
-matcher = '{}-0000[0-4]-of-00005.txt'
-data_lenghts_count = 'reddit/train_data.lengths'
-data_valid_lenghts_count = 'reddit/train_data.lengths_valid'
+gcp_data_path = 'reddit_cleaned/20200904'
+matcher = '{}-0000[0-9]-of-000010.txt'
+data_lenghts_count = 'reddit_cleaned/train_data.lengths'
+data_valid_lenghts_count = 'reddit_cleaned/train_data.lengths_valid'
 
 def build(opt):
     RESOURCES = opt.get('gcs_data_path', gcp_data_path)
@@ -25,7 +24,7 @@ def build(opt):
     if exists and condt:
         files_list = os.listdir(dpath)
         if any([re.fullmatch(regex, f) == None for f in files_list]):
-            req_files = [ '{}-0000{}-of-00005.txt'.format(dtype,i) for i in range(5)]
+            req_files = [ '{}-0000{}-of-000010.txt'.format(dtype,i) for i in range(10)]
             req_files_table = [(req_file, req_file in files_list) for req_file in req_files]
             for index_fl in req_files_table:
                 if not index_fl[1]:

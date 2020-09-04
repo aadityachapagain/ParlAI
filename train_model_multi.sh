@@ -13,7 +13,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --load-from-checkpoint True \
 --run-tag karu_bot_v0 \
 --run-tag "karu_90M" \
---gcs-data-path  "reddit/20200903" \
+--gcs-data-path  "reddit_cleaned/20200904" \
 --fp16-impl mem_efficient \
 --warmup_updates 100 \
 --wand-project-name "Karu_chatbot_v0" \
@@ -24,7 +24,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --evaltask reddit_datasets --eval_batchsize 12 \
 --fp16 True --text-truncate 128 --truncate 128 \
 --label-truncate 128 --dict-tokenizer bytelevelbpe \
--lr 1e-06 --optimizer adam \
+-lr 4e-06 --optimizer adam \
 --lr-scheduler reduceonplateau --gradient-clip 0.1 \
 -veps 0.25 --betas 0.9,0.999 --update-freq 2 \
 -vp 10 -vmt ppl -vmm min \
@@ -33,7 +33,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --save-after-valid True \
 --student-model-file data/models/Karu/karu_bot_90M \
 --init-model-student data/models/Karu/karu_bot_90M.checkpoint \
---save-every-n-secs 3600 \
+--save-every-n-secs 1800 \
 -tblog True
 
 # --validation-every-n-secs 14400 \

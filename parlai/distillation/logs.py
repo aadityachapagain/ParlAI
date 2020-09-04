@@ -23,6 +23,11 @@ import parlai.utils.logging as logging
 
 os.environ["WANDB_SILENT"] = "true"
 
+try:
+    import wandb
+except ImportError:
+    raise ImportError('Please run `pip install wandb --upgrade`.')
+
 class TensorboardLogger(object):
     """
     Log objects to tensorboard.
@@ -111,13 +116,9 @@ class WandbLogger(object):
             required=True,
             hidden=False,
         )
+    # __instance = None
 
     def __init__(self, opt: Opt):
-        try:
-            import wandb
-        except ImportError:
-            raise ImportError('Please run `pip install wandb -qqq`.')
-        
         # login to wandb
         wandb.login()
 
@@ -134,7 +135,7 @@ class WandbLogger(object):
             'lr_scheduler': opt['lr_scheduler'],
             }
 
-        self.wandrun = wandb.init(
+        wandb.init(
             name= opt['wand_run_name'], resume=True, project=opt['wand_project_name'], 
             id=opt['wand_id'], config=config
         )
@@ -184,4 +185,4 @@ class WandbLogger(object):
             else:
                 logging.error(f'k {k} v {v} is not a number')
 
-        self.wandrun.log(metrics)
+        wandb.log(metrics)

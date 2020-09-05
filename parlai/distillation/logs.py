@@ -25,6 +25,7 @@ os.environ["WANDB_SILENT"] = "true"
 
 try:
     import wandb
+    WANDB_API_KEY = os.environ['WANDB_API_KEY']
 except ImportError:
     raise ImportError('Please run `pip install wandb --upgrade`.')
 
@@ -120,7 +121,7 @@ class WandbLogger(object):
 
     def __init__(self, opt: Opt):
         # login to wandb
-        wandb.login()
+        wandb.login(key = WANDB_API_KEY)
 
         # gather config
         config = {

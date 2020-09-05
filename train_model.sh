@@ -14,7 +14,7 @@ python parlai/distillation/distill_model.py \
 --load-from-checkpoint True \
 --run-tag "karu_90M" \
 --gcs-data-path  "reddit_cleaned/20200904" \
---fp16-impl mem_efficient \
+--fp16-impl apex \
 --warmup_updates 100 \
 --wand-project-name "Karu_chatbot_v0" \
 --wand-run-name "90M Model Distillation" \
@@ -24,11 +24,11 @@ python parlai/distillation/distill_model.py \
 --history-add-global-end-token end \
 --fp16 True --text-truncate 128 --truncate 128 \
 --label-truncate 128 --dict-tokenizer bytelevelbpe \
--lr 4e-06 --optimizer adam \
+-lr 4e-06 --optimizer adamax \
 --lr-scheduler reduceonplateau --gradient-clip 0.1 \
 -veps 0.25 --betas 0.9,0.999 --update-freq 2 \
 -vp 10 -vmt ppl -vmm min \
---dynamic-batching full --batchsize 40 \
+--dynamic-batching full --batchsize 32 \
 --delimiter '  ' \
 --student-model-file data/models/Karu/karu_bot_90M \
 --init-model-student data/models/Karu/karu_bot_90M.checkpoint \

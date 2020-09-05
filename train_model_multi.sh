@@ -9,12 +9,12 @@ python parlai/distillation/multiprocessing_distill.py \
 --dict-file zoo:blender/blender_3B/model.dict \
 --skip-generation True \
 --lr-scheduler reduceonplateau \
---lr-scheduler-patience 4 \
+--lr-scheduler-patience 3 \
 --load-from-checkpoint True \
 --run-tag karu_bot_v0 \
 --run-tag "karu_90M" \
 --gcs-data-path  "reddit_cleaned/20200904" \
---fp16-impl mem_efficient \
+--fp16-impl apex \
 --warmup_updates 100 \
 --wand-project-name "Karu_chatbot_v0" \
 --wand-run-name "90M Model Distillation" \
@@ -24,11 +24,11 @@ python parlai/distillation/multiprocessing_distill.py \
 --evaltask reddit_datasets --eval_batchsize 12 \
 --fp16 True --text-truncate 128 --truncate 128 \
 --label-truncate 128 --dict-tokenizer bytelevelbpe \
--lr 4e-06 --optimizer adam \
+-lr 4e-06 --optimizer adamax \
 --lr-scheduler reduceonplateau --gradient-clip 0.1 \
 -veps 0.25 --betas 0.9,0.999 --update-freq 2 \
 -vp 10 -vmt ppl -vmm min \
---dynamic-batching full --batchsize 4 \
+--dynamic-batching full --batchsize 2 \
 --delimiter '  ' \
 --save-after-valid True \
 --student-model-file data/models/Karu/karu_bot_90M \
@@ -37,4 +37,5 @@ python parlai/distillation/multiprocessing_distill.py \
 -tblog True
 
 # --validation-every-n-secs 14400 \
-# --dynamic-batching full 
+# --dynamic-batching full
+# --fp16-impl mem_efficient \

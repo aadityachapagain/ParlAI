@@ -746,17 +746,18 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
         with torch.no_grad():
                 # save memory and compute by disabling autograd.
                 # use `with torch.enable_grad()` to gain back gradients.
-            output = self.teacher_eval_step(batch)
+            output, ys, ys_lens = self.teacher_eval_step(batch)
 
         for idx , obs in enumerate(observations):
             obs.force_set('labels' , [output['text'][idx]])
             # print(obs['text'], obs['labels'], output.get('text'))
-        del batch
 
         # convert label to label_vec
-        self._set_label_vec(observations, False,True , self.label_truncate)
+        observations = self._set_label_vec(observations, False,True , self.label_truncate)
 
-        assert tmp_label_vec != observations[0].get('labels_vec')
+        assert tmp_label_vec != observations[0].get('labels_vec') torch.eq()
+        
+        del batch
         batch = self.batchify(observations)
 
         self.global_metrics.add('exps', GlobalTimerMetric(batch.batchsize))
@@ -1041,7 +1042,7 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
             # compute additional bleu scores
             self._compute_fairseq_bleu(batch, preds)
             self._compute_nltk_bleu(batch, text)
-        return Output(text, cand_choices, token_losses=token_losses)
+        return Output(text, cand_choices, token_losses=token_losses), self._create_soft_labels[self.filter_BOS_token(x) for x in preds]
 
     def compute_loss(self, batch, return_output=False):
         """

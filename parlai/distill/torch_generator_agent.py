@@ -739,6 +739,7 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
         # check if there are any labels available, if so we will train on them
         self.is_training = any('labels' in obs for obs in observations)
 
+        tmp_label_vec = observations[0].get('labels_vec')
         # create a batch from the vectors
         batch = self.batchify(observations)
         
@@ -749,8 +750,13 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
 
         for idx , obs in enumerate(observations):
             obs.force_set('labels' , [output['text'][idx]])
-            # print(obs['text'], obs['labels'])
+            # print(obs['text'], obs['labels'], output.get('text'))
         del batch
+
+        # convert label to label_vec
+        self._set_label_vec(observations, False, , label_truncate)
+
+        assert tmp_label_vec != observations[0].get('labels_vec')
         batch = self.batchify(observations)
 
         self.global_metrics.add('exps', GlobalTimerMetric(batch.batchsize))

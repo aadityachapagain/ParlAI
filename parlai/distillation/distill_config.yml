@@ -3,7 +3,7 @@ student_config:
   embedding_size: 512
   ffn_size: 2048
   embeddings_scale: True
-  variant: prelayernorm
+  variant: xlm
   n_heads: 16
   n_positions: 512
   n_encoder_layers: 8

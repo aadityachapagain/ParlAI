@@ -12,7 +12,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --lr-scheduler-patience 3 \
 --load-from-checkpoint True \
 --run-tag karu_bot_v0 \
---run-tag "karu_90M" \
+--run-tag "karu_90M_stable" \
 --gcs-data-path  "reddit_cleaned/20200904" \
 --fp16-impl apex \
 --warmup_updates 100 \

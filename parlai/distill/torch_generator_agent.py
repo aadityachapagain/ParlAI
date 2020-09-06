@@ -754,7 +754,7 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
         del batch
 
         # convert label to label_vec
-        self._set_label_vec(observations, False,True , label_truncate)
+        self._set_label_vec(observations, False,True , self.label_truncate)
 
         assert tmp_label_vec != observations[0].get('labels_vec')
         batch = self.batchify(observations)

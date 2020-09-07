@@ -50,12 +50,12 @@ def build(opt):
         for downloadable_file in RESOURCES.get(version, RESOURCES['All']):
             downloadable_file.download_file(dpath)
 
-        _create_parlai_format(dpath)
+        _create_parlai_format(dpath, opt.get('min_dialogue_turns', -1))
 
         build_data.mark_done(dpath, version_string=version)
 
 
-def _create_parlai_format(dpath):
+def _create_parlai_format(dpath, min_dialogue_turns=-1):
     conv_files = glob.glob(os.path.join(dpath, '*/*/t_*/custom/data.json'))
     conv_data = []
     for conv_file in conv_files:
@@ -66,13 +66,17 @@ def _create_parlai_format(dpath):
 
     with open(os.path.join(dpath, 'train.txt'), 'w') as f_write:
         for conv in conv_data:
-            for line in _get_lines(conv):
+            for line in _get_lines(conv, min_dialogue_turns=min_dialogue_turns):
                 f_write.write(f'{line} \n')
 
 
-def _get_lines(conv):
+def _get_lines(conv, min_dialogue_turns=-1):
     lines = []
     num_of_turns = len(conv['conversations']) // 2
+
+    if num_of_turns < min_dialogue_turns:
+        return lines
+
     for turn_idx in range(num_of_turns):
         lines.append({
             'text': conv['conversations'][2 * turn_idx]['text'],

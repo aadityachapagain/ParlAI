@@ -24,7 +24,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --evaltask reddit_datasets --eval_batchsize 12 \
 --fp16 True --text-truncate 128 --truncate 128 \
 --label-truncate 128 --dict-tokenizer bytelevelbpe \
--lr 2e-06 --optimizer adam \
+-lr 1e-06 --optimizer adam \
 --lr-scheduler reduceonplateau --gradient-clip 0.1 \
 -veps 0.25 --betas 0.9,0.999 --update-freq 2 \
 -vp 10 -vmt ppl -vmm min \

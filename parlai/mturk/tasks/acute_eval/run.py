@@ -170,6 +170,12 @@ class AcuteEvaluator(object):
 
         Useful to add relevant options after args are parsed.
         """
+        self.opt.update({
+            'subtasks_per_hit': (len(self.opt.get('acute_questions'))
+                                 if self.opt.get('acute_questions')
+                                 else self.opt.get('subtasks_per_hit'))
+        })
+
         self.opt.update(
             {
                 'task': os.path.basename(os.path.dirname(os.path.abspath(__file__))),
@@ -357,6 +363,22 @@ class AcuteEvaluator(object):
 
         return task_data
 
+    def attach_acute_questions(self, task_data):
+        if len(task_data) <= len(self.opt['acute_questions']):
+            questions = random.sample(list(self.opt['acute_questions']), len(task_data))
+        else:
+            questions = random.sample(list(self.opt['acute_questions']), len(self.opt['acute_questions']))
+            questions.extend([random.choice(list(self.opt['acute_questions'])) for _ in
+                              range(len(task_data) - len(self.opt['acute_questions']))])
+        assert len(questions) == len(self.opt['acute_questions']), "Number of Acute Questions should match number of task data."
+        for quest, task in zip(questions, task_data):
+            task['task_specs'].update({
+                's1_choice': self.opt['acute_questions'][quest]['s1_choice'],
+                's2_choice': self.opt['acute_questions'][quest]['s2_choice'],
+                'question': self.opt['acute_questions'][quest]['question'],
+            })
+        return task_data
+
     def get_new_task_data(self, worker_id: str) -> List[Dict[str, Any]]:
         """
         Get next task for worker.
@@ -376,16 +398,17 @@ class AcuteEvaluator(object):
         tasks_per_hit = self.opt['subtasks_per_hit']
         # first add onboarding tasks
         task_data = self.get_onboarding_tasks(worker_id)
-        if len(task_data) == tasks_per_hit:
-            return task_data
 
         # poll the task queue for more tasks
-        task_data = self._poll_task_queue(worker_id, task_data)
-        if len(task_data) == tasks_per_hit:
-            return task_data
+        if len(task_data) < tasks_per_hit:
+            task_data = self._poll_task_queue(worker_id, task_data)
 
         # top up the task_data if we don't hit the desired tasks_per_hit
-        task_data = self._top_up_task_data(worker_id, task_data)
+        if len(task_data) < tasks_per_hit:
+            task_data = self._top_up_task_data(worker_id, task_data)
+
+        if self.opt.get('acute_questions'):
+            task_data = self.attach_acute_questions(task_data)
         return task_data
 
     def requeue_task_data(self, worker_id: str, task_data: List[Dict[str, Any]]):

@@ -43,4 +43,16 @@ CONFIG: Dict[str, Dict] = {
         'log_path': f"{os.path.dirname(os.path.realpath(__file__))}/example/chat_log.jsonl"
     },
     'example_dataset': {'task': 'convai2', 'prepended_context': True},
+    '90M': {
+        'task': 'child_companion_dialog',
+        'prepended_context': True,
+        'task_data_version': '90M',
+        'min_dialogue_turns': 7,
+    },
+    '3B': {
+        'task': 'child_companion_dialog',
+        'prepended_context': True,
+        'task_data_version': '3B',
+        'min_dialogue_turns': 7,
+    },
 }

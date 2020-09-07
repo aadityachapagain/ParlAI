@@ -51,15 +51,30 @@ import hashlib
 # ACUTE EVAL CONSTANTS #
 ########################
 ACUTE_EVAL_TYPES = {
-    'human': {
-        'question': 'Which speaker sounds more human?',
-        's1_choice': '<Speaker 1> sounds more human',
-        's2_choice': '<Speaker 2> sounds more human',
+    'Interestingness': {
+        'question': 'Which speaker had the more interesting conversation?',
+        's1_choice': '<Speaker 1> sounds more interesting.',
+        's2_choice': '<Speaker 2> sounds more interesting.',
     },
-    'engaging': {
-        'question': 'Who would you prefer to talk to for a long conversation?',
-        's1_choice': 'I would prefer to talk to <Speaker 1>',
-        's2_choice': 'I would prefer to talk to <Speaker 2>',
+    'Engaging': {
+        'question': 'With which speaker would you like to talk more to?',
+        's1_choice': 'I would prefer to talk more to <Speaker 1>.',
+        's2_choice': 'I would prefer to talk more to <Speaker 2>.',
+    },
+    'Empathetic': {
+        'question': 'Which speaker is more empathetic?',
+        's1_choice': '<Speaker 1> sounds more empathetic.',
+        's2_choice': '<Speaker 2> sounds more empathetic.',
+    },
+    'Contradictory': {
+        'question': 'Which speaker makes more self-contradictory or non-sensicial statements?',
+        's1_choice': '<Speaker 1> makes more self-contradictory or non-sensicial statements.',
+        's2_choice': '<Speaker 2> makes more self-contradictory or non-sensicial statements.',
+    },
+    'Repeating': {
+        'question': 'Which speaker has more tendency to repeat themselves?',
+        's1_choice': '<Speaker 1> has more tendency to repeat.',
+        's2_choice': '<Speaker 2> has more tendency to repeat.',
     },
 }
 if internal_types:
@@ -71,8 +86,8 @@ EXAMPLE_PATH = os.path.join(
 )
 # Feel free to edit this, but not necessary
 SUBTASKS_PER_HIT = 5
-MAX_HITS_PER_WORKER = 1
-MATCHUPS_PER_PAIR = 160
+MAX_HITS_PER_WORKER = 0
+MATCHUPS_PER_PAIR = 500
 
 ACUTE_DEFAULT_ARGS = {
     # onboarding
@@ -83,6 +98,7 @@ ACUTE_DEFAULT_ARGS = {
     'max_hits_per_worker': MAX_HITS_PER_WORKER,
     'assignment_duration_in_seconds': 600,
     'auto_approve_delay': 5,
+    'count_complete': True,
     # acute args
     'annotations_per_pair': 1,
     'seed': 42,
@@ -132,9 +148,15 @@ def setup_args(parser=None) -> ParlaiParser:
         '-eval',
         '--acute-eval-type',
         type=str,
-        default='engaging',
+        default='Engaging',
         choices=list(ACUTE_EVAL_TYPES.keys()),
         help='which evaluation to run for acute',
+    )
+    parser.add_argument(
+        '--ask-all-acute-question',
+        dest='ask_all_acute_question',
+        action='store_true',
+        help='Ask all ACUTE question in ACUTE_EVAL_TYPES in a HIT',
     )
     parser.add_argument(
         '-mpp',
@@ -373,6 +395,8 @@ class ParlAIQuickAcute(object):
             'dialogue': [],
             'speakers': [],
         }
+        if conversation.context:
+            acute_conversation['context'].extend(conversation.context)
         for i, ex in enumerate(conversation):
             if ex['id'] == 'context':
                 acute_conversation['context'].append(ex)
@@ -595,6 +619,10 @@ class ParlAIQuickAcute(object):
                 ),
             }
         )
+        if self.opt.get('ask_all_acute_question'):
+            self.acute_args.update({
+                'acute_questions': ACUTE_EVAL_TYPES,
+            })
         self.acute_evaluator = AcuteEvaluator(self.acute_args)
         if self.opt['live_acute']:
             self._print_progress('Running ACUTE-EVAL in LIVE Mode')

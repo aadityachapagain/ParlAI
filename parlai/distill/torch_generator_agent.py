@@ -748,9 +748,7 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
 
         for idx , obs in enumerate(observations):
             obs.force_set('labels' , [output['text'][idx]])
-            if output.text:
-                print(' set vec !')
-                obs.force_set('labels_vec', self._vectorize_text(output.text[idx], False, True, self.label_truncate, False))
+            obs.force_set('labels_vec', self._vectorize_text(output.text[idx], False, True, self.label_truncate, False))
         
         del batch
         batch = self.batchify(observations)

@@ -122,7 +122,7 @@ SELFCHAT_MAX_TURNS = 6
 ##############################
 # TASK CONVERSTION CONSTANTS #
 ##############################
-NUM_TASK_DATA_EPISODES = 500
+NUM_TASK_DATA_EPISODES = -1
 SELFCHAT_MAX_TURNS = 6
 
 
@@ -176,6 +176,19 @@ def setup_args(parser=None) -> ParlaiParser:
         type=str,
         default=os.path.join(EXAMPLE_PATH, 'onboarding.jsonl'),
         help='path to onboarding pair',
+    )
+    parser.add_argument(
+        '--heroku-team',
+        dest='heroku_team',
+        default=None,
+        help='Specify Heroku team name to use for launching Dynos.',
+    )
+    parser.add_argument(
+        '--hobby',
+        dest='hobby',
+        default=False,
+        action='store_true',
+        help='Run the heroku server on the hobby tier.',
     )
     parser.set_defaults(selfchat_task=True, task='self_chat')
     return parser
@@ -617,6 +630,8 @@ class ParlAIQuickAcute(object):
                 'num_conversations': int(
                     total_convos / (SUBTASKS_PER_HIT - 1)  # subtract 1 for onboarding
                 ),
+                'heroku_team': self.opt['heroku_team'],
+                'hobby': self.opt['hobby']
             }
         )
         if self.opt.get('ask_all_acute_question'):

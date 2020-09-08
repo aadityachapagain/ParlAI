@@ -138,7 +138,7 @@ class Interactive(ParlaiScript):
 
         model_download_path = os.path.join(*os.path.split(self.opt['model_file'])[:-1])
         if latest_train_path:
-            if len(os.listdir(model_download_path)) < 2:
+            if len(os.listdir(model_download_path)) < 2 or os.path.isdir(model_download_path):
                 storage_agent.download_all(latest_train_path, model_download_path)
 
         for subdir in os.listdir(model_download_path):

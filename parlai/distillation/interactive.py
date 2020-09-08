@@ -10,6 +10,8 @@ from parlai.utils.torch import atomic_save
 import random
 from parlai.gcp.gcs_service import gcp as storage_agent
 import traceback
+import json
+import torch
 
 def get_latest_train(file_path):
     try:
@@ -23,7 +25,7 @@ def get_latest_train(file_path):
         traceback.print_exc()
         return False
 
-def check_parlai_model(path: str) -> Dict[str, Any]:
+def check_parlai_model(path: str):
     """
     Return opt and model states.
 
@@ -136,18 +138,26 @@ class Interactive(ParlaiScript):
 
         model_download_path = os.path.join(*os.path.split(self.opt['model_file'])[:-1])
         if latest_train_path:
-            if not os.path.isfile(self.opt['model_file']+'.checkpoint'):
+            if len(os.listdir(model_download_path)) < 2:
                 storage_agent.download_all(latest_train_path, model_download_path)
 
         for subdir in os.listdir(model_download_path):
             if subdir.endswith('.checkpoint'):
-                model_file_path = subdir
+                model_file_path = subdir    
         
-        if os.path.isfile(os.path.join(model_download_path, model_file_path.replace('.checkpoint', '')):
+        if os.path.isfile(os.path.join(model_download_path, model_file_path.replace('.checkpoint', ''))):
             model_file_path = model_file_path.replace('.checkpoint', '')
-        self.opt['dict_file'] =  model_file_path + '.dict'
-        self.opt['model_file'] = model_file_path
-        self.opt.update(self.opt['student_config'])
+        self.opt['dict_file'] =  os.path.join(model_download_path, model_file_path + '.dict')
+        self.opt['model_file'] = os.path.join(model_download_path, model_file_path)
+        with open(self.opt['model_file']+'.opt') as fp:
+            student_config = json.loads(fp.read())
+
+        student_config.update(student_config['student_config'])
+        with open(self.opt['model_file']+'.opt', 'w') as fw:
+            json.dump(student_config, fw)
+        
+        self.opt.update(student_config['student_config'])
+        self.opt['embedding_size'] = student_config['student_config']['embedding_size']
         check_parlai_model(self.opt['model_file'])
 
         return interactive(self.opt)

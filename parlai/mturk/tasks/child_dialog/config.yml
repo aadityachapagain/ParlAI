@@ -2,14 +2,14 @@ run_config1:
   workers_role: [KARU]
   run_name: KaruOnlyGolden50  # No underscore here please
   dedicated_worker_run: True
-  number_of_dedicated_workers : 15
+  number_of_dedicated_workers : 20
   num_conversations: 50 # number of conversations you want to create for this task, ignored in dedicated run
   number_of_runs: 1
   sleep_between_runs: 600
   run_timelimit: 86400
   unique_worker: False  # enforce that no worker can work on your task twice
   max_hits_per_worker: 50  # Max number of hits each worker can perform during current group run, 0 means unlimited
-  unique_qual_name: EmbChildCompanionDialogMax50Submission09072020  # qualification name to use for uniqueness between HITs
+  unique_qual_name: EmbChildCompanionDialogMax50Submission09082020  # qualification name to use for uniqueness between HITs
   max_hits_limit_in_a_run_only: True
   reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
   is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
@@ -53,9 +53,9 @@ run_config1:
   force_bot: True  # If true force worker to chat with Bot
   qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
   delete_qual_test_qualification: False  #  TODO if True might throw error(need fixing), Delete `qual_test_qualification` after all HITs are complete
-  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITsWorker09072020
+  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITsWorker09082020
   ExcludeWorkerWithQualifications: []
   min_hit_approval_rate: 90
   no_cuda: False
-  dedicated_workers_list: [A16T3D6VY5WJGJ, A1TR5V28IAIIBZ, A24RCKH0Q3GMQY, A27OFCQG73Z4UF, A2CUAZD7OJDFYR, A2IRBZJJEB9P5E, A2UKO65AVU38T4, A38N05VH5344HC, A3DAZYTJQ74UOQ, A3DELT7BVEPU24, A3MYPYBVHX7FQ2, A3VQNWG6KIY4MJ, A4BDXOXC4D8FX, AJZEXCH1TSUE1, ATJVY9O4CY5EX]
+  dedicated_workers_list: [A1DNMJE4FXPDZK, A2LR1HKNOVDTJ8, A7SXWHGK8B40R, AJZEXCH1TSUE1, A16T3D6VY5WJGJ, AGZ3GHE3N634N, A3MYPYBVHX7FQ2, APKTDTD9LK539, A4BDXOXC4D8FX, A182N7RLXGSCZG, A3DELT7BVEPU24, A1WAWEY2810TFN, A34RAQL1JVSK70, A2WIEFKYR5LJQ1, A24RCKH0Q3GMQY, A2SMPT2VQV8HUI, A27OFCQG73Z4UF, A2CUAZD7OJDFYR, A3DAZYTJQ74UOQ, A2STG331R3P3FK]
   approve_pending_assignments: True

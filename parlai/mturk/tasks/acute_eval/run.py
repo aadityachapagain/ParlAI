@@ -584,6 +584,96 @@ class AcuteEvaluator(object):
         return task_group_id
 
 
+class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
+    def _load_conversation_data(self):
+        """
+        Load conversation data.
+
+        Loads in the data from the pairs filepath.
+        """
+        pairs_path = self.opt.get('pairings_filepath')
+        if not os.path.exists(pairs_path):
+            raise RuntimeError('You MUST specify a valid pairings filepath')
+
+        with open(pairs_path) as pf:
+            for i, l in enumerate(pf.readlines()):
+                convo_pair = json.loads(l.strip())
+                eval_speakers = [
+                    s
+                    for d in convo_pair['dialogue_dicts']
+                    for s in d['speakers']
+                    if s in convo_pair['speakers_to_eval']
+                ]
+                # make sure order is preserved
+                assert eval_speakers == convo_pair['speakers_to_eval']
+                model_left_idx = random.choice([0, 1])
+                task = {
+                    'task_specs': {
+                        's1_choice': self.opt['s1_choice'],
+                        's2_choice': self.opt['s2_choice'],
+                        'question': self.opt['question'],
+                        'is_onboarding': convo_pair['is_onboarding'],
+                        'model_left': {
+                            'name': eval_speakers[model_left_idx],
+                            'dialogue': convo_pair['dialogue_dicts'][model_left_idx][
+                                'dialogue'
+                            ],
+                        },
+                        'persona': (convo_pair['dialogue_dicts'][model_left_idx][
+                                       'context'][0]['text'][-1][14:]
+                                    if convo_pair['dialogue_dicts'][model_left_idx].get('context')
+                                    else ''),
+                        'model_right': {
+                            'name': eval_speakers[1 - model_left_idx],
+                            'dialogue': convo_pair['dialogue_dicts'][
+                                1 - model_left_idx
+                            ]['dialogue'],
+                        },
+                    },
+                    'pairing_dict': convo_pair,
+                    'pair_id': i,
+                }
+                if convo_pair.get('is_onboarding'):
+                    self.onboarding_tasks.append(task)
+                else:
+                    self.desired_tasks.append(task)
+
+    def attach_acute_questions(self, task_data):
+        question_key = random.choice(list(self.opt['acute_questions']))
+
+        for task in task_data:
+            if question_key.lower() == 'persona':
+                question = self.opt['acute_questions'][question_key]['question'] + \
+                           ' --> ' + task['task_specs'].get('persona', '')
+            else:
+                question = self.opt['acute_questions'][question_key]['question']
+
+            task['task_specs'].update({
+                's1_choice': self.opt['acute_questions'][question_key]['s1_choice'],
+                's2_choice': self.opt['acute_questions'][question_key]['s2_choice'],
+                'question': question,
+            })
+        return task_data
+
+    def _supplement_opt(self):
+        """
+        Add additional args to opt.
+
+        Useful to add relevant options after args are parsed.
+        """
+        self.opt.update(
+            {
+                'task': os.path.basename(os.path.dirname(os.path.abspath(__file__))),
+                'task_description': {
+                    'num_subtasks': self.opt['subtasks_per_hit'],
+                    'question': self.opt['question'],
+                },
+                'frontend_version': 1,
+            }
+        )
+        self.opt.update(self.opt['task_config'])
+
+
 if __name__ == '__main__':
     args = add_args(from_argv=True)
     runner = AcuteEvaluator(args)

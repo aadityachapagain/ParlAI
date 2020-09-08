@@ -6,7 +6,7 @@
 from parlai import __file__ as parlai_filepath
 from parlai.core.opt import Opt
 from parlai.core.params import ParlaiParser
-from parlai.mturk.tasks.acute_eval.run import AcuteEvaluator, add_args as acute_add_args
+from parlai.mturk.tasks.acute_eval.run import AcuteEvaluator, PersonaMatchingAcuteEvaluator, add_args as acute_add_args
 from parlai.scripts.self_chat import self_chat, setup_args as self_chat_setup_args
 from parlai.utils.conversations import Conversations, Conversation
 from parlai.utils.strings import normalize_reply
@@ -76,6 +76,11 @@ ACUTE_EVAL_TYPES = {
         's1_choice': '<Speaker 1> has more tendency to repeat.',
         's2_choice': '<Speaker 2> has more tendency to repeat.',
     },
+    'Persona': {
+        'question': 'Which speaker best modeled the following persona?',
+        's1_choice': '<Speaker 1> modeled the persona better.',
+        's2_choice': '<Speaker 2> modeled the persona better.'
+    }
 }
 if internal_types:
     ACUTE_EVAL_TYPES.update(
@@ -673,9 +678,105 @@ class ParlAIQuickAcute(object):
         self._print_progress(f'ACUTE results saved to {self.results_path}')
 
 
+class CCDPersonaMatchingQuickAcute(ParlAIQuickAcute):
+    def filter_common_persona_conversations_in_combo(
+            self, conversations: Dict[str, Conversations], unique_ids: Dict[str, List[int]]
+    ):
+        assert len(conversations) == 2, 'Combo should have only 2 models'
+        id_pair = list(conversations)
+        model1_personas = set([c.context[0]['text'][-1] for c in conversations[id_pair[0]] if c.context])
+        model2_personas = set([c.context[0]['text'][-1] for c in conversations[id_pair[1]] if c.context])
+        common_personas = model1_personas.intersection(model2_personas)
+
+        return {
+            id_pair[0]: {
+                persona: [(c, c_id) for c, c_id in zip(conversations[id_pair[0]], unique_ids[id_pair[0]]) if
+                          (c.context and (c.context[0]['text'][-1] == persona))]
+                for persona in common_personas},
+            id_pair[1]: {
+                persona: [(c, c_id) for c, c_id in zip(conversations[id_pair[1]], unique_ids[id_pair[1]]) if
+                          (c.context and (c.context[0]['text'][-1] == persona))]
+                for persona in common_personas},
+        }
+
+    def _build_conversation_pairs(
+            self, conversations: Dict[str, Conversations]
+    ) -> List[Dict[str, Any]]:
+        """
+        Build a conversation pair to show during ACUTE Eval.
+
+        We build twice as many pairs per matchup as specified
+        in the config, to account for issues where sometimes
+        we run out of pairs of conversations to evaluate.
+        :param conversations:
+        A dictionary mapping config_id to dialogues
+
+        :return pairs:
+        A list of conversation pairs
+        """
+        unique_ids = self._get_unique_ids(conversations)
+        pairs = []
+        pairs_per_id = self.opt['matchups_per_pair'] * 2
+        # Write random pairs of conversations
+        for id_pair in self.combos:
+            filtered_conversations = self.filter_common_persona_conversations_in_combo({
+                id_pair[0]: conversations[id_pair[0]],
+                id_pair[1]: conversations[id_pair[1]],
+            }, unique_ids)
+            for _ in range(pairs_per_id):
+                persona, (conv1, c_id1) = random.choice(
+                    [(p, conv) for p, convs in filtered_conversations[id_pair[0]].items() for conv in convs])
+                conv2, c_id2 = random.choice(filtered_conversations[id_pair[1]][persona])
+                pairs.append(
+                    {
+                        "is_onboarding": False,
+                        "speakers_to_eval": id_pair,
+                        "dialogue_dicts": [self._acutify_convo(conv1, id_pair[0]),
+                                           self._acutify_convo(conv2, id_pair[1])],
+                        "dialogue_ids": [c_id1, c_id2],
+                    }
+                )
+        return pairs
+
+    def run_acute_eval(self):
+        """
+        Run ACUTE Eval.
+        """
+        self._load_pairings_file()
+
+        self.acute_args = acute_add_args()
+        self.acute_args.update(ACUTE_DEFAULT_ARGS)
+        total_convos = self.opt['matchups_per_pair'] * len(self.combos)
+        self.acute_args.update(
+            {
+                'is_sandbox': not self.opt['live_acute'],
+                'pairings_filepath': self.pairings_filepath,
+                's1_choice': self.question_config['s1_choice'],
+                's2_choice': self.question_config['s2_choice'],
+                'question': self.question_config['question'],
+                'num_matchup_pairs': total_convos,
+                'num_conversations': int(
+                    total_convos / (SUBTASKS_PER_HIT - 1)  # subtract 1 for onboarding
+                ),
+                'heroku_team': self.opt['heroku_team'],
+                'hobby': self.opt['hobby']
+            }
+        )
+        if self.opt.get('ask_all_acute_question'):
+            self.acute_args.update({
+                'acute_questions': ACUTE_EVAL_TYPES,
+            })
+        self.acute_evaluator = PersonaMatchingAcuteEvaluator(self.acute_args)
+        if self.opt['live_acute']:
+            self._print_progress('Running ACUTE-EVAL in LIVE Mode')
+        else:
+            self._print_progress('Running ACUTE-EVAL in SANDBOX Mode')
+        self.run_id = self.acute_evaluator.run()
+
+
 if __name__ == '__main__':
     parser = setup_args()
-    runner = ParlAIQuickAcute(parser.parse_args())
+    runner = CCDPersonaMatchingQuickAcute(parser.parse_args())
 
     # Compile Chat Logs
     runner.compile_chat_logs()

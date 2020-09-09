@@ -11,7 +11,6 @@ python parlai/distillation/multiprocessing_distill.py \
 --lr-scheduler reduceonplateau \
 --lr-scheduler-patience 3 \
 --load-from-checkpoint True \
---run-tag karu_bot_v0 \
 --run-tag "karu_90M_stable" \
 --gcs-data-path  "reddit_cleaned/20200904" \
 --fp16-impl apex \
@@ -21,7 +20,7 @@ python parlai/distillation/multiprocessing_distill.py \
 --wand-id "90MmodelDistilleval" \
 --log_every_n_secs 30 \
 --history-add-global-end-token end \
---evaltask reddit_datasets --eval_batchsize 12 \
+--evaltask reddit_datasets --eval_batchsize 8 \
 --fp16 True --text-truncate 128 --truncate 128 \
 --label-truncate 128 --dict-tokenizer bytelevelbpe \
 -lr 1e-06 --optimizer adam \

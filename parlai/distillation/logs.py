@@ -126,9 +126,9 @@ class WandbLogger(object):
         # gather config
         config = {
             'optimizer': opt['optimizer'],
-            'embedding_size': opt['student_config']['embedding_size'],
-            'ffn_size': opt['student_config']['ffn_size'],
-            'n_decoder_layers': opt['student_config']['n_decoder_layers'],
+            'embedding_size': opt.get('student_config')['embedding_size'] if opt.get('student_config') else opt['embedding_size'],
+            'ffn_size': opt['student_config']['ffn_size'] if opt.get('student_config') else opt['ffn_size'],
+            'n_decoder_layers': opt['student_config']['n_decoder_layers'] if opt.get('student_config') else opt['n_decoder_layers'],
             'tokenizer': opt['dict_tokenizer'],
             'fp16': opt['fp16'],
             'fp16_impl': opt['fp16_impl'],

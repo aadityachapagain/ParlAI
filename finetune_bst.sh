@@ -1,4 +1,9 @@
 export GOOGLE_APPLICATION_CREDENTIALS="gcp/fusemachineschat.json"
+
+export WANDB_API_KEY="250ec687322ac7425ad946e7c5238228d48fc93a"
+
+python3 parlai/tasks/reddit_datasets/build.py
+
 export PYTHONFAULTHANDLER=1
 python parlai/scripts/multiprocessing_train.py \
 -t blended_skill_talk,wizard_of_wikipedia,convai2:normalized \

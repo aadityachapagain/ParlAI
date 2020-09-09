@@ -4,12 +4,13 @@
   "description": "",
   "main": "webpack.config.js",
   "scripts": {
-    "dev": "webpack --mode development -q"
+    "dev": "webpack --mode production -q"
   },
   "keywords": [],
   "author": "",
   "dependencies": {
     "bootstrap": "^4.3.1",
+    "compression-webpack-plugin": "^5.0.2",
     "fetch": "^1.1.0",
     "jquery": "^3.0.0",
     "popper.js": "^1.14.4",
@@ -17,7 +18,8 @@
     "react": "^16.5.2",
     "react-bootstrap": "^0.32.4",
     "react-dom": "^16.5.2",
-    "react-table": "^6.8.6"
+    "react-table": "^6.8.6",
+    "uglifyjs-webpack-plugin": "^2.2.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.1.0",
@@ -30,6 +32,8 @@
     "style-loader": "^0.23.0",
     "url-loader": "^2.0.1",
     "webpack": "^4.19.1",
-    "webpack-cli": "^3.1.1"
+    "webpack-cli": "^3.1.1",
+    "uglifyjs-webpack-plugin": "^2.2.0",
+    "compression-webpack-plugin": "^5.0.2"
   }
 }

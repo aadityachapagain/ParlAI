@@ -6,6 +6,8 @@
 
 var path = require('path');
 var webpack = require('webpack');
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
+const CompressionPlugin = require('compression-webpack-plugin');
 
 module.exports = {
   entry: './dev/main.js',
@@ -16,6 +18,13 @@ module.exports = {
   node: {
     net: 'empty',
     dns: 'empty',
+  },
+  plugins: [new CompressionPlugin()],
+  mode: 'production',
+  devtool: false,
+  optimization: {
+    minimize: true,
+    minimizer: [new UglifyJsPlugin()]
   },
   module: {
     rules: [

@@ -26,6 +26,14 @@ app.use(
 );
 app.use(bodyParser.json());
 
+app.get('*.js', (req, res, next) => {
+  req.url = req.url + '.gz';
+  res.set('Content-Encoding', 'gzip');
+  next();
+});
+
+app.use(express.static('public'));
+
 nunjucks.configure(task_directory_name, {
   autoescape: true,
   express: app,

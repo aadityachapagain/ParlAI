@@ -9,6 +9,7 @@ import os
 import queue
 import random
 import time
+import copy
 
 from parlai.core.params import ParlaiParser
 from parlai.mturk.core.mturk_manager import StaticMTurkManager
@@ -639,9 +640,10 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
                     self.desired_tasks.append(task)
 
     def attach_acute_questions(self, task_data):
-        question_key = random.choice(list(self.opt['acute_questions']))
+        question_keys = random.sample(list(self.opt['acute_questions']), len(self.opt['acute_questions']))
+        task_data = [copy.deepcopy(task_data[0]) for _ in range(len(question_keys))]
 
-        for task in task_data:
+        for question_key, task in zip(question_keys, task_data):
             if question_key.lower() == 'persona':
                 question = self.opt['acute_questions'][question_key]['question'] + \
                            ' --> ' + task['task_specs'].get('persona', '')
@@ -661,6 +663,12 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
 
         Useful to add relevant options after args are parsed.
         """
+        self.opt.update({
+            'subtasks_per_hit': (len(self.opt.get('acute_questions'))
+                                 if self.opt.get('acute_questions')
+                                 else self.opt.get('subtasks_per_hit'))
+        })
+
         self.opt.update(
             {
                 'task': os.path.basename(os.path.dirname(os.path.abspath(__file__))),
@@ -672,6 +680,128 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
             }
         )
         self.opt.update(self.opt['task_config'])
+
+    def _poll_task_queue(
+        self, worker_id: str, task_data: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Poll task queue for tasks for a worker.
+
+        :param worker_id:
+            id for worker
+
+        :param task_data:
+            list of potential tasks already for worker
+
+        :return task_data:
+            a list of tasks for a worker to complete
+        """
+        worker_data = self._get_worker_data(worker_id)
+        num_attempts = 0
+        while (not self.task_queue.empty()) and num_attempts < self.task_queue.qsize():
+            try:
+                next_task = self.task_queue.get()
+            except queue.Empty:
+                break
+            num_attempts += 1
+
+            pair_id = next_task['pair_id']
+            dialogue_ids = self._get_dialogue_ids(next_task)
+
+            # make sure worker has not seen these conversations before
+            if pair_id not in worker_data['tasks_completed'] and all(
+                d_id not in worker_data['conversations_seen'] for d_id in dialogue_ids
+            ):
+                # track tasks and conversations seen
+                worker_data['tasks_completed'].append(pair_id)
+                worker_data['conversations_seen'].extend(dialogue_ids)
+                task_data.append(next_task)
+                if len(task_data) == 1:
+                    return task_data
+            else:
+                self.task_queue.put(next_task)
+
+        return task_data
+
+    def _top_up_task_data(
+        self, worker_id: str, task_data: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Top up worker task data.
+
+        This function is called if ``self.task_queue`` is exhausted but
+        task_data for the worker is less than the `tasks_per_hit`.
+
+        Make sure that all added tasks have not been seen by the worker.
+
+        :param worker_id:
+            id for worker
+
+        :param task_data:
+            list of potential tasks already for worker
+
+        :return task_data:
+            a list of tasks for a worker to complete
+        """
+        worker_data = self._get_worker_data(worker_id)
+        tasks_still_needed = 1 - len(task_data)
+        tasks_remaining = [
+            t_id
+            for t_id in range(len(self.desired_tasks))
+            if t_id not in worker_data['tasks_completed']
+        ]
+        # get any pairings with conversations this worker has not seen to fill this hit
+        additional_tasks = [
+            t
+            for t in tasks_remaining
+            if all(
+                d_id not in worker_data['conversations_seen']
+                for d_id in self._get_dialogue_ids(self.desired_tasks[t])
+            )
+        ]
+        if tasks_still_needed < len(additional_tasks):
+            additional_tasks = random.sample(additional_tasks, tasks_still_needed)
+        worker_data['tasks_completed'].extend(additional_tasks)
+
+        for t in additional_tasks:
+            worker_data['conversations_seen'].extend(
+                self._get_dialogue_ids(self.desired_tasks[t])
+            )
+            task_data.append(self.desired_tasks[t])
+
+        return task_data
+
+    def get_new_task_data(self, worker_id: str) -> List[Dict[str, Any]]:
+        """
+        Get next task for worker.
+
+        Returns the next onboarding task if worker hasn't finished them all,
+        Otherwise finds a task from the queue they haven't seen
+
+        If they've seen everything in the queue, spin up an
+        extra task (one that was in the queue and is now saturated)
+
+        :param worker_id:
+            worker id
+
+        :return task_data:
+            A list of tasks for the worker to complete
+        """
+        # tasks_per_hit = self.opt['subtasks_per_hit']
+        # # first add onboarding tasks
+        # task_data = self.get_onboarding_tasks(worker_id)
+        #
+        # # poll the task queue for more tasks
+        # if len(task_data) < tasks_per_hit:
+        task_data = self._poll_task_queue(worker_id, [])
+
+        # top up the task_data if we don't hit the desired tasks_per_hit
+        if len(task_data) < 1:
+            task_data = self._top_up_task_data(worker_id, task_data)
+
+        if self.opt.get('acute_questions'):
+            task_data = self.attach_acute_questions(task_data)
+        return task_data
 
 
 if __name__ == '__main__':

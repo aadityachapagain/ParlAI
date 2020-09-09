@@ -758,9 +758,10 @@ class CCDPersonaMatchingQuickAcute(ParlAIQuickAcute):
                 's2_choice': self.question_config['s2_choice'],
                 'question': self.question_config['question'],
                 'num_matchup_pairs': total_convos,
-                'num_conversations': int(
-                    total_convos / (SUBTASKS_PER_HIT - 1)  # subtract 1 for onboarding
-                ),
+                # 'num_conversations': int(
+                #     total_convos / (SUBTASKS_PER_HIT - 1)  # subtract 1 for onboarding
+                # ),
+                'num_conversations': 10,
                 'heroku_team': self.opt['heroku_team'],
                 'hobby': self.opt['hobby']
             }

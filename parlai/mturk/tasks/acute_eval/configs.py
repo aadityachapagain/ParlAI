@@ -47,12 +47,14 @@ CONFIG: Dict[str, Dict] = {
         'task': 'child_companion_dialog',
         'prepended_context': True,
         'task_data_version': '90M',
-        'min_dialogue_turns': 7,
+        'min_dialogue_turns': 5,
+        'truncate_dialog_to_min_turns': True
     },
     '3B': {
         'task': 'child_companion_dialog',
         'prepended_context': True,
         'task_data_version': '3B',
-        'min_dialogue_turns': 7,
+        'min_dialogue_turns': 5,
+        'truncate_dialog_to_min_turns': True
     },
 }

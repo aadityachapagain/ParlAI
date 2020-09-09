@@ -416,6 +416,9 @@ class ParlAIQuickAcute(object):
         if conversation.context:
             acute_conversation['context'].extend(conversation.context)
         for i, ex in enumerate(conversation):
+            if config.get('truncate_dialog_to_min_turns', False) and (
+                    config.get('min_dialogue_turns', float('inf')) * 2 <= i):
+                break
             if ex['id'] == 'context':
                 acute_conversation['context'].append(ex)
                 continue

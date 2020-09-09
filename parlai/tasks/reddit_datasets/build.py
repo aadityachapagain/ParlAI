@@ -33,9 +33,6 @@ def build(opt):
         gcp.download_all(RESOURCES, dpath)
     if not os.path.isfile(os.path.join(opt['datapath'], 'reddit_datasets', 'train_data.lengths')):
         gcp.download(data_lenghts_count,os.path.join(opt['datapath'], 'reddit_datasets', ))
-
-    if not os.path.isfile(os.path.join(opt['datapath'], 'reddit_datasets', 'train_data.lengths_valid')):
-        gcp.download(data_valid_lenghts_count,os.path.join(opt['datapath'], 'reddit_datasets', ))
     
     build_data.mark_done(dpath)
 

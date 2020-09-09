@@ -4,9 +4,10 @@ export WANDB_API_KEY="250ec687322ac7425ad946e7c5238228d48fc93a"
 
 python3 parlai/tasks/reddit_datasets/build.py
 
-python parlai/scripts/multiprocessing_train.py \
+python parlai/scripts/train_model.py \
 -t reddit_datasets \
 -dt train:stream \
+--model-parallel True \
 --run-tag "90m_pretrain" \
 --wand-project-name "Karu_chatbot_v0" \
 --wand-run-name "90M Model Pretraining" \
@@ -31,7 +32,7 @@ python parlai/scripts/multiprocessing_train.py \
 --dict-file zoo:blender/blender_3B/model.dict \
 --delimiter '  ' \
 --fp16-impl apex \
---dynamic-batching full --batchsize 24 \
+--dynamic-batching full --batchsize 96 \
 --model-file /tmp/models/Karu/karu_bot_90M \
 --init-model /tmp/models/Karu/karu_bot_90M.checkpoint \
 -tblog True

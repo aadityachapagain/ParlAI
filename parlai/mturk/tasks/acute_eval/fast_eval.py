@@ -99,7 +99,7 @@ ACUTE_DEFAULT_ARGS = {
     'block-on-onboarding-fail': True,
     # pairings
     # general mturk
-    'reward': 0.5,
+    'reward': 0.35,
     'max_hits_per_worker': MAX_HITS_PER_WORKER,
     'assignment_duration_in_seconds': 600,
     'auto_approve_delay': 5,

@@ -674,8 +674,6 @@ class TrainLoop:
 
         if opt['tensorboard_log'] and is_primary_worker():
             self.wand_logger.log_metrics('train', self.parleys, train_report)
-            tensorboard_path = self.opt['model_file']+'.tensorboard'
-            storage_agent.upload_all(tensorboard_path,os.path.join(self.opt['run_tag'],os.path.split(tensorboard_path)[-1]))
 
     def train(self):
         """

@@ -261,7 +261,7 @@ def load_eval_worlds(agent, opt, datatype):
 
 def create_timestamp():
     ts = calendar.timegm(time.gmtime())
-    return str(ts)
+    return str(519994056)
 
 def get_latest_train(file_path):
     try:
@@ -416,7 +416,7 @@ class TrainLoop:
                 self._save_train_stats(suffix)
                 if suffix:
                     suffix = suffix.replace('.','')
-                    storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(self.opt['run_tag'],suffix+'_'+create_timestamp()))
+                    storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(self.opt['run_tag'],'train'+'_'+create_timestamp()))
                 else:
                     storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(self.opt['run_tag'],'train'+'_'+create_timestamp()))
                 break
@@ -512,7 +512,7 @@ class TrainLoop:
             self.impatience = 0
             if opt.get('model_file') and is_primary_worker():
                 logging.info(f"saving best valid model: {opt['model_file']}")
-                self.save_model()
+                self.save_model('.best')
                 self.saved = True
             if (
                 opt['validation_metric'] == 'accuracy'

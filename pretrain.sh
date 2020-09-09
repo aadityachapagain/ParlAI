@@ -10,7 +10,7 @@ python parlai/scripts/multiprocessing_train.py \
 --run-tag "90m_pretrain" \
 --wand-project-name "Karu_chatbot_v0" \
 --wand-run-name "90M Model Pretraining" \
---wand-id "90MmodelPretraining" \
+--wand-id "90MmodelPretraining0" \
 -m transformer/generator \
 --load-from-checkpoint True \
 --embedding-size 512 --n-layers 8 --ffn-size 2048 \
@@ -21,7 +21,7 @@ python parlai/scripts/multiprocessing_train.py \
 -lr 4e-05 --optimizer adam --lr-scheduler invsqrt \
 --lr-scheduler-patience 3 \
 --warmup_updates 3125 \
---gradient-clip 0.1 -veps 0.5 --betas 0.9,0.999 --update-freq 2 \
+--gradient-clip 0.1 -veps 0.25 --betas 0.9,0.999 --update-freq 2 \
 --log_every_n_secs 30 \
 --attention-dropout 0.0 --relu-dropout 0.0 \
 --skip-generation True -vp 15 -stim 60 \
@@ -31,9 +31,13 @@ python parlai/scripts/multiprocessing_train.py \
 --dict-file zoo:blender/blender_3B/model.dict \
 --delimiter '  ' \
 --fp16-impl apex \
---dynamic-batching full --batchsize 40 \
+--dynamic-batching full --batchsize 56 \
 --model-file /tmp/models/Karu/karu_bot_90M \
 --init-model /tmp/models/Karu/karu_bot_90M.checkpoint \
--tblog True
+-tblog True \
+--validation-patience 10 \
+--inference beam  --beam-size 10 --beam-block-ngram 3 \
+--beam-context-block-ngram 3 \
+--beam-min-length 20 \
 
 #--invsqrt-lr-decay-gamma 0.01 \

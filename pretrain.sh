@@ -34,5 +34,6 @@ python parlai/scripts/multiprocessing_train.py \
 --dynamic-batching full --batchsize 24 \
 --model-file /tmp/models/Karu/karu_bot_90M \
 --init-model /tmp/models/Karu/karu_bot_90M.checkpoint
+-tblog True
 
 #--invsqrt-lr-decay-gamma 0.01 \

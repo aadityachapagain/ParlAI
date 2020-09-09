@@ -391,7 +391,6 @@ class TrainLoop:
                             f.close()
 
         if opt['tensorboard_log'] and is_primary_worker():
-            self.tb_logger = TensorboardLogger(opt)
             self.wand_logger = WandbLogger(opt)
 
     def save_model(self, suffix=None):
@@ -471,10 +470,7 @@ class TrainLoop:
         # logging
         if opt['tensorboard_log'] and is_primary_worker():
             valid_report['total_exs'] = self._total_exs
-            self.tb_logger.log_metrics('valid', self.parleys, valid_report)
             self.wand_logger.log_metrics('valid', self.parleys, valid_report)
-            # flush on a validation
-            self.tb_logger.flush()
         # saving
         if (
             opt.get('model_file')
@@ -677,7 +673,6 @@ class TrainLoop:
         self.log_time.reset()
 
         if opt['tensorboard_log'] and is_primary_worker():
-            self.tb_logger.log_metrics('train', self.parleys, train_report)
             self.wand_logger.log_metrics('train', self.parleys, train_report)
             tensorboard_path = self.opt['model_file']+'.tensorboard'
             storage_agent.upload_all(tensorboard_path,os.path.join(self.opt['run_tag'],os.path.split(tensorboard_path)[-1]))
@@ -755,8 +750,6 @@ class TrainLoop:
                     logging.info(
                         f"saving model checkpoint: {opt['model_file']}.checkpoint"
                     )
-                    if opt['tensorboard_log'] and is_primary_worker():
-                        self.tb_logger.flush()
                     self.save_model('.checkpoint')
                     self.save_time.reset()
 

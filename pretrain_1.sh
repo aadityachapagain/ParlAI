@@ -7,7 +7,7 @@ python3 parlai/tasks/reddit_datasets/build.py
 python parlai/scripts/multiprocessing_train.py \
 -t reddit_datasets \
 -dt train:stream \
---run-tag "90m_pretrain_1" \
+--run-tag "90m_pretrain_prelayernorm" \
 --wand-project-name "Karu_chatbot_v0" \
 --wand-run-name "90M Model Pretraining (Prelayernorm)" \
 --wand-id "90MmodelPretrainingprelayernorm" \
@@ -18,7 +18,7 @@ python parlai/scripts/multiprocessing_train.py \
 --n-positions 512 --variant prelayernorm \
 --activation gelu --skip-generation True --fp16 True \
 --text-truncate 256 --label-truncate 128 --dict-tokenizer bytelevelbpe \
--lr 1e-05 --optimizer adam --lr-scheduler invsqrt \
+-lr 6e-06 --optimizer adam --lr-scheduler invsqrt \
 --lr-scheduler-patience 3 \
 --warmup_updates 3125 \
 --gradient-clip 0.1 -veps 0.5 --betas 0.9,0.999 --update-freq 2 \

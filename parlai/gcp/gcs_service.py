@@ -6,7 +6,6 @@ import os
 from os import environ, listdir
 from os.path import isfile, join
 from io import BytesIO, StringIO
-from parlai.utils.misc import warn_once
 
 from google.cloud import storage
 
@@ -101,7 +100,7 @@ class GCP_Service(object):
         except:
             if os.path.isfile(dest_file):
                 os.remove(dest_file)
-            warn_once(f'{bucket_filename} not found in {self.bucket_name}')
+            logger.warn(f'{bucket_filename} not found in {self.bucket_name}')
 
     def delete(self, bucket_filename:str):
         self.bucket.delete_blob(bucket_filename)

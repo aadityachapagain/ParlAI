@@ -909,7 +909,7 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
             def run_conversation(mturk_manager, opt, workers):
                 task_data = self.get_new_task_data(workers[0].worker_id)
                 world = StaticMTurkTaskWorld(
-                    opt, mturk_agent=workers[0], task_data=task_data
+                    opt, mturk_agent=workers[0], task_data=task_data, act_timeout=True
                 )
                 while not world.episode_done():
                     world.parley()

@@ -157,7 +157,7 @@ class StaticMTurkTaskWorld(MTurkDataWorld):
     don't need the server to be in the loop.
     """
 
-    def __init__(self, opt, mturk_agent, task_data):
+    def __init__(self, opt, mturk_agent, task_data, act_timeout=False):
         """
         Init should be provided with the task_data that the worker needs to complete the
         task on the frontend.
@@ -165,6 +165,8 @@ class StaticMTurkTaskWorld(MTurkDataWorld):
         self.mturk_agent = mturk_agent
         self.episodeDone = False
         self.task_data = task_data
+        self.opt = opt
+        self.act_timeout = act_timeout
 
     def did_complete(self):
         """
@@ -189,7 +191,11 @@ class StaticMTurkTaskWorld(MTurkDataWorld):
         self.mturk_agent.observe(
             {'id': 'System', 'text': '[TASK_DATA]', 'task_data': self.task_data}
         )
-        self.response = self.mturk_agent.act()
+        self.response = self.mturk_agent.act(timeout=(self.opt['assignment_duration_in_seconds']
+                                                      if self.act_timeout
+                                                      else None
+                                                      )
+                                             )
         self.episodeDone = True
 
     def prep_save_data(self, workers):

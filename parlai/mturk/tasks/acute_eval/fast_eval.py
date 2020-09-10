@@ -108,8 +108,8 @@ ACUTE_DEFAULT_ARGS = {
     # general mturk
     'reward': 0.35,
     'max_hits_per_worker': MAX_HITS_PER_WORKER,
-    'assignment_duration_in_seconds': 600,
-    'auto_approve_delay': 5,
+    'assignment_duration_in_seconds': 900,
+    'auto_approve_delay': 172800,
     'count_complete': True,
     # acute args
     'annotations_per_pair': 1,

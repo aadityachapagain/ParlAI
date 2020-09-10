@@ -117,6 +117,13 @@ class WandbLogger(object):
             required=True,
             hidden=False,
         )
+        logger.add_argument(
+            '--wandb-notes',
+            type=str,
+            default='',
+            help="Wandb Notes for current run",
+            hidden=True,
+        )
     # __instance = None
 
     def __init__(self, opt: Opt):
@@ -138,7 +145,7 @@ class WandbLogger(object):
 
         wandb.init(
             name= opt['wand_run_name'], resume=True, project=opt['wand_project_name'], 
-            id=opt['wand_id'], config=config
+            id=opt['wand_id'], config=config, notes= opt['wandb_notes']
         )
 
         self.key_map = {

@@ -476,10 +476,10 @@ class TaskDescription extends React.Component {
         In this task, you will read two conversations and judge&nbsp;
         <div style={speaker1_style}>Speaker 1</div> on the left and&nbsp;
         <div style={speaker2_style}>Speaker 2</div> on the right&nbsp; based on
-          {num_subtasks} questions.
+        <b>[Interestingness, Empathy, Engagingness, Fitting a Persona, Repetition, Contradictory/Nonsensical Statement]</b>.
         <b>Don't base your judgement&nbsp; on their hobbies, job, etc.</b>&nbsp;
         Do your best to ignore the{" "}
-        <div style={otherspeaker_style}>other speaker</div>.&nbsp;
+        <div style={otherspeaker_style}>other speaker</div> in grey.&nbsp;
         <br />
         <br />
         <b>
@@ -511,18 +511,18 @@ class TaskDescription extends React.Component {
           <br />
           You will read two conversations and judge&nbsp;
           <div style={speaker1_style}>Speaker 1</div> on the left and&nbsp;
-          <div style={speaker2_style}>Speaker 2</div> on the right&nbsp; based
-          on {num_subtasks} questions.{" "}
+          <div style={speaker2_style}>Speaker 2</div> on the right&nbsp; based on
+          <b>[Interestingness, Empathy, Engagingness, Fitting a Persona, Repetition, Contradictory/Nonsensical Statement]</b>.
           <b>Don't base your judgement&nbsp; on their hobbies, job, etc. </b>
           &nbsp; Do your best to ignore the{" "}
-          <div style={otherspeaker_style}>other speaker.</div>&nbsp;
+          <div style={otherspeaker_style}>other speaker</div> in grey.&nbsp;
           <br />
           <br />
           <b>
             {" "}
             You will do this for {num_subtasks} questions.&nbsp;
             After completing each judgement, use the [NEXT] button (which will
-            appear below after you finish your judgement in each question).
+            appear below(bottom of left green panel) after you finish your judgement in each question).
           </b>
           <br />
         </div>

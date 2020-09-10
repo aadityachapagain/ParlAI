@@ -645,8 +645,7 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
 
         for question_key, task in zip(question_keys, task_data):
             if question_key.lower() == 'persona':
-                question = self.opt['acute_questions'][question_key]['question'] + \
-                           ' --> ' + task['task_specs'].get('persona', '')
+                question = self.opt['acute_questions'][question_key]['question']
             else:
                 question = self.opt['acute_questions'][question_key]['question']
 
@@ -654,7 +653,13 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
                 's1_choice': self.opt['acute_questions'][question_key]['s1_choice'],
                 's2_choice': self.opt['acute_questions'][question_key]['s2_choice'],
                 'question': question,
+                'question_type': question_key,
             })
+            if question_key.lower() in ['contradictory', 'repeating'] and (
+                    self.opt['acute_questions'][question_key].get('neutral_choice')):
+                task['task_specs'].update({
+                    'neutral_choice': self.opt['acute_questions'][question_key].get('neutral_choice')
+                })
         return task_data
 
     def _supplement_opt(self):

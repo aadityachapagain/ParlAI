@@ -70,11 +70,13 @@ ACUTE_EVAL_TYPES = {
         'question': 'Which speaker makes more self-contradictory or non-sensicial statements?',
         's1_choice': '<Speaker 1> makes more self-contradictory or non-sensicial statements.',
         's2_choice': '<Speaker 2> makes more self-contradictory or non-sensicial statements.',
+        'neutral_choice': 'Both speakers are equal.'
     },
     'Repeating': {
         'question': 'Which speaker has more tendency to repeat themselves?',
         's1_choice': '<Speaker 1> has more tendency to repeat.',
         's2_choice': '<Speaker 2> has more tendency to repeat.',
+        'neutral_choice': 'Both speakers are equal.'
     },
     'Persona': {
         'question': 'Which speaker best modeled the following persona?',

@@ -285,9 +285,14 @@ class EvalResponse extends React.Component {
     let s2_choice = this.props.task_data.task_specs.s2_choice.split(
       "<Speaker 2>"
     );
+    let neutral_choice = this.props.task_data.task_specs.neutral_choice;
     let s1_name = this.props.task_data.task_specs.model_left.name;
     let s2_name = this.props.task_data.task_specs.model_right.name;
     let form_question = this.props.task_data.task_specs.question;
+    let form_question_type = this.props.task_data.task_specs.question_type;
+    if (form_question_type === 'Persona'){
+      form_question = <div align={'left'}>{form_question}<br/>{this.props.task_data.task_specs.persona}</div>
+    }
     let text_question =
       "Please provide a brief justification for your choice (a few words or a sentence)";
     let text_reason = (
@@ -325,6 +330,7 @@ class EvalResponse extends React.Component {
         {s2_choice[1]}
       </div>
     );
+    if (neutral_choice === undefined){
     return (
       <div
         id="response-type-text-input"
@@ -371,7 +377,67 @@ class EvalResponse extends React.Component {
           </div>
         </Form>
       </div>
-    );
+    )}
+    else {
+      return (
+      <div
+        id="response-type-text-input"
+        className="response-type-module"
+        style={{
+          paddingTop: "15px",
+          float: "left",
+          width: "100%",
+          backgroundColor: "#eeeeee"
+        }}
+      >
+        <Form
+          horizontal
+          style={{ backgroundColor: "#eeeeee", paddingBottom: "10px" }}
+          onSubmit={this.handleEnterKey}
+        >
+          <div className="container" style={{ width: "auto" }}>
+            <ControlLabel> {form_question} </ControlLabel>
+            <FormGroup>
+              <Col sm={4}>
+                <Radio
+                  name="speakerChoice"
+                  value={s1_name}
+                  style={{ width: "100%" }}
+                  checked={this.state.speakerChoice == s1_name}
+                  onChange={this.handleInputChange}
+                >
+                  {choice1}
+                </Radio>
+              </Col>
+              <Col sm={4}>
+                <Radio
+                  name="speakerChoice"
+                  value={"Neutral"}
+                  style={{ width: "100%" }}
+                  checked={this.state.speakerChoice == "Neutral"}
+                  onChange={this.handleInputChange}
+                >
+                  {<div>{neutral_choice}</div>}
+                </Radio>
+              </Col>
+              <Col sm={4}>
+                <Radio
+                  name="speakerChoice"
+                  value={s2_name}
+                  style={{ width: "100%" }}
+                  checked={this.state.speakerChoice == s2_name}
+                  onChange={this.handleInputChange}
+                >
+                  {choice2}
+                </Radio>
+              </Col>
+            </FormGroup>
+            {text_reason}
+          </div>
+        </Form>
+      </div>
+    )
+    }
   }
 }
 

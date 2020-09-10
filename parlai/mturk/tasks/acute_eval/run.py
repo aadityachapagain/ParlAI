@@ -612,6 +612,9 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
             QualificationTypeStatus='Active',
         )['QualificationType']['QualificationTypeId']
 
+        shared_utils.print_and_log(logging.INFO,
+                                   f"Assigning {len(self.dedicated_workers)} workers dedicated worker qualification {qual_name}",
+                                   should_print=True)
         for worker_id in self.dedicated_workers:
             mturk_utils.give_worker_qualification(worker_id, qual_id, is_sandbox=self.opt['is_sandbox'])
 
@@ -650,6 +653,9 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
         worker_ids = [self.dedicated_workers[i: i + 100] for i in range(0, len(self.dedicated_workers), 100)]
         failures = []
         subject, message_text = self._get_hit_notification_message()
+        shared_utils.print_and_log(logging.INFO,
+                                   f"Sending emails to {len(self.dedicated_workers)} workers",
+                                   should_print=True)
         for worker_ids_chunk in worker_ids:
             resp = client.notify_workers(
                 Subject=subject, MessageText=message_text, WorkerIds=worker_ids_chunk

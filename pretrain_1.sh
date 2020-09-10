@@ -7,10 +7,10 @@ python3 parlai/tasks/reddit_datasets/build.py
 python parlai/scripts/multiprocessing_train.py \
 -t reddit_datasets \
 -dt train:stream \
---run-tag "90m_pretrain_prelayernorm" \
+--run-tag "90m_pretrain_prelayernorm1" \
 --wand-project-name "Karu_chatbot_v0" \
 --wand-run-name "90M Model Pretraining (Prelayernorm)" \
---wand-id "90MmodelPretrainingprelayernorm" \
+--wand-id "90MmodelPretrainingprelayernorm1" \
 -m transformer/generator \
 --load-from-checkpoint True \
 --embedding-size 512 --n-layers 8 --ffn-size 2048 \

@@ -3,6 +3,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+import logging
 from typing import Dict, List, Set, Any
 import json
 import os
@@ -12,6 +13,7 @@ import time
 import copy
 
 from parlai.core.params import ParlaiParser
+from parlai.mturk.core import mturk_utils, shared_utils
 from parlai.mturk.core.mturk_manager import StaticMTurkManager
 from parlai.mturk.core.worlds import StaticMTurkTaskWorld
 from parlai.utils.misc import warn_once
@@ -586,6 +588,78 @@ class AcuteEvaluator(object):
 
 
 class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
+    def __init__(self, opt, dedicated_workers=None):
+        super(PersonaMatchingAcuteEvaluator, self).__init__(opt)
+        self.mturk_page_url = None
+        self.dedicated_workers = dedicated_workers
+        self.dedicated_workers_qual_id = self._create_and_assign_dedicated_worker_qualification()
+
+    def _create_and_assign_dedicated_worker_qualification(self):
+        mturk_utils.setup_aws_credentials()
+        if not (self.opt.get('dedicated_worker_qualification') and self.dedicated_workers):
+            return None
+        qual_name = self.opt['dedicated_worker_qualification']
+        qual_desc = (
+            'Qualification given to filter workers to work on Conversation Comparision task.'
+        )
+        qual_id = mturk_utils.find_qualification(qual_name, self.opt['is_sandbox'])
+        if qual_id:
+            mturk_utils.delete_qualification(qual_id, self.opt['is_sandbox'])
+        client = mturk_utils.get_mturk_client(self.opt['is_sandbox'])
+        qual_id = client.create_qualification_type(
+            Name=qual_name,
+            Description=qual_desc,
+            QualificationTypeStatus='Active',
+        )['QualificationType']['QualificationTypeId']
+
+        for worker_id in self.dedicated_workers:
+            mturk_utils.give_worker_qualification(worker_id, qual_id, is_sandbox=self.opt['is_sandbox'])
+
+        return qual_id
+
+    def _get_qualification_lists(self):
+        if not self.dedicated_workers_qual_id:
+            return None
+        return [
+            {
+                'QualificationTypeId': self.dedicated_workers_qual_id,
+                'Comparator': 'Exists',
+                'ActionsGuarded': 'DiscoverPreviewAndAccept'
+            }
+        ]
+
+    def _get_hit_notification_message(self):
+        subject = "Which Conversational Partner is Better?"
+        message = (
+            "Thank you for your contribution in Child Companion Dialog HIT you did for us. "
+            f"We have created another set of {self.opt['max_hits_per_worker']} HITs, only for you. "
+            f"In this task, you'll read two conversation and compare two of the speakers based on "
+            f"{len(self.opt.get('acute_questions')) if self.opt.get('acute_questions') else 'some'} questions "
+            "we've put on the task. Please find the HITs using following link. "
+            f"\nLink: {self.mturk_page_url} \n"
+            "Note: We're experimenting with this tasks. If everything goes well we might come up with higher"
+            " number of HITs with higher rewards."
+        )
+
+        return subject, message
+
+    def _notify_dedicated_workers(self):
+        if not (self.mturk_page_url and self.dedicated_workers):
+            return
+        client = mturk_utils.get_mturk_client(self.opt['is_sandbox'])
+        worker_ids = [self.dedicated_workers[i: i + 100] for i in range(0, len(self.dedicated_workers), 100)]
+        failures = []
+        subject, message_text = self._get_hit_notification_message()
+        for worker_ids_chunk in worker_ids:
+            resp = client.notify_workers(
+                Subject=subject, MessageText=message_text, WorkerIds=worker_ids_chunk
+            )
+            failures.extend(resp['NotifyWorkersFailureStatuses'])
+        if failures:
+            shared_utils.print_and_log(logging.WARN,
+                                       f"Sending email to {len(failures)} workers failed...")
+        return failures
+
     def _load_conversation_data(self):
         """
         Load conversation data.
@@ -807,6 +881,69 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
         if self.opt.get('acute_questions'):
             task_data = self.attach_acute_questions(task_data)
         return task_data
+
+    def run(self):
+        self.manager.setup_server(
+            task_directory_path=os.path.dirname(os.path.abspath(__file__))
+        )
+        self.manager.set_onboard_function(onboard_function=None)
+        task_group_id: str = None
+
+        try:
+            # Initialize run information
+            self.manager.start_new_run()
+
+            task_group_id = self.manager.task_group_id
+            self.set_block_qual(task_group_id)
+            self.manager.ready_to_accept_workers()
+            self.mturk_page_url = self.manager.create_hits(qualifications=self._get_qualification_lists())
+            if self.dedicated_workers_qual_id and self.dedicated_workers:
+                self._notify_dedicated_workers()
+
+            def check_worker_eligibility(worker):
+                return True
+
+            def assign_worker_roles(workers):
+                workers[0].id = AGENT_DISPLAY_NAME
+
+            def run_conversation(mturk_manager, opt, workers):
+                task_data = self.get_new_task_data(workers[0].worker_id)
+                world = StaticMTurkTaskWorld(
+                    opt, mturk_agent=workers[0], task_data=task_data
+                )
+                while not world.episode_done():
+                    world.parley()
+
+                world.shutdown()
+
+                save_data = world.prep_save_data(workers)
+
+                if not world.did_complete():
+                    self.requeue_task_data(workers[0].worker_id, task_data)
+                else:
+                    if opt['block_on_onboarding_fail']:
+                        # check whether workers failed onboarding
+                        self.check_and_update_worker_approval(
+                            workers[0].worker_id, save_data
+                        )
+                return save_data
+
+            # Soft-block all chosen workers
+            self.softblock_workers()
+            print("This run id: {}".format(task_group_id))
+
+            # Begin the task, allowing mturk_manager to start running the task
+            # world on any workers who connect
+            self.manager.start_task(
+                eligibility_function=check_worker_eligibility,
+                assign_role_function=assign_worker_roles,
+                task_function=run_conversation,
+            )
+        finally:
+            self.manager.expire_all_unassigned_hits()
+            self.manager.shutdown()
+
+        return task_group_id
 
 
 if __name__ == '__main__':

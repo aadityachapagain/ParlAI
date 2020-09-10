@@ -47,6 +47,11 @@ import random
 import torch
 import hashlib
 
+
+DEDICATED_WORKERS = [
+
+]
+
 ########################
 # ACUTE EVAL CONSTANTS #
 ########################
@@ -93,7 +98,7 @@ EXAMPLE_PATH = os.path.join(
 )
 # Feel free to edit this, but not necessary
 SUBTASKS_PER_HIT = 5
-MAX_HITS_PER_WORKER = 0
+MAX_HITS_PER_WORKER = 10
 MATCHUPS_PER_PAIR = 500
 
 ACUTE_DEFAULT_ARGS = {
@@ -118,6 +123,7 @@ ACUTE_DEFAULT_ARGS = {
     },
     # temp directory for MTURK
     'tmp_dir': '/tmp',
+    'dedicated_worker_qualification': 'EmbConversationComparisionDedicatedWorker'
 }
 
 #######################
@@ -760,10 +766,10 @@ class CCDPersonaMatchingQuickAcute(ParlAIQuickAcute):
                 's2_choice': self.question_config['s2_choice'],
                 'question': self.question_config['question'],
                 'num_matchup_pairs': total_convos,
-                # 'num_conversations': int(
-                #     total_convos / (SUBTASKS_PER_HIT - 1)  # subtract 1 for onboarding
-                # ),
-                'num_conversations': 10,
+                'num_conversations': (len(DEDICATED_WORKERS) * self.acute_args['max_hits_per_worker']
+                                      if DEDICATED_WORKERS
+                                      else int(total_convos / (SUBTASKS_PER_HIT - 1))  # subtract 1 for onboarding
+                                      ),
                 'heroku_team': self.opt['heroku_team'],
                 'hobby': self.opt['hobby']
             }
@@ -772,7 +778,8 @@ class CCDPersonaMatchingQuickAcute(ParlAIQuickAcute):
             self.acute_args.update({
                 'acute_questions': ACUTE_EVAL_TYPES,
             })
-        self.acute_evaluator = PersonaMatchingAcuteEvaluator(self.acute_args)
+        self.acute_evaluator = PersonaMatchingAcuteEvaluator(self.acute_args,
+                                                             dedicated_workers=DEDICATED_WORKERS)
         if self.opt['live_acute']:
             self._print_progress('Running ACUTE-EVAL in LIVE Mode')
         else:

@@ -578,7 +578,7 @@ class TaskDescription extends React.Component {
           You will read two conversations and judge&nbsp;
           <div style={speaker1_style}>Speaker 1</div> on the left and&nbsp;
           <div style={speaker2_style}>Speaker 2</div> on the right based on&nbsp;
-          <b>[Interestingness, Empathy, Engagingness, Fitting a Persona, Repetition, Contradictory/Nonsensical Statement]</b>.
+          <b>[Interestingness, Empathy, Engagingness, Fitting a Persona, Repetition, Contradictory/Nonsensical Statement]</b>.&nbsp;
           <b>Don't base your judgement&nbsp; on their hobbies, job, etc. </b>
           &nbsp; Do your best to ignore the{" "}
           <div style={otherspeaker_style}>other speaker</div> in grey.&nbsp;

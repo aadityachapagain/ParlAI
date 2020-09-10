@@ -4,10 +4,9 @@ import re
 from parlai.core.build_data import DownloadableFile
 import parlai.core.build_data as build_data
 
-gcp_data_path = 'reddit_cleaned_pretrain/20200909'
+gcp_data_path = 'reddit_cleaned_revised/20200910'
 matcher = '{}-0000[0-9]-of-00010.txt'
-data_lenghts_count = 'reddit_cleaned_pretrain/train_data.lengths'
-data_valid_lenghts_count = 'reddit_cleaned/train_data.lengths_valid'
+data_lenghts_count = 'reddit_cleaned_revised/train_data.lengths'
 
 def build(opt):
     RESOURCES = opt.get('gcs_data_path', gcp_data_path)

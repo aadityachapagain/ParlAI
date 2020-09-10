@@ -18,7 +18,7 @@ python parlai/scripts/multiprocessing_train.py \
 --n-positions 512 --variant xlm \
 --activation gelu --skip-generation True --fp16 True \
 --text-truncate 256 --label-truncate 128 --dict-tokenizer bytelevelbpe \
--lr 4e-05 --optimizer adam --lr-scheduler invsqrt \
+-lr 2e-06 --optimizer adam --lr-scheduler invsqrt \
 --lr-scheduler-patience 3 \
 --warmup_updates 3125 \
 --gradient-clip 0.1 -veps 0.25 --betas 0.9,0.999 --update-freq 2 \
@@ -31,7 +31,7 @@ python parlai/scripts/multiprocessing_train.py \
 --dict-file zoo:blender/blender_3B/model.dict \
 --delimiter '  ' \
 --fp16-impl apex \
---dynamic-batching full --batchsize 56 \
+--dynamic-batching full --batchsize 56 --eval-batchsize 64 \
 --model-file /tmp/models/Karu/karu_bot_90M \
 --init-model /tmp/models/Karu/karu_bot_90M.checkpoint \
 -tblog True \

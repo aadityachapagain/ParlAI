@@ -9,7 +9,7 @@ run_config1:
   run_timelimit: 86400
   unique_worker: False  # enforce that no worker can work on your task twice
   max_hits_per_worker: 50  # Max number of hits each worker can perform during current group run, 0 means unlimited
-  unique_qual_name: EmbChildCompanionDialogMax50Submission1stBatch09102020  # qualification name to use for uniqueness between HITs
+  unique_qual_name: EmbChildCompanionDialogMax50Submission1stBatch09112020  # qualification name to use for uniqueness between HITs
   max_hits_limit_in_a_run_only: True
   reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
   is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
@@ -53,11 +53,11 @@ run_config1:
   force_bot: True  # If true force worker to chat with Bot
   qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
   delete_qual_test_qualification: False  #  TODO if True might throw error(need fixing), Delete `qual_test_qualification` after all HITs are complete
-  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITs1stBatchWorker09102020
+  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITs1stBatchWorker09112020
   ExcludeWorkerWithQualifications: []
   min_hit_approval_rate: 90
   no_cuda: False
-  dedicated_workers_list: [A38N05VH5344HC, A34RAQL1JVSK70, APKTDTD9LK539, A2SMPT2VQV8HUI, AGZ3GHE3N634N, A7SXWHGK8B40R, A1PLZ8RM4NW43J, AZKX3JFPKFWNC, AB1GNKQ0KS4R9, AJZEXCH1TSUE1, A3DELT7BVEPU24, A3MYPYBVHX7FQ2, A36F8PDK1DMAN1, A2DU0TGJDZWUCV, A1T6TPNU64ZH9F]
+  dedicated_workers_list: [A36F8PDK1DMAN1, A2IRBZJJEB9P5E, A24RCKH0Q3GMQY, APKTDTD9LK539, A1PLZ8RM4NW43J, A182N7RLXGSCZG, AB1GNKQ0KS4R9, A3DAZYTJQ74UOQ, AZKX3JFPKFWNC, A2DU0TGJDZWUCV, A2WIEFKYR5LJQ1, A1WAWEY2810TFN, A1T6TPNU64ZH9F, A4BDXOXC4D8FX]
   approve_pending_assignments: False
 
 run_config2:
@@ -71,7 +71,7 @@ run_config2:
   run_timelimit: 86400
   unique_worker: False  # enforce that no worker can work on your task twice
   max_hits_per_worker: 50  # Max number of hits each worker can perform during current group run, 0 means unlimited
-  unique_qual_name: EmbChildCompanionDialogMax50Submission2ndBatch09102020  # qualification name to use for uniqueness between HITs
+  unique_qual_name: EmbChildCompanionDialogMax50Submission2ndBatch09112020  # qualification name to use for uniqueness between HITs
   max_hits_limit_in_a_run_only: True
   reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
   is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
@@ -115,9 +115,9 @@ run_config2:
   force_bot: True  # If true force worker to chat with Bot
   qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
   delete_qual_test_qualification: False  #  TODO if True might throw error(need fixing), Delete `qual_test_qualification` after all HITs are complete
-  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITs2ndBatchWorker09102020
+  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITs2ndBatchWorker09112020
   ExcludeWorkerWithQualifications: []
   min_hit_approval_rate: 90
   no_cuda: False
-  dedicated_workers_list: [A2CUAZD7OJDFYR, A2WIEFKYR5LJQ1, ATJVY9O4CY5EX, A2LR1HKNOVDTJ8, A3DAZYTJQ74UOQ, A2UKO65AVU38T4, A2IRBZJJEB9P5E, AOEO9ZV81R0I4, A4D4NFXD7ALZ6, A182N7RLXGSCZG, A1WAWEY2810TFN, A2HC9549CZAKNN, A4BDXOXC4D8FX, A24RCKH0Q3GMQY]
+  dedicated_workers_list: [A2HD86WAUM59IP, A2UKO65AVU38T4, AJZEXCH1TSUE1, A2HC9549CZAKNN, AOEO9ZV81R0I4, A3MYPYBVHX7FQ2, A2SMPT2VQV8HUI, A34RAQL1JVSK70, AGZ3GHE3N634N, A4D4NFXD7ALZ6, A2CUAZD7OJDFYR, A3DELT7BVEPU24, ATJVY9O4CY5EX, A2LR1HKNOVDTJ8]
   approve_pending_assignments: False

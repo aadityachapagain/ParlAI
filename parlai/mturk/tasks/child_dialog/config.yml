@@ -9,7 +9,7 @@ run_config1:
   run_timelimit: 86400
   unique_worker: False  # enforce that no worker can work on your task twice
   max_hits_per_worker: 50  # Max number of hits each worker can perform during current group run, 0 means unlimited
-  unique_qual_name: EmbChildCompanionDialogMax50Submission1stBatch09112020  # qualification name to use for uniqueness between HITs
+  unique_qual_name: EmbChildCompanionDialogMax50Submission1stBatch09122020  # qualification name to use for uniqueness between HITs
   max_hits_limit_in_a_run_only: True
   reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
   is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
@@ -53,7 +53,7 @@ run_config1:
   force_bot: True  # If true force worker to chat with Bot
   qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
   delete_qual_test_qualification: False  #  TODO if True might throw error(need fixing), Delete `qual_test_qualification` after all HITs are complete
-  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITs1stBatchWorker09112020
+  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITs1stBatchWorker09122020
   ExcludeWorkerWithQualifications: []
   min_hit_approval_rate: 90
   no_cuda: False
@@ -71,7 +71,7 @@ run_config2:
   run_timelimit: 86400
   unique_worker: False  # enforce that no worker can work on your task twice
   max_hits_per_worker: 50  # Max number of hits each worker can perform during current group run, 0 means unlimited
-  unique_qual_name: EmbChildCompanionDialogMax50Submission2ndBatch09112020  # qualification name to use for uniqueness between HITs
+  unique_qual_name: EmbChildCompanionDialogMax50Submission2ndBatch09122020  # qualification name to use for uniqueness between HITs
   max_hits_limit_in_a_run_only: True
   reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
   is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
@@ -115,7 +115,7 @@ run_config2:
   force_bot: True  # If true force worker to chat with Bot
   qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
   delete_qual_test_qualification: False  #  TODO if True might throw error(need fixing), Delete `qual_test_qualification` after all HITs are complete
-  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITs2ndBatchWorker09112020
+  dedicated_worker_qualification: EmbChildCompanionDialogDedicated50HITs2ndBatchWorker09122020
   ExcludeWorkerWithQualifications: []
   min_hit_approval_rate: 90
   no_cuda: False

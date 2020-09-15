@@ -107,14 +107,12 @@ class WandbLogger(object):
             '--wand-run-name',
             type=str,
             help="Project Run Name for specific wandb run",
-            required=True,
             hidden=False,
         )
         logger.add_argument(
             '--wand-id',
             type=str,
             help="ID for specific run that will used to resume previously preemted logging",
-            required=True,
             hidden=False,
         )
         logger.add_argument(

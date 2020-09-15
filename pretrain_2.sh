@@ -15,7 +15,7 @@ python parlai/scripts/multiprocessing_train.py \
 -m transformer/generator \
 --load-from-checkpoint True \
 --embedding-size 768 \
---n-encoder-layers 2 --n-decoder-layers 14 \
+--n-encoder-layers 2 --n-decoder-layers 12 \
 --ffn-size 2048 \
 --dropout 0.1 --n-heads 16 --learn-positional-embeddings True \
 --n-positions 512 --variant prelayernorm \
@@ -35,7 +35,7 @@ python parlai/scripts/multiprocessing_train.py \
 --dict-file zoo:blender/blender_3B/model.dict \
 --delimiter '  ' \
 --fp16-impl apex \
---dynamic-batching full --batchsize 4 --eval-batchsize 8 \
+--dynamic-batching full --batchsize 32 --eval-batchsize 32 \
 --model-file /tmp/models/Karu/karu_bot_90M \
 --init-model /tmp/models/Karu/karu_bot_90M.checkpoint \
 -tblog True \

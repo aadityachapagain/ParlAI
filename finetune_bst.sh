@@ -26,5 +26,5 @@ python parlai/scripts/multiprocessing_train.py \
 --delimiter '  ' \
 --fp16-impl apex \
 --dynamic-batching full --batchsize 32 \
---model-file data/models/Karu/karu_bot_90M \
---init-model data/models/Karu/karu_bot_90M.checkpoint
+--model-file /tmp/models/Karu/karu_bot_90M \
+--init-model /tmp/models/Karu/karu_bot_90M.checkpoint

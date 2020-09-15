@@ -593,6 +593,7 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
         self.mturk_page_url = None
         self.dedicated_workers = dedicated_workers
         self.dedicated_workers_qual_id = self._create_and_assign_dedicated_worker_qualification()
+        self.task_queue: List = list(self.task_queue.queue)
 
     def _create_and_assign_dedicated_worker_qualification(self):
         mturk_utils.setup_aws_credentials()
@@ -782,13 +783,14 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
             a list of tasks for a worker to complete
         """
         worker_data = self._get_worker_data(worker_id)
-        num_attempts = 0
-        while (not self.task_queue.empty()) and num_attempts < self.task_queue.qsize():
-            try:
-                next_task = self.task_queue.get()
-            except queue.Empty:
-                break
-            num_attempts += 1
+        # num_attempts = 0
+        # while (not self.task_queue.empty()) and num_attempts < self.task_queue.qsize():
+        for next_task in self.task_queue:
+            # try:
+            #     next_task = self.task_queue.get()
+            # except queue.Empty:
+            #     break
+            # num_attempts += 1
 
             pair_id = next_task['pair_id']
             dialogue_ids = self._get_dialogue_ids(next_task)
@@ -803,8 +805,8 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
                 task_data.append(next_task)
                 if len(task_data) == 1:
                     return task_data
-            else:
-                self.task_queue.put(next_task)
+            # else:
+            #     self.task_queue.put(next_task)
 
         return task_data
 
@@ -925,7 +927,8 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
                 save_data = world.prep_save_data(workers)
 
                 if not world.did_complete():
-                    self.requeue_task_data(workers[0].worker_id, task_data)
+                    # self.requeue_task_data(workers[0].worker_id, task_data)
+                    pass
                 else:
                     if opt['block_on_onboarding_fail']:
                         # check whether workers failed onboarding
@@ -950,6 +953,13 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
             self.manager.shutdown()
 
         return task_group_id
+
+    def _setup_task_queue(self):
+        all_task_keys = list(range(len(self.desired_tasks)))
+        random.shuffle(all_task_keys)
+        for p_id in all_task_keys:
+            for _i in range(self.opt['annotations_per_pair']):
+                self.task_queue.put(self.desired_tasks[p_id])
 
 
 if __name__ == '__main__':

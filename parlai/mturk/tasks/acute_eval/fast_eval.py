@@ -49,35 +49,6 @@ import hashlib
 
 
 DEDICATED_WORKERS = [
-    'A182N7RLXGSCZG',
-    'A1PLZ8RM4NW43J',
-    'A1T6TPNU64ZH9F',
-    'A1WAWEY2810TFN',
-    'A24RCKH0Q3GMQY',
-    'A2CUAZD7OJDFYR',
-    'A2DU0TGJDZWUCV',
-    'A2HC9549CZAKNN',
-    'A2IRBZJJEB9P5E',
-    'A2LR1HKNOVDTJ8',
-    'A2SMPT2VQV8HUI',
-    'A2UKO65AVU38T4',
-    'A2WIEFKYR5LJQ1',
-    'A34RAQL1JVSK70',
-    'A36F8PDK1DMAN1',
-    'A38N05VH5344HC',
-    'A3DAZYTJQ74UOQ',
-    'A3DELT7BVEPU24',
-    'A3MYPYBVHX7FQ2',
-    'A4BDXOXC4D8FX',
-    'A4D4NFXD7ALZ6',
-    'A7SXWHGK8B40R',
-    'AB1GNKQ0KS4R9',
-    'AGZ3GHE3N634N',
-    'AJZEXCH1TSUE1',
-    'AOEO9ZV81R0I4',
-    'APKTDTD9LK539',
-    'ATJVY9O4CY5EX',
-    'AZKX3JFPKFWNC',
 ]
 
 ########################
@@ -100,9 +71,9 @@ ACUTE_EVAL_TYPES = {
         's2_choice': '<Speaker 2> sounds more empathetic.',
     },
     'Contradictory': {
-        'question': 'Which speaker makes more self-contradictory or non-sensicial statements?',
-        's1_choice': '<Speaker 1> makes more self-contradictory or non-sensicial statements.',
-        's2_choice': '<Speaker 2> makes more self-contradictory or non-sensicial statements.',
+        'question': 'Which speaker makes more self-contradictory or non-sensical statements?',
+        's1_choice': '<Speaker 1> makes more self-contradictory or non-sensical statements.',
+        's2_choice': '<Speaker 2> makes more self-contradictory or non-sensical statements.',
         'neutral_choice': 'Both speakers are equal.'
     },
     'Repeating': {
@@ -151,7 +122,7 @@ ACUTE_DEFAULT_ARGS = {
     },
     # temp directory for MTURK
     'tmp_dir': '/tmp',
-    'dedicated_worker_qualification': 'EmbConversationComparisionDedicatedWorker'
+    'dedicated_worker_qualification': None
 }
 
 #######################
@@ -184,6 +155,12 @@ def setup_args(parser=None) -> ParlaiParser:
         help='Comma separated, colon-delimited list of CONFIG pairs for evaluation, '
         'e.g. model1:model2,model1:model3',
         default=None,
+    )
+    parser.add_argument(
+        '--annotations-per-pair',
+        type=int,
+        default=5,
+        help='Number of annotations per conversation comparison pair',
     )
     parser.add_argument(
         '-eval',
@@ -799,7 +776,8 @@ class CCDPersonaMatchingQuickAcute(ParlAIQuickAcute):
                                       else int(total_convos / (SUBTASKS_PER_HIT - 1))  # subtract 1 for onboarding
                                       ),
                 'heroku_team': self.opt['heroku_team'],
-                'hobby': self.opt['hobby']
+                'hobby': self.opt['hobby'],
+                'annotations_per_pair': self.opt['annotations_per_pair'],
             }
         )
         if self.opt.get('ask_all_acute_question'):

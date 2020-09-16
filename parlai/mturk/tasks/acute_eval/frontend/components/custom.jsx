@@ -541,9 +541,10 @@ class TaskDescription extends React.Component {
       <div>
         In this task, you will read two conversations and judge&nbsp;
         <div style={speaker1_style}>Speaker 1</div> on the left and&nbsp;
-        <div style={speaker2_style}>Speaker 2</div> on the right based on&nbsp;
-        <b>[Interestingness, Empathy, Engagingness, Fitting a Persona, Repetition, Contradictory/Nonsensical Statement]</b>.
-        <b>Don't base your judgement&nbsp; on their hobbies, job, etc.</b>&nbsp;
+        <div style={speaker2_style}>Speaker 2</div> on the right based on this:&nbsp;
+        <b>{num_subtasks === 1? question: "[Interestingness, Empathy, Engagingness, Fitting a Persona, Repetition, Contradictory / Nonsensical Statement]"}</b>.&nbsp;
+        <b>Don't base your judgement&nbsp; on their hobbies, job, etc. You should&nbsp; also provide a very brief
+        justification.</b>&nbsp;
         Do your best to ignore the{" "}
         <div style={otherspeaker_style}>other speaker</div> in grey.&nbsp;
         <br />
@@ -578,8 +579,9 @@ class TaskDescription extends React.Component {
           You will read two conversations and judge&nbsp;
           <div style={speaker1_style}>Speaker 1</div> on the left and&nbsp;
           <div style={speaker2_style}>Speaker 2</div> on the right based on&nbsp;
-          <b>[Interestingness, Empathy, Engagingness, Fitting a Persona, Repetition, Contradictory/Nonsensical Statement]</b>.&nbsp;
-          <b>Don't base your judgement&nbsp; on their hobbies, job, etc. </b>
+          <b>"{num_subtasks === 1? question: "[Interestingness, Empathy, Engagingness, Fitting a Persona, Repetition, Contradictory / Nonsensical Statement]"}"</b>.&nbsp;
+          <b>Don't base your judgement&nbsp; on their hobbies, job, etc. You should&nbsp; also provide a very brief
+        justification.</b>
           &nbsp; Do your best to ignore the{" "}
           <div style={otherspeaker_style}>other speaker</div> in grey.&nbsp;
           <br />
@@ -587,8 +589,8 @@ class TaskDescription extends React.Component {
           <b>
             {" "}
             You will do this for {num_subtasks} questions.&nbsp;
-            After completing each judgement, use the [NEXT] button (which will
-            appear below(bottom of left green panel) after you finish your judgement in each question).
+            After completing {num_subtasks===1?"":"each"} judgement, use the {num_subtasks===1?"[DONE]":"[NEXT]"} button (which will
+            appear below(bottom of left green panel) after you finish your judgement {num_subtasks===1?"":"in each question"}).
           </b>
           <br />
         </div>

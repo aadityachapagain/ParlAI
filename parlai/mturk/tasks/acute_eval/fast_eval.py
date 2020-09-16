@@ -55,38 +55,38 @@ DEDICATED_WORKERS = [
 # ACUTE EVAL CONSTANTS #
 ########################
 ACUTE_EVAL_TYPES = {
-    'Interestingness': {
-        'question': 'Which speaker had the more interesting conversation?',
-        's1_choice': '<Speaker 1> sounds more interesting.',
-        's2_choice': '<Speaker 2> sounds more interesting.',
-    },
+    # 'Interestingness': {
+    #     'question': 'Which speaker had the more interesting conversation?',
+    #     's1_choice': '<Speaker 1> sounds more interesting.',
+    #     's2_choice': '<Speaker 2> sounds more interesting.',
+    # },
     'Engaging': {
         'question': 'With which speaker would you like to talk more to?',
         's1_choice': 'I would prefer to talk more to <Speaker 1>.',
         's2_choice': 'I would prefer to talk more to <Speaker 2>.',
     },
-    'Empathetic': {
-        'question': 'Which speaker is more empathetic?',
-        's1_choice': '<Speaker 1> sounds more empathetic.',
-        's2_choice': '<Speaker 2> sounds more empathetic.',
-    },
-    'Contradictory': {
-        'question': 'Which speaker makes more self-contradictory or non-sensical statements?',
-        's1_choice': '<Speaker 1> makes more self-contradictory or non-sensical statements.',
-        's2_choice': '<Speaker 2> makes more self-contradictory or non-sensical statements.',
-        'neutral_choice': 'Both speakers are equal.'
-    },
-    'Repeating': {
-        'question': 'Which speaker has more tendency to repeat themselves?',
-        's1_choice': '<Speaker 1> has more tendency to repeat.',
-        's2_choice': '<Speaker 2> has more tendency to repeat.',
-        'neutral_choice': 'Both speakers are equal.'
-    },
-    'Persona': {
-        'question': 'Which speaker best modeled the following persona?',
-        's1_choice': '<Speaker 1> modeled the persona better.',
-        's2_choice': '<Speaker 2> modeled the persona better.'
-    }
+    # 'Empathetic': {
+    #     'question': 'Which speaker is more empathetic?',
+    #     's1_choice': '<Speaker 1> sounds more empathetic.',
+    #     's2_choice': '<Speaker 2> sounds more empathetic.',
+    # },
+    # 'Contradictory': {
+    #     'question': 'Which speaker makes more self-contradictory or non-sensical statements?',
+    #     's1_choice': '<Speaker 1> makes more self-contradictory or non-sensical statements.',
+    #     's2_choice': '<Speaker 2> makes more self-contradictory or non-sensical statements.',
+    #     'neutral_choice': 'Both speakers are equal.'
+    # },
+    # 'Repeating': {
+    #     'question': 'Which speaker has more tendency to repeat themselves?',
+    #     's1_choice': '<Speaker 1> has more tendency to repeat.',
+    #     's2_choice': '<Speaker 2> has more tendency to repeat.',
+    #     'neutral_choice': 'Both speakers are equal.'
+    # },
+    # 'Persona': {
+    #     'question': 'Which speaker best modeled the following persona?',
+    #     's1_choice': '<Speaker 1> modeled the persona better.',
+    #     's2_choice': '<Speaker 2> modeled the persona better.'
+    # }
 }
 if internal_types:
     ACUTE_EVAL_TYPES.update(

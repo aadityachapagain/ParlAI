@@ -29,12 +29,13 @@ import json
 import numpy as np
 import signal
 from typing import Dict
+import os
 
 from parlai.core.metrics import Metric
 from parlai.gcp.gcs_service import gcp as storage_agent
 from parlai.core.agents import create_agent, create_agent_from_shared
 from parlai.core.exceptions import StopTrainException
-from parlai.core.logs import TensorboardLogger
+from parlai.distillation.logs import TensorboardLogger, WandbLogger
 from parlai.core.metrics import aggregate_named_reports, aggregate_unnamed_reports
 from parlai.core.params import ParlaiParser, print_announcements
 from parlai.core.worlds import create_task
@@ -73,7 +74,7 @@ def setup_args(parser=None) -> ParlaiParser:
         help='specifc tag for training run with specific hyper-paramter or model'
     )
     storage_tag.add_argument(
-        '--gcs-train-path',
+        '--gcs-data-path',
         type=str,
         help='path for train data in gcs storage'
     )
@@ -208,6 +209,7 @@ def setup_args(parser=None) -> ParlaiParser:
         recommended=False,
     )
     TensorboardLogger.add_cmdline_args(parser)
+    WandbLogger.add_cmdline_args(parser)
 
     parser = setup_dict_args(parser)
     return parser
@@ -259,7 +261,7 @@ def load_eval_worlds(agent, opt, datatype):
 
 def create_timestamp():
     ts = calendar.timegm(time.gmtime())
-    return str(ts)
+    return str(519994056)
 
 def get_latest_train(file_path):
     try:
@@ -280,12 +282,11 @@ class TrainLoop:
         # if python is called from a non-interactive shell, like a bash script,
         # it will by-default ignore SIGINTs, and KeyboardInterrupt exceptions are
         # not produced. This line brings them back
-        if not os.path.isfile(opt['fromfile_datapath']):
-            storage_agent.download_all(opt['gcs_train_path'], os.path.join(*os.path.split(opt['fromfile_datapath'])[:-1]))
         signal.signal(signal.SIGINT, signal.default_int_handler)
         latest_train_path = get_latest_train(opt['run_tag'])
         if latest_train_path:
-            storage_agent.download_all(latest_train_path, os.path.join(*os.path.split(opt['model_file'])[:-1]))
+            if not os.path.isfile(opt['model_file']+'.checkpoint'):
+                storage_agent.download_all(latest_train_path, os.path.join(*os.path.split(opt['model_file'])[:-1]))
         # Possibly load from checkpoint
         trainstats_suffix = '.trainstats'  # we might load training statistics from here
         if (
@@ -390,7 +391,7 @@ class TrainLoop:
                             f.close()
 
         if opt['tensorboard_log'] and is_primary_worker():
-            self.tb_logger = TensorboardLogger(opt)
+            self.wand_logger = WandbLogger(opt)
 
     def save_model(self, suffix=None):
         """
@@ -414,7 +415,7 @@ class TrainLoop:
                 self._save_train_stats(suffix)
                 if suffix:
                     suffix = suffix.replace('.','')
-                    storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(self.opt['run_tag'],suffix+'_'+create_timestamp()))
+                    storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(self.opt['run_tag'],'train'+'_'+create_timestamp()))
                 else:
                     storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(self.opt['run_tag'],'train'+'_'+create_timestamp()))
                 break
@@ -469,9 +470,7 @@ class TrainLoop:
         # logging
         if opt['tensorboard_log'] and is_primary_worker():
             valid_report['total_exs'] = self._total_exs
-            self.tb_logger.log_metrics('valid', self.parleys, valid_report)
-            # flush on a validation
-            self.tb_logger.flush()
+            self.wand_logger.log_metrics('valid', self.parleys, valid_report)
         # saving
         if (
             opt.get('model_file')
@@ -674,9 +673,7 @@ class TrainLoop:
         self.log_time.reset()
 
         if opt['tensorboard_log'] and is_primary_worker():
-            self.tb_logger.log_metrics('train', self.parleys, train_report)
-            tensorboard_path = self.opt['model_file']+'.tensorboard'
-            storage_agent.upload_all(tensorboard_path,os.path.join(self.opt['run_tag'],os.path.split(tensorboard_path)[-1]))
+            self.wand_logger.log_metrics('train', self.parleys, train_report)
 
     def train(self):
         """
@@ -692,7 +689,8 @@ class TrainLoop:
                 # do one example / batch of examples
                 try:
                     world.parley()
-                except StopTrainException:
+                except StopTrainException as e:
+                    logging.info(f"Stopping from {e}")
                     break
 
                 self.parleys += 1
@@ -751,8 +749,6 @@ class TrainLoop:
                     logging.info(
                         f"saving model checkpoint: {opt['model_file']}.checkpoint"
                     )
-                    if opt['tensorboard_log'] and is_primary_worker():
-                        self.tb_logger.flush()
                     self.save_model('.checkpoint')
                     self.save_time.reset()
 

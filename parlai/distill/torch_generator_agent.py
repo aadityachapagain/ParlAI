@@ -738,23 +738,21 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
 
         # check if there are any labels available, if so we will train on them
         self.is_training = any('labels' in obs for obs in observations)
-
         # create a batch from the vectors
         batch = self.batchify(observations)
         
         with torch.no_grad():
                 # save memory and compute by disabling autograd.
                 # use `with torch.enable_grad()` to gain back gradients.
-            output , soft_target_vecs = self.teacher_eval_step(batch)
+            output = self.teacher_eval_step(batch)
 
-        ys, ys_lens = self._create_soft_labels(soft_target_vecs)
-
-        del batch.label_vec
-        del batch.label_lengths
-
-        # setting teacher labels into batch obj
-        batch.label_vec = ys
-        batch.label_lengths = ys_lens
+        for idx , obs in enumerate(observations):
+            if output['text']:
+                obs.force_set('labels' , [output['text'][idx]])
+                obs.force_set('labels_vec', self._vectorize_text(output.text[idx], False, True, self.label_truncate, False))
+            
+        del batch
+        batch = self.batchify(observations)
 
         self.global_metrics.add('exps', GlobalTimerMetric(batch.batchsize))
 
@@ -1038,7 +1036,7 @@ class TorchDistillGeneratorAgent(TorchGeneratorAgent):
             # compute additional bleu scores
             self._compute_fairseq_bleu(batch, preds)
             self._compute_nltk_bleu(batch, text)
-        return Output(text, cand_choices, token_losses=token_losses), [self.filter_BOS_token(x) for x in preds]
+        return Output(text, cand_choices, token_losses=token_losses)
 
     def compute_loss(self, batch, return_output=False):
         """

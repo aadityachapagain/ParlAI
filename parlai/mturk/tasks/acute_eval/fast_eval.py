@@ -49,6 +49,23 @@ import hashlib
 
 
 DEDICATED_WORKERS = [
+    'A182N7RLXGSCZG',
+    'A1PLZ8RM4NW43J',
+    'A1T6TPNU64ZH9F',
+    'A1WAWEY2810TFN',
+    'A24RCKH0Q3GMQY',
+    'A2HC9549CZAKNN',
+    'A2LR1HKNOVDTJ8',
+    'A2UKO65AVU38T4',
+    'A2WIEFKYR5LJQ1',
+    'A34RAQL1JVSK70',
+    'A36F8PDK1DMAN1',
+    'A38N05VH5344HC',
+    'A3DAZYTJQ74UOQ',
+    'A3DELT7BVEPU24',
+    'A3MYPYBVHX7FQ2',
+    'A4BDXOXC4D8FX',
+    'AB1GNKQ0KS4R9',
 ]
 
 ########################
@@ -97,7 +114,7 @@ EXAMPLE_PATH = os.path.join(
 )
 # Feel free to edit this, but not necessary
 SUBTASKS_PER_HIT = 5
-MAX_HITS_PER_WORKER = 10
+MAX_HITS_PER_WORKER = 20
 MATCHUPS_PER_PAIR = 500
 
 ACUTE_DEFAULT_ARGS = {
@@ -122,7 +139,7 @@ ACUTE_DEFAULT_ARGS = {
     },
     # temp directory for MTURK
     'tmp_dir': '/tmp',
-    'dedicated_worker_qualification': None
+    'dedicated_worker_qualification': 'EmbEnagingAcuteEvalWorkerQualification',
 }
 
 #######################

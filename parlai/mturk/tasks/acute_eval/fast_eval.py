@@ -105,13 +105,13 @@ ACUTE_DEFAULT_ARGS = {
     'block-on-onboarding-fail': True,
     # pairings
     # general mturk
-    'reward': 0.35,
+    'reward': 0.25,
     'max_hits_per_worker': MAX_HITS_PER_WORKER,
-    'assignment_duration_in_seconds': 900,
+    'assignment_duration_in_seconds': 600,
     'auto_approve_delay': 172800,
     'count_complete': True,
     # acute args
-    'annotations_per_pair': 1,
+    'annotations_per_pair': 5,
     'seed': 42,
     'subtasks_per_hit': SUBTASKS_PER_HIT,
     # Task Config
@@ -155,12 +155,6 @@ def setup_args(parser=None) -> ParlaiParser:
         help='Comma separated, colon-delimited list of CONFIG pairs for evaluation, '
         'e.g. model1:model2,model1:model3',
         default=None,
-    )
-    parser.add_argument(
-        '--annotations-per-pair',
-        type=int,
-        default=5,
-        help='Number of annotations per conversation comparison pair',
     )
     parser.add_argument(
         '-eval',
@@ -777,7 +771,6 @@ class CCDPersonaMatchingQuickAcute(ParlAIQuickAcute):
                                       ),
                 'heroku_team': self.opt['heroku_team'],
                 'hobby': self.opt['hobby'],
-                'annotations_per_pair': self.opt['annotations_per_pair'],
             }
         )
         if self.opt.get('ask_all_acute_question'):

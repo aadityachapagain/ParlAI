@@ -594,6 +594,7 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
         self.dedicated_workers = dedicated_workers
         self.dedicated_workers_qual_id = self._create_and_assign_dedicated_worker_qualification()
         self.task_queue: List = list(self.task_queue.queue)
+        self.pair_annotation_count: Dict[int, int] = {}
 
     def _create_and_assign_dedicated_worker_qualification(self):
         mturk_utils.setup_aws_credentials()
@@ -798,10 +799,13 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
             # make sure worker has not seen these conversations before
             if pair_id not in worker_data['tasks_completed'] and all(
                 d_id not in worker_data['conversations_seen'] for d_id in dialogue_ids
+            ) and (
+                    self.pair_annotation_count.get(pair_id, 0) < self.opt['annotations_per_pair']
             ):
                 # track tasks and conversations seen
                 worker_data['tasks_completed'].append(pair_id)
                 worker_data['conversations_seen'].extend(dialogue_ids)
+                self.pair_annotation_count[pair_id] = self.pair_annotation_count.get(pair_id, 0) + 1
                 task_data.append(next_task)
                 if len(task_data) == 1:
                     return task_data
@@ -857,6 +861,37 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
             task_data.append(self.desired_tasks[t])
 
         return task_data
+
+    def requeue_task_data(self, worker_id: str, task_data: List[Dict[str, Any]]):
+        """
+        Return task to task_queue.
+
+        If the task is an onboarding task, indicate that the worker has
+        another onboarding task to do.
+
+        :param worker_id:
+            worker id of worker who is returning task
+
+        :param task_data:
+            list of unfinished tasks to return to the queue.
+        """
+        worker_data = self._get_worker_data(worker_id)
+        pair_ids = set([t['pair_id'] for t in task_data])
+        for p_id in pair_ids:
+            self.pair_annotation_count[p_id] = self.pair_annotation_count.get(p_id, 0) - 1
+        for subtask_data in task_data:
+            if subtask_data['task_specs'].get('is_onboarding', False):
+                worker_data['onboarding_todo'].append(subtask_data['pair_id'])
+            else:
+                # self.task_queue.put(subtask_data)
+                try:
+                    worker_data['tasks_completed'].remove(subtask_data['pair_id'])
+                    for d_id in self._get_dialogue_ids(subtask_data):
+                        worker_data['conversations_seen'].remove(d_id)
+                except ValueError:
+                    # Task may have shown up in worker's task queue twice
+                    # due to some unfortunate race condition
+                    warn_once(f'could not remove task from worker {worker_id} history')
 
     def get_new_task_data(self, worker_id: str) -> List[Dict[str, Any]]:
         """
@@ -927,8 +962,7 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
                 save_data = world.prep_save_data(workers)
 
                 if not world.did_complete():
-                    # self.requeue_task_data(workers[0].worker_id, task_data)
-                    pass
+                    self.requeue_task_data(workers[0].worker_id, task_data)
                 else:
                     if opt['block_on_onboarding_fail']:
                         # check whether workers failed onboarding
@@ -958,8 +992,7 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
         all_task_keys = list(range(len(self.desired_tasks)))
         random.shuffle(all_task_keys)
         for p_id in all_task_keys:
-            for _i in range(self.opt['annotations_per_pair']):
-                self.task_queue.put(self.desired_tasks[p_id])
+            self.task_queue.put(self.desired_tasks[p_id])
 
 
 if __name__ == '__main__':

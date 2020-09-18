@@ -30,6 +30,7 @@ import numpy as np
 import signal
 from typing import Dict
 import os
+import traceback
 
 from parlai.core.metrics import Metric
 from parlai.gcp.gcs_service import gcp as storage_agent
@@ -421,6 +422,10 @@ class TrainLoop:
                 break
             except KeyboardInterrupt:
                 pass
+            except:
+                exceptions_str = traceback.format_exc()
+                with open('extreme.logs', 'a+') as fw:
+                    fw.write(exceptions_str)
 
     def _safe_report(self, report: Dict[str, Metric]):
         return {k: v.value() if isinstance(v, Metric) else v for k, v in report.items()}

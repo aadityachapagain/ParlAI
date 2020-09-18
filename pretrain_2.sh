@@ -35,7 +35,7 @@ python parlai/scripts/multiprocessing_train.py \
 --dict-file zoo:blender/blender_3B/model.dict \
 --delimiter '  ' \
 --fp16-impl apex \
---dynamic-batching full --batchsize 32 --eval-batchsize 32 \
+--dynamic-batching full --batchsize 16 --eval-batchsize 64 \
 --model-file /tmp/models/Karu/karu_bot_90M \
 --init-model /tmp/models/Karu/karu_bot_90M.checkpoint \
 -tblog True \

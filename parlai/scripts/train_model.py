@@ -424,6 +424,7 @@ class TrainLoop:
                 pass
             except:
                 exceptions_str = traceback.format_exc()
+                print(exceptions_str)
                 with open('extreme.logs', 'a+') as fw:
                     fw.write(exceptions_str)
 

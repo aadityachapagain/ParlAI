@@ -2,6 +2,12 @@ export GOOGLE_APPLICATION_CREDENTIALS="gcp/fusemachineschat.json"
 
 export WANDB_API_KEY="250ec687322ac7425ad946e7c5238228d48fc93a"
 
+export RUST_BACKTRACE=1
+
+export PYTHONWARNINGS="ignore"
+
+export TOKENIZERS_PARALLELISM=true
+
 python3 parlai/tasks/reddit_datasets/build.py
 
 python parlai/scripts/multiprocessing_train.py \

@@ -11,7 +11,7 @@ python parlai/scripts/multiprocessing_train.py \
 --wand-project-name "Karu_chatbot_v0" \
 --wand-run-name "90M Model Pretraining" \
 --wand-id "90MmodelPretraining-diff-enc-dec-layer" \
---wandb-notes "trying hypterparamter suggested by stephen but with 90m model" \
+--wandb-notes " " \
 -m transformer/generator \
 --load-from-checkpoint True \
 --embedding-size 768 \

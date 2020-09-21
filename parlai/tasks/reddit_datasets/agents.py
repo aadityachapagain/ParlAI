@@ -63,8 +63,8 @@ class RedditChunkTeacher(ChunkTeacher):
     """
 
     def __init__(self, opt, shared=None):
-        self.TRAINSIZE = 5437097
-        self.VALIDSIZE = 71052
+        self.TRAINSIZE = 671513380
+        self.VALIDSIZE = 471052
         self.datasets_type = 'train' if 'train' in opt.get('datatype','train') else 'valid'
 
         if shared is None:
@@ -138,7 +138,7 @@ class RedditChunkTeacher(ChunkTeacher):
                     )
                 if msg:
                     episode_done = msg.get('episode_done', False)
-                output.append((msg['text'], msg['labels'], episode_done))
+                    output.append((msg['text'], msg['labels'], episode_done))
         return output
 
     def create_message(self, queue_output: ChunkOutput, entry_idx=0) -> 'Message':

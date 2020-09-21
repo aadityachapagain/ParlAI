@@ -26,9 +26,9 @@ class RedditTeacher(DialogTeacher):
         super().__init__(opt, shared)
 
     def setup_data(self, path):
-        req_files = random.sample([ '{}-0000{}-of-00010.txt'.format(self.datasets_type,i) for i in range(10)], 10)
+        req_files = random.sample([ '{}-00{:03}-of-00200.txt'.format(self.datasets_type,i) for i in range(200)], 200)
         if self.datasets_type == 'valid':
-            req_files = random.sample(req_files,3)
+            req_files = random.sample(req_files,100)
         for subdir in req_files:
             subdir_path = os.path.join(path, subdir)
             with open(subdir_path, newline='\n', encoding="utf-8") as read:
@@ -90,7 +90,7 @@ class RedditChunkTeacher(ChunkTeacher):
 
     def _set_chunk_idx_to_file(self):
         folder = self._get_data_folder()
-        req_files = random.sample([ '{}-0000{}-of-00010.txt'.format(self.datasets_type,i) for i in range(10)], 10)
+        req_files = random.sample([ '{}-00{:03}-of-00010.txt'.format(self.datasets_type,i) for i in range(200)], 200)
         if self.datasets_type == 'valid':
             req_files = random.sample(req_files,5)
         self.chunk_idx_to_file = {i: x for i, x in enumerate(req_files)}

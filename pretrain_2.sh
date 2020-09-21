@@ -2,6 +2,12 @@ export GOOGLE_APPLICATION_CREDENTIALS="gcp/fusemachineschat.json"
 
 export WANDB_API_KEY="250ec687322ac7425ad946e7c5238228d48fc93a"
 
+export RUST_BACKTRACE=1
+
+export PYTHONWARNINGS="ignore"
+
+export TOKENIZERS_PARALLELISM=true
+
 python3 parlai/tasks/reddit_datasets/build.py
 
 python parlai/scripts/multiprocessing_train.py \
@@ -11,7 +17,7 @@ python parlai/scripts/multiprocessing_train.py \
 --wand-project-name "Karu_chatbot_v0" \
 --wand-run-name "90M Model Pretraining" \
 --wand-id "90MmodelPretraining-diff-enc-dec-layer" \
---wandb-notes "trying hypterparamter suggested by stephen but with 90m model" \
+--wandb-notes " " \
 -m transformer/generator \
 --load-from-checkpoint True \
 --embedding-size 768 \
@@ -35,7 +41,7 @@ python parlai/scripts/multiprocessing_train.py \
 --dict-file zoo:blender/blender_3B/model.dict \
 --delimiter '  ' \
 --fp16-impl apex \
---dynamic-batching full --batchsize 32 --eval-batchsize 32 \
+--dynamic-batching full --batchsize 16 --eval-batchsize 64 \
 --model-file /tmp/models/Karu/karu_bot_90M \
 --init-model /tmp/models/Karu/karu_bot_90M.checkpoint \
 -tblog True \

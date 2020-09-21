@@ -30,6 +30,7 @@ import numpy as np
 import signal
 from typing import Dict
 import os
+import traceback
 
 from parlai.core.metrics import Metric
 from parlai.gcp.gcs_service import gcp as storage_agent
@@ -421,6 +422,11 @@ class TrainLoop:
                 break
             except KeyboardInterrupt:
                 pass
+            except:
+                exceptions_str = traceback.format_exc()
+                print(exceptions_str)
+                with open('extreme.logs', 'a+') as fw:
+                    fw.write(exceptions_str)
 
     def _safe_report(self, report: Dict[str, Metric]):
         return {k: v.value() if isinstance(v, Metric) else v for k, v in report.items()}
@@ -511,8 +517,11 @@ class TrainLoop:
                 self.save_model('.best')
                 self.saved = True
             if (
-                opt['validation_metric'] == 'accuracy'
+                opt['validation_metric_mode'] == 'max'
                 and self.best_valid >= opt['validation_cutoff']
+            ) or (
+                opt['validation_metric_mode'] == 'min'
+                and self.best_valid <= opt['validation_cutoff']
             ):
                 logging.info('task solved! stopping.')
                 return True

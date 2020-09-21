@@ -153,5 +153,5 @@ class RedditChunkTeacher(ChunkTeacher):
         shared = super().share()
         shared['chunk_idx_to_file'] = self.chunk_idx_to_file
         return shared
-class DefaultTeacher(RedditChunkTeacher):
+class DefaultTeacher(RedditTeacher):
     pass

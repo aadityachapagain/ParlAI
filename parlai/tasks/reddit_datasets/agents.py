@@ -66,10 +66,9 @@ class RedditChunkTeacher(ChunkTeacher):
         self.TRAINSIZE = 671513380
         self.VALIDSIZE = 471052
         self.datasets_type = 'train' if 'train' in opt.get('datatype','train') else 'valid'
-
+        self.opt = opt
         if shared is None:
             # set map
-            self.opt = opt
             self._set_chunk_idx_to_file()
         else:
             self._set_chunk_idx_to_file()

@@ -67,7 +67,7 @@ def interactive(opt):
     human_agent = LocalHumanAgent(opt)
     # set up world logger
     world_logger = WorldLogger(opt) if opt.get('outfile') else None
-    with open('parlai/data/adult_statements/adult_like_statements.txt' 'r') as fd:
+    with open('parlai/data/adult_statements/adult_like_statements.txt',  'r') as fd:
         for i in fd:
             statement = i.strip()
             agent.observe({'text': statement})

@@ -60,7 +60,7 @@ def _generate_adult_sentences(agent, statement, depth = 4):
     generated_adult_beams.append(statement)
     print('statement : ', statement)
     agent.observe({'text': statement, 'episode_done': True})
-    beams = agent.act()['text']
+    beams = agent.act()
     agent.reset()
     if isinstance(beams, list) and len(beams) > 1 and depth > 0:
         print(beams)

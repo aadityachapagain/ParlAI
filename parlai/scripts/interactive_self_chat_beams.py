@@ -6,9 +6,9 @@ from parlai.utils.world_logging import WorldLogger
 from parlai.agents.local_human.local_human import LocalHumanAgent
 import parlai.utils.logging as logging
 import os
-
 import random
 
+generated_adult_beams = []
 
 def setup_args(parser=None):
     if parser is None:
@@ -55,7 +55,6 @@ def setup_args(parser=None):
     WorldLogger.add_cmdline_args(parser)
     return parser
 
-
 def interactive(opt):
     if isinstance(opt, ParlaiParser):
         logging.error('interactive should be passed opt not Parser')
@@ -67,14 +66,30 @@ def interactive(opt):
     human_agent = LocalHumanAgent(opt)
     # set up world logger
     world_logger = WorldLogger(opt) if opt.get('outfile') else None
+    adult_sentences = []
     with open('data/adult_statements/adult_like_statements.txt',  'r') as fd:
-        for i in fd:
-            statement = i.strip()
-            agent.observe({'text': statement})
-            beams = agent.act()
-            print(beams)
-            break
-
+        adult_sentences =  [i.strip() for i in fd]
+    
+    for statement in adult_sentences:
+        generated_adult_beams.append(statement)
+        print('statement : ', statement)
+        agent.observe({'text': statement, 'episode_done': True})
+        beams_1 = agent.act()['text']
+        agent.reset()
+        if isinstance(beams_1, list) and len(beams_1) > 1:
+            for beam in beams_1:
+                generated_adult_beams.append(beam)
+                agent.observe({'text': beam, 'episode_done': True})
+                beams_2 = agent.act()['text']
+                agent.reset()
+                for beam in beams_2:
+                    generated_adult_beams.append(beam)
+                    agent.observe({'text': beam, 'episode_done': True})
+                    beams_2 = agent.act()['text']
+                    agent.reset()
+                    break
+    
+    print(generated_adult_beams)
 
 @register_script('interactive', aliases=['i'])
 class Interactive(ParlaiScript):

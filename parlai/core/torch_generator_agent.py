@@ -887,8 +887,8 @@ class TorchGeneratorAgent(TorchAgent, ABC):
         else:
             maxlen = self.label_truncate or 256
             beam_preds_scores, _ = self._generate(batch, self.beam_size, maxlen)
-            preds, scores = zip(*beam_preds_scores)
-            self._add_generation_metrics(batch, preds)
+            # preds, scores = zip(*beam_preds_scores)
+            # self._add_generation_metrics(batch, preds)
 
         cand_choices = None
         # TODO: abstract out the scoring here
@@ -913,7 +913,12 @@ class TorchGeneratorAgent(TorchAgent, ABC):
                 _, ordering = cand_scores.sort()
                 cand_choices.append([batch.candidates[i][o] for o in ordering])
 
-        text = [self._v2t(p) for p in preds] if preds is not None else None
+        # text = [self._v2t(p) for p in preds] if preds is not None else None
+        text = []
+        for i, beams in enumerate(beam_preds_scores):
+                for b, (tokens, score) in enumerate(beams):
+                    text.append(self._v2t(tokens))
+
         if text and self.compute_tokenized_bleu:
             # compute additional bleu scores
             self._compute_fairseq_bleu(batch, preds)
@@ -1166,7 +1171,7 @@ class TorchGeneratorAgent(TorchAgent, ABC):
             )
 
         # get the top prediction for each beam (i.e. minibatch sample)
-        beam_preds_scores = [n_best_list[0] for n_best_list in n_best_beam_preds_scores]
+        # beam_preds_scores = [n_best_list[0] for n_best_list in n_best_beam_preds_scores]
         if self.opt.get('verbose'):
             for i, beams in enumerate(n_best_beam_preds_scores):
                 for b, (tokens, score) in enumerate(beams):
@@ -1174,7 +1179,7 @@ class TorchGeneratorAgent(TorchAgent, ABC):
                     logging.debug(f"Batch[{i:3d}] Beam[{b:3d}]: ({score:4.2f}): {gen}")
                 logging.debug('-')
 
-        return beam_preds_scores, beams
+        return n_best_beam_preds_scores, beams
 
     def _load_beam_block_list(self) -> SearchBlocklist:
         """

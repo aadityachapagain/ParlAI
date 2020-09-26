@@ -55,7 +55,7 @@ def setup_args(parser=None):
     WorldLogger.add_cmdline_args(parser)
     return parser
 
-def _generate_adult_sentences(agent, statement, depth = 3):
+def _generate_adult_sentences(agent, statement, depth = 4):
     depth = depth -1
     generated_adult_beams.append(statement)
     print('statement : ', statement)
@@ -85,26 +85,10 @@ def interactive(opt):
     
     for statement in adult_sentences:
         _generate_adult_sentences(agent, statement)
-        # generated_adult_beams.append(statement)
-        # print('statement : ', statement)
-        # agent.observe({'text': statement, 'episode_done': True})
-        # beams_1 = agent.act()['text']
-        # agent.reset()
-        # if isinstance(beams_1, list) and len(beams_1) > 1:
-        #     for beam in beams_1:
-        #         generated_adult_beams.append(beam)
-        #         agent.observe({'text': beam, 'episode_done': True})
-        #         beams_2 = agent.act()['text']
-        #         agent.reset()
-        #         if isinstance(beams_2, list) and len(beams_2) > 1:
-        #             for beam in beams_2:
-        #                 generated_adult_beams.append(beam)
-        #                 agent.observe({'text': beam, 'episode_done': True})
-        #                 beams_2 = agent.act()['text']
-        #                 agent.reset()
-        #                 break
     
-    print(generated_adult_beams)
+    with open('data/generated_adult_beams.txt', 'w+') as fw:
+        for beam in generated_adult_beams:
+            fw.write(beam +'\n')
 
 @register_script('interactive', aliases=['i'])
 class Interactive(ParlaiScript):

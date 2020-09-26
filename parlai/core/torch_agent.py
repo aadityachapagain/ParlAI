@@ -1994,9 +1994,9 @@ class TorchAgent(ABC, Agent):
         """
         # BatchWorld handles calling self_observe, but we're in a Hogwild or Interactive
         # world, so we need to handle this ourselves.
-        response = self.batch_act([self.observation])[0]
-        self.self_observe(response)
-        return response
+        response, output = self.batch_act([self.observation])
+        self.self_observe(response[0])
+        return output.text
 
     def batch_act(self, observations):
         """
@@ -2086,7 +2086,7 @@ class TorchAgent(ABC, Agent):
             self.global_metrics.add('ctps', GlobalTimerMetric(0))
             self.global_metrics.add('tps', GlobalTimerMetric(0))
 
-        return batch_reply
+        return batch_reply, output
 
     @abstractmethod
     def train_step(self, batch):

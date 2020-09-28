@@ -72,7 +72,8 @@ def _generate_adult_sentences(agent, statement, depth = 4):
 def save_file_disk():
     with open('data/generated_adult_beams.txt', 'w+') as fw:
         while INFERENCE_FLAG or len(generated_adult_beams) > 0:
-            fw.write(generated_adult_beams.pop() +'\n')
+            if len(generated_adult_beams):
+                fw.write(generated_adult_beams.pop() +'\n')
 
 
 def interactive(opt):
@@ -96,6 +97,7 @@ def interactive(opt):
     for statement in adult_sentences:
         _generate_adult_sentences(agent, statement, 3)
 
+    INFERENCE_FLAG = False
     iothread.join()
     
 @register_script('interactive', aliases=['i'])

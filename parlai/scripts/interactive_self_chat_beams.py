@@ -7,8 +7,10 @@ from parlai.agents.local_human.local_human import LocalHumanAgent
 import parlai.utils.logging as logging
 import os
 import random
+import threading
 
 generated_adult_beams = []
+INFERENCE_FLAG = True
 
 def setup_args(parser=None):
     if parser is None:
@@ -63,10 +65,15 @@ def _generate_adult_sentences(agent, statement, depth = 4):
     beams = agent.act()
     agent.reset()
     if isinstance(beams, list) and len(beams) > 1 and depth > 0:
-        print(beams)
         for beam in beams:
             _generate_adult_sentences(agent, beam, depth)
     
+
+def save_file_disk():
+    with open('data/generated_adult_beams.txt', 'w+') as fw:
+        while INFERENCE_FLAG or len(generated_adult_beams) > 0:
+            fw.write(generated_adult_beams.pop() +'\n')
+
 
 def interactive(opt):
     if isinstance(opt, ParlaiParser):
@@ -83,13 +90,14 @@ def interactive(opt):
     with open('data/adult_statements/adult_like_statements.txt',  'r') as fd:
         adult_sentences =  [i.strip() for i in fd]
     
-    for statement in adult_sentences:
-        _generate_adult_sentences(agent, statement)
-    
-    with open('data/generated_adult_beams.txt', 'w+') as fw:
-        for beam in generated_adult_beams:
-            fw.write(beam +'\n')
+    iothread = threading.Thread(target = save_file_disk, args= (), daemon=True)
+    iothread.start()
 
+    for statement in adult_sentences:
+        _generate_adult_sentences(agent, statement, 3)
+
+    iothread.join()
+    
 @register_script('interactive', aliases=['i'])
 class Interactive(ParlaiScript):
     @classmethod

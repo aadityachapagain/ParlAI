@@ -11,6 +11,7 @@ import threading
 
 generated_adult_beams = []
 INFERENCE_FLAG = True
+AT_CHECKPOINT = False
 
 def setup_args(parser=None):
     if parser is None:
@@ -69,12 +70,27 @@ def _generate_adult_sentences(agent, statement, depth = 4):
             _generate_adult_sentences(agent, beam, depth)
     
 
-def save_file_disk():
-    with open('data/generated_adult_beams.txt', 'w+') as fw:
-        while INFERENCE_FLAG or len(generated_adult_beams) > 0:
-            if len(generated_adult_beams):
-                fw.write(generated_adult_beams.pop() +'\n')
+def _emtpy_generated_list():
+    global generated_adult_beams
+    generated_adult_beams = []
 
+
+def _save_file_disk():
+    with open('data/generated_adult_beams.txt', 'a+') as fw:
+        for stmt in generated_adult_beams:
+            fw.write(stmt+'\n')
+
+def _write_checkpoint(val):
+    with open('data/generated_adult_beams.checkpoint', 'w') as fw:
+        fw.write(val)
+
+def _load_checkpoint():
+    try:
+        with open('data/generated_adult_beams.checkpoint', 'r') as fw:
+            val = int(fw.read())
+    except:
+        val = 0
+    return val
 
 def interactive(opt):
     if isinstance(opt, ParlaiParser):
@@ -88,15 +104,20 @@ def interactive(opt):
     # set up world logger
     world_logger = WorldLogger(opt) if opt.get('outfile') else None
     adult_sentences = []
+    global AT_CHECKPOINT
     with open('data/adult_statements/adult_like_statements.txt',  'r') as fd:
         adult_sentences =  [i.strip() for i in fd]
-
-    for statement in adult_sentences:
-        _generate_adult_sentences(agent, statement, 3)
     
-    with open('data/generated_adult_beams.txt', 'w+') as fw:
-        for stmt in generated_adult_beams:
-            fw.write(stmt+'\n')
+    checkpoint = _load_checkpoint()
+    for idx, statement in enumerate(adult_sentences):
+        if idx >= checkpoint:
+            AT_CHECKPOINT = True
+        else:
+            continue
+        _generate_adult_sentences(agent, statement, 3)
+        _write_checkpoint(idx)
+        _save_file_disk()
+        _emtpy_generated_list()
 @register_script('interactive', aliases=['i'])
 class Interactive(ParlaiScript):
     @classmethod

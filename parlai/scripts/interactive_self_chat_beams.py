@@ -90,16 +90,13 @@ def interactive(opt):
     adult_sentences = []
     with open('data/adult_statements/adult_like_statements.txt',  'r') as fd:
         adult_sentences =  [i.strip() for i in fd]
-    
-    iothread = threading.Thread(target = save_file_disk, args= (), daemon=True)
-    iothread.start()
 
     for statement in adult_sentences:
         _generate_adult_sentences(agent, statement, 3)
-
-    INFERENCE_FLAG = False
-    iothread.join()
     
+    with open('data/generated_adult_beams.txt', 'w+') as fw:
+        for stmt in generated_adult_beams:
+            fw.write(stmt+'\n')
 @register_script('interactive', aliases=['i'])
 class Interactive(ParlaiScript):
     @classmethod

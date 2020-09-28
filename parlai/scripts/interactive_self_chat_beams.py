@@ -82,7 +82,7 @@ def _save_file_disk():
 
 def _write_checkpoint(val):
     with open('data/generated_adult_beams.checkpoint', 'w') as fw:
-        fw.write(val)
+        fw.write(str(val))
 
 def _load_checkpoint():
     try:

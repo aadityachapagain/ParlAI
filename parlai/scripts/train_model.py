@@ -37,7 +37,11 @@ from parlai.gcp.gcs_service import gcp as storage_agent
 from parlai.core.agents import create_agent, create_agent_from_shared
 from parlai.core.exceptions import StopTrainException
 from parlai.distillation.logs import TensorboardLogger, WandbLogger
-from parlai.core.metrics import aggregate_named_reports, aggregate_unnamed_reports
+from parlai.core.metrics import (
+    aggregate_named_reports,
+    aggregate_unnamed_reports,
+    dict_report,
+)
 from parlai.core.params import ParlaiParser, print_announcements
 from parlai.core.worlds import create_task
 from parlai.scripts.build_dict import build_dict, setup_args as setup_dict_args
@@ -428,9 +432,6 @@ class TrainLoop:
                 with open('extreme.logs', 'a+') as fw:
                     fw.write(exceptions_str)
 
-    def _safe_report(self, report: Dict[str, Metric]):
-        return {k: v.value() if isinstance(v, Metric) else v for k, v in report.items()}
-
     def _save_train_stats(self, suffix=None):
         fn = self.opt['model_file']
         if suffix:
@@ -467,7 +468,7 @@ class TrainLoop:
         valid_report = self._run_eval(
             self.valid_worlds, opt, 'valid', opt['validation_max_exs']
         )
-        v = self._safe_report(valid_report.copy())
+        v = dict_report(valid_report)
         v['train_time'] = self.train_time.time()
         v['parleys'] = self.parleys
         v['total_exs'] = self._total_exs
@@ -602,7 +603,7 @@ class TrainLoop:
         # write to file
         if write_log and opt.get('model_file') and is_primary_worker():
             # Write out metrics
-            with PathManager.open(opt['model_file'] + '.' + datatype, 'a+') as f:
+            with PathManager.open(opt['model_file'] + '.' + datatype, 'a') as f:
                 f.write(f'{metrics}\n')
 
         return report
@@ -658,7 +659,7 @@ class TrainLoop:
         train_report = self._sync_metrics(train_report)
         self.world.reset_metrics()
 
-        train_report_trainstats = self._safe_report(train_report)
+        train_report_trainstats = dict_report(train_report)
         train_report_trainstats['total_epochs'] = self._total_epochs
         train_report_trainstats['total_exs'] = self._total_exs
         train_report_trainstats['parleys'] = self.parleys

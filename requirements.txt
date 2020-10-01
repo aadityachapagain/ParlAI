@@ -165,3 +165,4 @@ widgetsnbextension==3.5.1
 yarl==1.5.1
 zict==2.0.0
 zstandard==0.14.0
+jsonlines==1.2.0

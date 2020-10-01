@@ -1,6 +1,5 @@
-python parlai/core/latest_checkpoint.py --model-file /tmp/models/talk_with_bot/Karu/karu_bot_90M --run-tag 90m_pretrain_2
+python parlai/core/latest_checkpoint.py --model-file /tmp/Karu/Karu_M1.checkpoint --run-tag "M1_finetune"
 
 python parlai/scripts/interactive.py /
---model-file /tmp/models/talk_with_bot/Karu/karu_bot_90M.checkpoint /
---model transformer/generator /
---no-cuda
+--model-file /tmp/Karu/Karu_M1.checkpoint /
+--model transformer/generator

@@ -933,7 +933,9 @@ class MTurkDataHandler:
             'had_conversation_dir': False,
             'had_worker_dir': False,
             'had_worker_file': False,
+            'had_custom_data': False,
             'data': None,
+            'custom_data': None,
         }
         target = 'sandbox' if is_sandbox else 'live'
         search_dir = os.path.join(data_dir, target)
@@ -958,6 +960,14 @@ class MTurkDataHandler:
         result['had_worker_file'] = True
         with open(target_filename, 'r') as target_file:
             result['data'] = json.load(target_file)
+
+        # Custom data
+        target_filename = os.path.join(os.path.dirname(os.path.dirname(target_filename)), 'custom/data.json')
+        if not os.path.exists(target_filename):
+            return result
+        result['had_custom_data'] = True
+        with open(target_filename, 'r') as target_file:
+            result['custom_data'] = json.load(target_file)
 
         return result
 

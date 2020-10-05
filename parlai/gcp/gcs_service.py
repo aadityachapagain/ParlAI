@@ -10,6 +10,7 @@ from io import BytesIO, StringIO
 from google.cloud import storage
 
 import logging
+import traceback
 FORMAT = '%(asctime)-15s %(name)s %(levelname)s %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger("data.storage.gcp")
@@ -82,7 +83,9 @@ class GCP_Service(object):
                 blob.download_to_filename(dest_file)
                 logger.info(f'{dest_file} downloaded from bucket.')
             except:
-                print('raise exception')
+                traceback.print_exc()
+                if os.path.isfile(dest_file):
+                    os.remove(dest_file)
                 continue
 
     def download(self, bucket_filename:str, local_dir:str) -> str:
@@ -96,6 +99,8 @@ class GCP_Service(object):
             logger.info(f'{file_name} downloaded from bucket.')
             return dest_file
         except:
+            if os.path.isfile(dest_file):
+                os.remove(dest_file)
             logger.warn(f'{bucket_filename} not found in {self.bucket_name}')
 
     def delete(self, bucket_filename:str):

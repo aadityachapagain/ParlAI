@@ -1186,7 +1186,7 @@ class TorchAgent(ABC, Agent):
 
         # only report LR if we have a scheduler
         if hasattr(self, 'scheduler') and self.scheduler is not None:
-            report['lr'] = GlobalAverageMetric(self.optimizer.param_groups[0]['lr'])
+            report['lr'] = GlobalAverageMetric(self.scheduler.get_last_lr())
 
         if self.use_cuda:
             report['gpu_mem'] = GlobalAverageMetric(self._gpu_usage())
@@ -1946,9 +1946,10 @@ class TorchAgent(ABC, Agent):
         """
         import parlai.utils.pickle
 
-        states = torch.load(
-            path, map_location=lambda cpu, _: cpu, pickle_module=parlai.utils.pickle
-        )
+        with PathManager.open(path, 'rb') as f:
+            states = torch.load(
+                f, map_location=lambda cpu, _: cpu, pickle_module=parlai.utils.pickle
+            )
         if 'model' in states:
             self.load_state_dict(states['model'])
         if 'optimizer' in states and hasattr(self, 'optimizer'):

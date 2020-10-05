@@ -23,6 +23,12 @@ import parlai.utils.logging as logging
 
 os.environ["WANDB_SILENT"] = "true"
 
+try:
+    import wandb
+    WANDB_API_KEY = os.environ['WANDB_API_KEY']
+except ImportError:
+    raise ImportError('Please run `pip install wandb --upgrade`.')
+
 class TensorboardLogger(object):
     """
     Log objects to tensorboard.
@@ -101,32 +107,33 @@ class WandbLogger(object):
             '--wand-run-name',
             type=str,
             help="Project Run Name for specific wandb run",
-            required=True,
             hidden=False,
         )
         logger.add_argument(
             '--wand-id',
             type=str,
             help="ID for specific run that will used to resume previously preemted logging",
-            required=True,
             hidden=False,
         )
+        logger.add_argument(
+            '--wandb-notes',
+            type=str,
+            default='',
+            help="Wandb Notes for current run",
+            hidden=True,
+        )
+    # __instance = None
 
     def __init__(self, opt: Opt):
-        try:
-            import wandb
-        except ImportError:
-            raise ImportError('Please run `pip install wandb -qqq`.')
-        
         # login to wandb
-        wandb.login()
+        wandb.login(key = WANDB_API_KEY)
 
         # gather config
         config = {
             'optimizer': opt['optimizer'],
-            'embedding_size': opt['student_config']['embedding_size'],
-            'ffn_size': opt['student_config']['ffn_size'],
-            'n_decoder_layers': opt['student_config']['n_decoder_layers'],
+            'embedding_size': opt.get('student_config')['embedding_size'] if opt.get('student_config') else opt['embedding_size'],
+            'ffn_size': opt['student_config']['ffn_size'] if opt.get('student_config') else opt['ffn_size'],
+            'n_decoder_layers': opt['student_config']['n_decoder_layers'] if opt.get('student_config') else opt['n_decoder_layers'],
             'tokenizer': opt['dict_tokenizer'],
             'fp16': opt['fp16'],
             'fp16_impl': opt['fp16_impl'],
@@ -134,9 +141,9 @@ class WandbLogger(object):
             'lr_scheduler': opt['lr_scheduler'],
             }
 
-        self.wandrun = wandb.init(
+        wandb.init(
             name= opt['wand_run_name'], resume=True, project=opt['wand_project_name'], 
-            id=opt['wand_id'], config=config
+            id=opt['wand_id'], config=config, notes= opt['wandb_notes']
         )
 
         self.key_map = {
@@ -184,4 +191,4 @@ class WandbLogger(object):
             else:
                 logging.error(f'k {k} v {v} is not a number')
 
-        self.wandrun.log(metrics)
+        wandb.log(metrics)

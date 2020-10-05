@@ -1309,4 +1309,15 @@ task_list = [
             "for task oriented dialogue in 7 domains."
         ),
     },
+    {
+        "id": "TopicalChat",
+        "display_name": "Topical Chat",
+        "task": "topical_chat",
+        "tags": ["All", "ChitChat"],
+        "description": (
+            "Topical-Chat, a knowledge-grounded human-human conversation dataset "
+            "where the underlying knowledge spans 8 broad topics and conversation "
+            "partners don’t have explicitly defined roles."
+        )
+    },
 ]

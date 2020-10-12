@@ -60,13 +60,13 @@ def setup_args(parser=None):
 
 def _generate_adult_sentences(agent, statement, depth = 4):
     depth = depth -1
-    generated_adult_beams.append(statement)
     print('statement : ', statement)
     agent.observe({'text': statement, 'episode_done': True})
     beams = agent.act()
     agent.reset()
     if isinstance(beams, list) and len(beams) > 1 and depth > 0:
         for beam in beams:
+            generated_adult_beams.append(f'text:{statement}\tlabels:{beam}\tepisode_done:True\treward:-1')
             _generate_adult_sentences(agent, beam, depth)
     
 

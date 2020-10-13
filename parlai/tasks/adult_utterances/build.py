@@ -8,7 +8,9 @@ def build(opt):
     dpath = os.path.join(opt['datapath'], 'unliked_utterances')
     dtype = 'train' if 'train' in opt.get('datatype','train') else 'valid'
     if not os.path.isfile(f'{dpath}/train.txt'):
-        gcp.download((f'unliked_utterances/train.txt',dpath)
+        gcp.download('unliked_utterances/train.txt',dpath)
+    if not os.path.isfile(f'{dpath}/valid.txt'):
+        gcp.download('unliked_utterances/valid.txt',dpath)
     
     build_data.mark_done(dpath)
 

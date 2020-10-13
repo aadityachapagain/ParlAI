@@ -8,9 +8,9 @@ def build(opt):
     dpath = os.path.join(opt['datapath'], 'moxie_grl')
     dtype = 'train' if 'train' in opt.get('datatype','train') else 'valid'
     if not os.path.isfile(f'{dpath}/train.txt'):
-        gcp.download((f'moxie_data/train.txt',dpath)
+        gcp.download(f'moxie_data/train.txt',dpath)
     if not os.path.isfile(f'{dpath}/valid.txt'):
-        gcp.download((f'moxie_data/valid.txt',dpath)
+        gcp.download(f'moxie_data/valid.txt',dpath)
     
     build_data.mark_done(dpath)
 

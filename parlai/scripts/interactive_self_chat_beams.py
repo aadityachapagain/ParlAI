@@ -7,7 +7,7 @@ from parlai.agents.local_human.local_human import LocalHumanAgent
 import parlai.utils.logging as logging
 import os
 import random
-import threading
+import time
 
 generated_adult_beams = []
 INFERENCE_FLAG = True
@@ -25,6 +25,11 @@ def setup_args(parser=None):
         default=False,
         help='Set to use a prettytable when displaying '
         'examples with text candidates',
+    )
+    parser.add_argument(
+        '--adultlike_file_path',
+        type=str,
+        required=True
     )
     parser.add_argument(
         '--display-ignore-fields',
@@ -58,16 +63,17 @@ def setup_args(parser=None):
     WorldLogger.add_cmdline_args(parser)
     return parser
 
-def _generate_adult_sentences(agent, statement, depth = 4):
-    depth = depth -1
+def _generate_adult_sentences(agent, statement,curr_gen, max_gen = 3):
     print('statement : ', statement)
     agent.observe({'text': statement, 'episode_done': True})
+    start = time.time()
     beams = agent.act()
+    ttl = time.time() - start
     agent.reset()
-    if isinstance(beams, list) and len(beams) > 1 and depth > 0:
+    if isinstance(beams, list) and len(beams) > 1 and curr_gen <= max_gen:
         for beam in beams:
-            generated_adult_beams.append(f'text:{statement}\tlabels:{beam}\tepisode_done:True\treward:-1')
-            _generate_adult_sentences(agent, beam, depth)
+            generated_adult_beams.append(f'text:{statement}\tlabels:{beam}\tepisode_done:True\treward:-1\tgen:{str(curr_gen)}\tttl:{str(ttl)}')
+            _generate_adult_sentences(agent, beam, curr_gen + 1, max_gen)
     
 
 def _emtpy_generated_list():
@@ -75,24 +81,26 @@ def _emtpy_generated_list():
     generated_adult_beams = []
 
 
-def _save_file_disk():
-    with open('data/generated_adult_beams.txt', 'a+') as fw:
+def _save_file_disk(inf):
+    with open(f'data/generated_adult_beams_{inf}.txt', 'a+') as fw:
         for stmt in generated_adult_beams:
             fw.write(stmt+'\n')
 
-def _write_checkpoint(val):
-    with open('data/generated_adult_beams.checkpoint', 'w') as fw:
+def _write_checkpoint(val, inf):
+    with open(f'data/generated_adult_beams_{inf}.checkpoint', 'w') as fw:
         fw.write(str(val))
 
-def _load_checkpoint():
+def _load_checkpoint(inf):
     try:
-        with open('data/generated_adult_beams.checkpoint', 'r') as fw:
+        with open(f'data/generated_adult_beams_{inf}.checkpoint', 'r') as fw:
             val = int(fw.read())
     except:
         val = 0
     return val
 
 def interactive(opt):
+    inference = opt.get('inference')
+    file_path = opt.get('adultlike_file_path')
     if isinstance(opt, ParlaiParser):
         logging.error('interactive should be passed opt not Parser')
         opt = opt.parse_args()
@@ -105,18 +113,18 @@ def interactive(opt):
     world_logger = WorldLogger(opt) if opt.get('outfile') else None
     adult_sentences = []
     global AT_CHECKPOINT
-    with open('data/adult_statements/adult_like_statements.txt',  'r') as fd:
+    with open(file_path,  'r') as fd:
         adult_sentences =  [i.strip() for i in fd]
     
-    checkpoint = _load_checkpoint()
+    checkpoint = _load_checkpoint(inference)
     for idx, statement in enumerate(adult_sentences):
         if idx >= checkpoint:
             AT_CHECKPOINT = True
         else:
             continue
-        _generate_adult_sentences(agent, statement, 3)
-        _write_checkpoint(idx)
-        _save_file_disk()
+        _generate_adult_sentences(agent, statement, 0, 3)
+        _write_checkpoint(idx, inference)
+        _save_file_disk(inference)
         _emtpy_generated_list()
 @register_script('interactive', aliases=['i'])
 class Interactive(ParlaiScript):

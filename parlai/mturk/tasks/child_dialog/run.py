@@ -11,7 +11,6 @@ from tqdm import tqdm
 
 from parlai.core.params import ParlaiParser
 from parlai.mturk.core import mturk_utils
-from parlai.core.agents import create_agent
 from parlai.mturk.tasks.child_dialog.worlds import (
     QualificationTestOnboardWorld,
     InteractParlAIModelWorld
@@ -20,26 +19,52 @@ from parlai.mturk.tasks.child_dialog.mturk_manager import MturkManagerWithWaitin
 from parlai.mturk.tasks.child_dialog.task_config import task_config
 import parlai.mturk.core.shared_utils as shared_utils
 from parlai.mturk.tasks.child_dialog.agents import BotAgent
-# from parlai.mturk.tasks.child_dialog.dedicated_workers import ReviewGSheet
-from parlai.utils.safety import OffensiveLanguageClassifier
 
 
 def setup_args():
     argparser = ParlaiParser(False, True)
     argparser.add_parlai_data_path()
     argparser.add_mturk_args()
+    # argparser.add_argument(
+    #     '--gsheet-credentials',
+    #     dest='ghseet_credentials',
+    #     required=True,
+    #     help='path to gsheet credentials json file'
+    # )
+    # argparser.add_argument(
+    #     '--safety',
+    #     type=str,
+    #     default='string_matcher',
+    #     choices={'none', 'string_matcher', 'classifier', 'all'},
+    #     help='Apply safety filtering to messages',
+    # )
     argparser.add_argument(
-        '--gsheet-credentials',
-        dest='ghseet_credentials',
-        required=True,
-        help='path to gsheet credentials json file'
+        '--bot-host',
+        type=str,
+        default='10.1.2.99',
+        dest='bot_host',
+        help='Remote Chat Backend Address'
     )
     argparser.add_argument(
-        '--safety',
+        '--bot-port',
+        type=int,
+        default=80,
+        dest='bot_port',
+        help='Remote Chat Backend Port'
+    )
+    argparser.add_argument(
+        '--bot-username',
         type=str,
-        default='string_matcher',
-        choices={'none', 'string_matcher', 'classifier', 'all'},
-        help='Apply safety filtering to messages',
+        required=True,
+        dest='bot_username',
+        help='Remote Chat username'
+    )
+    argparser.add_argument(
+        '--bot-password',
+        type=str,
+        required=True,
+        dest='bot_password',
+        help='Remote Chat password'
     )
     argparser.add_argument(
         '--custom-data-dir',
@@ -177,8 +202,6 @@ def send_hit_notification(worker_ids, hit_link, is_sandbox, max_hits):
 
 
 def single_run(opt,
-               bot_agent,
-               offensive_language_classifier,
                pass_qual_id,
                fail_qual_id,
                dedicated_worker_qual_id=None,
@@ -263,8 +286,7 @@ def single_run(opt,
                 bot_agent_id = 'KARU'
             else:
                 bot_agent_id = 'CHILD'
-            bot = BotAgent(opt, bot_agent, bot_agent_id, mturk_manager.task_group_id,
-                           offensive_language_classifier=offensive_language_classifier)
+            bot = BotAgent(opt, bot_agent_id, mturk_manager.task_group_id)
             world = InteractParlAIModelWorld(opt, workers[0], bot)
 
             while not world.episode_done():
@@ -297,9 +319,7 @@ def run_final_job(manager):
     manager.shutdown()
 
 
-def launch_consecutive_runs(opt,
-                            bot_agent,
-                            offensive_language_classifier):
+def launch_consecutive_runs(opt):
     pass_qual_id, fail_qual_id = create_passfail_qualification(opt)
     if opt.get('dedicated_worker_run'):
         if opt.get("max_hits_limit_in_a_run_only"):
@@ -322,8 +342,6 @@ def launch_consecutive_runs(opt,
     for run_idx in range(opt['number_of_runs']):
         shared_utils.print_and_log(logging.INFO, f"Launching {run_idx + 1} run........", should_print=True)
         old_mturk_manager = single_run(opt,
-                                       bot_agent,
-                                       offensive_language_classifier,
                                        pass_qual_id,
                                        fail_qual_id,
                                        dedicated_worker_qual_id,
@@ -344,13 +362,6 @@ def launch_consecutive_runs(opt,
 
 
 def main(opt, cfgs):
-    # Qualifications
-    bot_agent = create_agent(opt, requireModelExists=True)
-    if opt['safety'] == 'classifier' or opt['safety'] == 'all':
-        offensive_language_classifier = OffensiveLanguageClassifier()
-    else:
-        offensive_language_classifier = None
-
     mturk_utils.setup_aws_credentials()
 
     all_dedicated_workers = []
@@ -375,17 +386,28 @@ def main(opt, cfgs):
                                        should_print=True)
 
     run_threads = []
-    for _, cfg in cfgs.items():
-        run_opt = copy.deepcopy(opt)
-        run_opt.update(cfg)
-        th = Thread(target=launch_consecutive_runs, args=(run_opt, bot_agent, offensive_language_classifier))
-        th.daemon = True
-        th.start()
-        run_threads.append(th)
-        time.sleep(120)
 
-    for th in run_threads:
-        th.join()
+    if len(cfgs) == 1:
+        for _, cfg in cfgs.items():
+            run_opt = copy.deepcopy(opt)
+            run_opt.update(cfg)
+            launch_consecutive_runs(run_opt)
+    elif len(cfgs) > 1:
+        for _, cfg in cfgs.items():
+            run_opt = copy.deepcopy(opt)
+            run_opt.update(cfg)
+            th = Thread(target=launch_consecutive_runs, args=(run_opt,))
+            th.daemon = True
+            th.start()
+            run_threads.append(th)
+            time.sleep(120)
+
+        for th in run_threads:
+            th.join()
+    else:
+        shared_utils.print_and_log(logging.WARN,
+                                   "No configuration founds.....",
+                                   should_print=True)
 
 
 if __name__ == '__main__':

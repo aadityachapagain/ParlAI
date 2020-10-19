@@ -1994,9 +1994,9 @@ class TorchAgent(ABC, Agent):
         """
         # BatchWorld handles calling self_observe, but we're in a Hogwild or Interactive
         # world, so we need to handle this ourselves.
-        response, output = self.batch_act([self.observation])
+        response, output, b_scores = self.batch_act([self.observation])
         self.self_observe(response[0])
-        return output.text
+        return output.text, b_scores
 
     def batch_act(self, observations):
         """
@@ -2055,7 +2055,7 @@ class TorchAgent(ABC, Agent):
             with torch.no_grad():
                 # save memory and compute by disabling autograd.
                 # use `with torch.enable_grad()` to gain back gradients.
-                output = self.eval_step(batch)
+                output, b_scores = self.eval_step(batch)
 
         if output is not None:
             # local metrics are automatically matched up
@@ -2086,7 +2086,7 @@ class TorchAgent(ABC, Agent):
             self.global_metrics.add('ctps', GlobalTimerMetric(0))
             self.global_metrics.add('tps', GlobalTimerMetric(0))
 
-        return batch_reply, output
+        return batch_reply, output, b_scores
 
     @abstractmethod
     def train_step(self, batch):

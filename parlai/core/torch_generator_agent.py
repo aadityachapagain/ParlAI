@@ -915,15 +915,18 @@ class TorchGeneratorAgent(TorchAgent, ABC):
 
         # text = [self._v2t(p) for p in preds] if preds is not None else None
         text = []
+        b_scores = []
         for i, beams in enumerate(beam_preds_scores):
                 for b, (tokens, score) in enumerate(beams):
-                    text.append(self._v2t(tokens))
+                    res = self._v2t(tokens)
+                    text.append(res)
+                    b_scores.append((res,score))
 
         if text and self.compute_tokenized_bleu:
             # compute additional bleu scores
             self._compute_fairseq_bleu(batch, preds)
             self._compute_nltk_bleu(batch, text)
-        return Output(text, cand_choices, token_losses=token_losses)
+        return Output(text, cand_choices, token_losses=token_losses), b_scores
 
     def _treesearch_factory(self, device):
         method = self.opt.get('inference', 'greedy')

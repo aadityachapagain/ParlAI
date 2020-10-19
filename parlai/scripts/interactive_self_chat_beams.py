@@ -69,15 +69,15 @@ def setup_args(parser=None):
     return parser
 
 def _generate_adult_sentences(agent, statement,curr_gen, max_gen = 3):
-    print('statement : ', statement)
     agent.observe({'text': statement, 'episode_done': True})
     start = time.time()
-    beams = agent.act()
+    _, beams = agent.act()
     ttl = time.time() - start
     agent.reset()
     if isinstance(beams, list) and len(beams) > 1 and curr_gen <= max_gen:
-        for beam in beams:
-            generated_adult_beams.append(f'text:{statement}\tlabels:{beam}\tepisode_done:True\treward:-1\tgen:{str(curr_gen)}\tttl:{str(ttl)}')
+        for beam, score in beams:
+            generated_adult_beams.append(f'text:{statement}\tlabels:{beam}\tepisode_done:True\treward:-1\tgen:{str(curr_gen)}\tttl:{str(ttl)}\tscore:{str(score)}')
+            print(f'text:{statement}\tlabels:{beam}\tepisode_done:True\treward:-1\tgen:{str(curr_gen)}\tttl:{str(ttl)}\tscore:{str(score)}')
             _generate_adult_sentences(agent, beam, curr_gen + 1, max_gen)
     
 

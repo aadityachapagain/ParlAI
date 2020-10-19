@@ -32,6 +32,11 @@ def setup_args(parser=None):
         required=True
     )
     parser.add_argument(
+        '--recursion',
+        default=3,
+        type=int
+    )
+    parser.add_argument(
         '--display-ignore-fields',
         type=str,
         default='label_candidates,text_candidates',
@@ -101,6 +106,7 @@ def _load_checkpoint(inf):
 def interactive(opt):
     inference = opt.get('inference')
     file_path = opt.get('adultlike_file_path')
+    recursion = opt.get('recursion')
     if isinstance(opt, ParlaiParser):
         logging.error('interactive should be passed opt not Parser')
         opt = opt.parse_args()
@@ -122,7 +128,7 @@ def interactive(opt):
             AT_CHECKPOINT = True
         else:
             continue
-        _generate_adult_sentences(agent, statement, 0, 3)
+        _generate_adult_sentences(agent, statement, 0, recursion)
         _write_checkpoint(idx, inference)
         _save_file_disk(inference)
         _emtpy_generated_list()

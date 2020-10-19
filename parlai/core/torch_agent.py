@@ -22,19 +22,18 @@ See below for documentation on each specific tool.
 from typing import Dict, Any, Union, List, Tuple, Optional
 from abc import ABC, abstractmethod
 import random
-import os
 import torch
 import parlai.utils.logging as logging
 from torch import optim
 
 from parlai.core.opt import Opt
 from parlai.core.agents import Agent
-from parlai.utils.thread import SharedTable
 from parlai.core.dict import DictionaryAgent
 from parlai.nn.lr_scheduler import ParlAILRScheduler
 from parlai.core.message import Message
 from parlai.utils.distributed import is_distributed
 from parlai.utils.misc import AttrDict, warn_once
+from parlai.utils.io import PathManager
 from parlai.utils.fp16 import (
     fp16_apex_available,
     fp16_optimizer_wrapper,
@@ -52,6 +51,91 @@ from parlai.core.metrics import (
 from parlai.utils.distributed import is_primary_worker
 from parlai.utils.torch import argsort, compute_grad_norm, padded_tensor, atomic_save
 
+class DistillBatch(AttrDict):
+    """
+    Batch is a namedtuple containing data being sent to an agent.
+
+    This is the input type of the train_step and eval_step functions.
+    Agents can override the batchify function to return an extended namedtuple
+    with additional fields if they would like, though we recommend calling the
+    parent function to set up these fields as a base.
+
+    :param text_vec:
+        bsz x seqlen tensor containing the parsed text data.
+
+    :param text_lengths:
+        list of length bsz containing the lengths of the text in same order as
+        text_vec; necessary for pack_padded_sequence.
+
+    :param label_vec:
+        bsz x seqlen tensor containing the parsed label (one per batch row).
+
+    :param label_lengths:
+        list of length bsz containing the lengths of the labels in same order as
+        label_vec.
+
+    :param labels:
+        list of length bsz containing the selected label for each batch row (some
+        datasets have multiple labels per input example).
+
+    :param valid_indices:
+        list of length bsz containing the original indices of each example in the
+        batch. we use these to map predictions back to their proper row, since e.g.
+        we may sort examples by their length or some examples may be invalid.
+
+    :param candidates:
+        list of lists of text. outer list has size bsz, inner lists vary in size
+        based on the number of candidates for each row in the batch.
+
+    :param candidate_vecs:
+        list of lists of tensors. outer list has size bsz, inner lists vary in size
+        based on the number of candidates for each row in the batch.
+
+    :param image:
+        list of image features in the format specified by the --image-mode arg.
+
+    :param observations:
+        the original observations in the batched order
+    """
+    batchsize: int
+    text_vec: Optional[torch.LongTensor]
+    text_lengths: Optional[List[int]]
+    label_vec: Optional[torch.LongTensor]
+    label_lengths: Optional[List[int]]
+    labels: Optional[List[str]]
+    valid_indices: Optional[List[int]]
+    candidates: Optional[List[List[str]]]
+    candidate_vecs: Optional[List[List[torch.LongTensor]]]
+    image: Optional[List[Any]]
+    observations: Optional[List[Message]]
+
+    def __init__(
+        self,
+        text_vec=None,
+        text_lengths=None,
+        label_vec=None,
+        label_lengths=None,
+        labels=None,
+        valid_indices=None,
+        candidates=None,
+        candidate_vecs=None,
+        image=None,
+        observations=None,
+        **kwargs,
+    ):
+        super().__init__(
+            text_vec=text_vec,
+            text_lengths=text_lengths,
+            label_vec=label_vec,
+            label_lengths=label_lengths,
+            labels=labels,
+            valid_indices=valid_indices,
+            candidates=candidates,
+            candidate_vecs=candidate_vecs,
+            image=image,
+            observations=observations,
+            **kwargs,
+        )
 
 class Batch(AttrDict):
     """
@@ -366,7 +450,7 @@ class TorchAgent(ABC, Agent):
     P2_TOKEN = '__p2__'
 
     @classmethod
-    def optim_opts(self):
+    def optim_opts(cls):
         """
         Fetch optimizer selection.
 
@@ -647,7 +731,6 @@ class TorchAgent(ABC, Agent):
             type='nonestr',
             default=None,
             hidden=True,
-            choices=[None, 'end'],
             help='Add special token to the end of history encoding.',
         )
         agent.add_argument(
@@ -734,7 +817,7 @@ class TorchAgent(ABC, Agent):
                         self.dict['__FP16_PAD_{}__'.format(i)] = 1
 
             # global_metrics keeps track of batch-level or global-level metrics
-            self.global_metrics = Metrics(opt.get('numthreads', 1) > 1, shared=None)
+            self.global_metrics = Metrics(shared=None)
             # self.metrics is there for legacy reasons
             self.metrics: Dict[str, Any] = {}
         else:
@@ -744,12 +827,7 @@ class TorchAgent(ABC, Agent):
             self.model = shared['model']
             self.criterion = shared['criterion']
             self.metrics = shared['metrics']
-            self.global_metrics = Metrics(
-                opt.get('numthreads', 1) > 1, shared=shared['global_metrics']
-            )
-
-        if opt.get('numthreads', 1) > 1:
-            torch.set_num_threads(1)
+            self.global_metrics = Metrics(shared=shared['global_metrics'])
 
         # Default to the class name, sans "Agent". child can override
         self.id = type(self).__name__.replace("Agent", "")
@@ -841,11 +919,11 @@ class TorchAgent(ABC, Agent):
         is_finetune = False
         if not shared:  # only do this on first setup
             # first check load path in case we need to override paths
-            if opt.get('init_model') and os.path.isfile(opt['init_model']):
+            if opt.get('init_model') and PathManager.exists(opt['init_model']):
                 # check first for 'init_model' for loading model from file
                 init_model = opt['init_model']
                 is_finetune = True
-            if opt.get('model_file') and os.path.isfile(opt['model_file']):
+            if opt.get('model_file') and PathManager.exists(opt['model_file']):
                 # next check for 'model_file', this would override init_model
                 init_model = opt['model_file']
                 is_finetune = False
@@ -861,7 +939,7 @@ class TorchAgent(ABC, Agent):
 
             if init_model is not None:
                 # if we are loading a model, should load its dict too
-                if os.path.isfile(init_model + '.dict') or opt['dict_file'] is None:
+                if PathManager.exists(init_model + '.dict') or opt['dict_file'] is None:
                     opt['dict_file'] = init_model + '.dict'
 
         return init_model, is_finetune
@@ -893,7 +971,7 @@ class TorchAgent(ABC, Agent):
             return False
         datatype = self.opt.get('datatype', '')
         is_train = 'train' in datatype and 'evalmode' not in datatype
-        return is_train or self.opt.get('numthreads', 1) > 1
+        return is_train
 
     def init_optim(self, params, optim_states=None, saved_optim_type=None):
         """
@@ -1108,7 +1186,7 @@ class TorchAgent(ABC, Agent):
 
         # only report LR if we have a scheduler
         if hasattr(self, 'scheduler') and self.scheduler is not None:
-            report['lr'] = GlobalAverageMetric(self.optimizer.param_groups[0]['lr'])
+            report['lr'] = GlobalAverageMetric(self.scheduler.get_last_lr())
 
         if self.use_cuda:
             report['gpu_mem'] = GlobalAverageMetric(self._gpu_usage())
@@ -1146,7 +1224,7 @@ class TorchAgent(ABC, Agent):
             props = torch.cuda.get_device_properties(dev)
             memory_avail += props.total_memory
             memory_used += torch.cuda.max_memory_allocated(dev)
-            torch.cuda.reset_max_memory_allocated(dev)
+            torch.cuda.reset_peak_memory_stats(dev)
         return memory_used / memory_avail
 
     def receive_metrics(self, metrics_dict):
@@ -1255,14 +1333,8 @@ class TorchAgent(ABC, Agent):
         Subclasses will likely want to share their model as well.
         """
         shared = super().share()
-
-        if self.opt.get('numthreads', 1) > 1 and isinstance(self.metrics, dict):
-            # move metrics and model to shared memory
-            self.metrics = SharedTable(self.metrics)
-            self.model.share_memory()
         shared['metrics'] = self.metrics
         shared['global_metrics'] = self.global_metrics.share()
-
         shared['dict'] = self.dict
         shared['model'] = self.model
         shared['criterion'] = self.criterion
@@ -1372,6 +1444,7 @@ class TorchAgent(ABC, Agent):
                 obs['text_vec'], truncate, truncate_left
             )
             obs.force_set('text_vec', torch.LongTensor(truncated_vec))
+
         return obs
 
     def _set_label_vec(self, obs, add_start, add_end, truncate):
@@ -1826,7 +1899,7 @@ class TorchAgent(ABC, Agent):
 
         if path:
             model_dict_path = path + '.dict'
-            if hasattr(self, 'dict') and not os.path.exists(
+            if hasattr(self, 'dict') and not PathManager.exists(
                 model_dict_path
             ):  # force save dictionary
                 # TODO: Look into possibly overriding opt('dict_file') with new path
@@ -1873,9 +1946,10 @@ class TorchAgent(ABC, Agent):
         """
         import parlai.utils.pickle
 
-        states = torch.load(
-            path, map_location=lambda cpu, _: cpu, pickle_module=parlai.utils.pickle
-        )
+        with PathManager.open(path, 'rb') as f:
+            states = torch.load(
+                f, map_location=lambda cpu, _: cpu, pickle_module=parlai.utils.pickle
+            )
         if 'model' in states:
             self.load_state_dict(states['model'])
         if 'optimizer' in states and hasattr(self, 'optimizer'):
@@ -2012,9 +2086,6 @@ class TorchAgent(ABC, Agent):
             self.global_metrics.add('ltps', GlobalTimerMetric(0))
             self.global_metrics.add('ctps', GlobalTimerMetric(0))
             self.global_metrics.add('tps', GlobalTimerMetric(0))
-
-        # Make sure we push all the metrics to main thread in hogwild/workers
-        self.global_metrics.flush()
 
         return batch_reply
 

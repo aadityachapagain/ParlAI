@@ -70,6 +70,9 @@ class MessengerBotChatTaskWorld(World):
         if a is not None:
             if '[DONE]' in a['text']:
                 self.episodeDone = True
+            elif '[RESET]' in a['text']:
+                self.model.reset()
+                self.agent.observe({"text": "[History Cleared]", "episode_done": False})
             else:
                 print("===act====")
                 print(a)

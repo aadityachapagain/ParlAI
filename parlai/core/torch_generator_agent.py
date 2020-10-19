@@ -920,7 +920,7 @@ class TorchGeneratorAgent(TorchAgent, ABC):
                 for b, (tokens, score) in enumerate(beams):
                     res = self._v2t(tokens)
                     text.append(res)
-                    b_scores.append((res,score))
+                    b_scores.append((res,float(score.cpu())))
 
         if text and self.compute_tokenized_bleu:
             # compute additional bleu scores

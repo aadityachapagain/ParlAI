@@ -17,11 +17,29 @@ class BotAgent(Agent):
         self.bot_response_time = []
         self.bot_request_error_counter = 0
         self.run_id = run_id
+        self.context_data = []
 
     def observe(self, observation):
-        bot_request_data = {"text": observation['text']}
+        if observation.get('persona', False):
+            self.context_data = [{'context_type': "prime",
+                                  'text': sentence.strip()} for sentence in observation['text'].split('\\n')]
+            self.resp_queue.put({
+                'remote_chat_response': {'output': {'text': "Successfully set persona:"}}
+            })
+            return
+
+        bot_request_data = {
+            "remote_chat_request": {
+                "speech": observation['text']
+            }
+        }
         if self.session_id:
             bot_request_data.update({'session_id': self.session_id})
+        else:
+            # It is a new session; add context data
+            bot_request_data['remote_chat_request'].update({
+                'extra_lines': self.context_data
+            })
         try:
             shared_utils.print_and_log(logging.INFO,
                                        f"Sending {observation} to bot......")

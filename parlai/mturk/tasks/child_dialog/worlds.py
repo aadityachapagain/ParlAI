@@ -63,8 +63,8 @@ class QualificationTestOnboardWorld(MTurkOnboardWorld):
             'text': (
                 'You\'re here for the first time. Please read the description and answer following qualification question.'
                 '\n'
-                'In the chat, we want you to be as <b>specific</b> and helpful to the child as you can. \n'
-                f'"<b>The other party wants to talk about {self.mturk_agent.context["conv_theme"]["theme"]}"</b>\n'
+                'In the chat, we want you to be as <b>specific</b> and communicative with the robot as you can. \n'
+                f'"<b>If the robot wants to talk about {self.mturk_agent.context["conv_theme"]["theme"]}"</b>\n'
                 f'Which is the <b>best</b> way to start the conversation?\n'
                 f'<ol>{choice_list_html}</ol>'
                 '<br>'
@@ -100,30 +100,28 @@ class QualificationTestOnboardWorld(MTurkOnboardWorld):
     def send_task_instruction(self):
         first_time_message = (
             'Congratulations you completed qualification task.\n'
-            '<b>Now, Please read the instructions on left carefully and '
-            'keep in mind your persona and conversation theme. When you are ready '
-            'send anything to continue.</b>'
+            '<b>Now, Please read the instructions on left carefully. '
+            'When you are ready send anything to continue.</b>'
         )
         old_turker_message = (
             'Welcome back! You\'ve already completed our qualification task. \n'
-            '<b>Please read the instructions on left carefully and '
-            'keep in mind your persona and conversation theme. When you are ready '
-            'send anything to continue.</b>'
+            '<b>Please read the instructions on left carefully. '
+            'When you are ready send anything to continue.</b>'
         )
         self.mturk_agent.observe({
             'id': 'SYSTEM',
             'qual_test_pass': True,
             'text': first_time_message if self.first_time else old_turker_message,
-            'onboard_message': (
-                '<b><h3>Task Instruction</h3></b>'
-                f"<ul>"
-                f'<li><b><span style="color:red">In this conversation, {self.mturk_agent.context["conv_theme"]["theme_sentence"]}</li>'
-                f"<li>You're assigned with the following character: <br>"
-                f'<ul><li><b><span style="color:blue">{self.mturk_agent.context["personas"]["child_persona" if self.mturk_agent.role == "CHILD" else "robot_persona"]}</span></b></li></ul>'
-                '<li>Stick to the above character and topic of the conversation.</li>'
-                f'</ul>'
-                '<br>'
-            )
+            'onboard_message': '',
+            #     '<b><h3>Task Instruction</h3></b>'
+            #     f"<ul>"
+            #     f'<li><b><span style="color:red">In this conversation, {self.mturk_agent.context["conv_theme"]["theme_sentence"]}</li>'
+            #     f"<li>You're assigned with the following character: <br>"
+            #     f'<ul><li><b><span style="color:blue">{self.mturk_agent.context["personas"]["child_persona" if self.mturk_agent.role == "CHILD" else "robot_persona"]}</span></b></li></ul>'
+            #     '<li>Stick to the above character and topic of the conversation.</li>'
+            #     f'</ul>'
+            #     '<br>'
+            # )
         })
         agent_act = self.mturk_agent.act(timeout=self.opt['max_onboard_resp_time'])
         if self.check_errors(agent_act):
@@ -197,17 +195,17 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         """If at first turn, we need to give each agent some prior info if any like personas"""
         if self.turn_index == 1:
             control_msg['text'] = self.get_instruction(tag='start', agent=self.mturk_agent)
-            control_msg['show_persona'] = True
-            control_msg['persona_description'] = (
-                '<b><h3>Task Instruction</h3></b>'
-                f"<ul>"
-                f'<li><b><span style="color:red">In this conversation, {self.mturk_agent.context["conv_theme"]["theme_sentence"]}</li>'
-                f"<li>You're assigned with the following character: <br>"
-                f'<ul><li><b><span style="color:blue">{self.mturk_agent.context["personas"]["child_persona" if self.mturk_agent.id == "CHILD" else "robot_persona"]}</span></b></li></ul>'
-                '<li>Stick to the above character and topic of the conversation.</li>'
-                f'</ul>'
-                '<br>'
-            )
+            control_msg['show_persona'] = False
+            control_msg['persona_description'] = ''
+            #     '<b><h3>Task Instruction</h3></b>'
+            #     f"<ul>"
+            #     f'<li><b><span style="color:red">In this conversation, {self.mturk_agent.context["conv_theme"]["theme_sentence"]}</li>'
+            #     f"<li>You're assigned with the following character: <br>"
+            #     f'<ul><li><b><span style="color:blue">{self.mturk_agent.context["personas"]["child_persona" if self.mturk_agent.id == "CHILD" else "robot_persona"]}</span></b></li></ul>'
+            #     '<li>Stick to the above character and topic of the conversation.</li>'
+            #     f'</ul>'
+            #     '<br>'
+            # )
             self.mturk_agent.observe(validate(control_msg))
 
         """If we get to the min turns, inform turker that they can end if they want"""
@@ -335,13 +333,10 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
     def get_instruction(self, tag, agent=None):
         if tag == 'start':
             return (
-                '\nPlease chat with the other party. '
-                f'\n<b><span style="color:red">In this conversation, {agent.theme_sentence}</span></b>'
-                '\nYour character is as follows:'
-                f'\n<b><span style="color:blue">{agent.persona_text}</span></b>'
-                '\nYou can also track the character description on the left.'
+                '\nPlease chat with the robot. '
+                '\nYou can read task description on the left.'
                 '\n<b>Please try to match the length of other party\'s message. '
-                'Share information relevant to character assigned and try to know other party as much as you can while adhering to persona and conversation theme. '
+                'Share information relevant to a child  and try to know other party as much as you can. '
                 '</b>'
             )
         if tag == 'end':

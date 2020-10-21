@@ -14,8 +14,7 @@ task_config['frontend_version'] = 0
 On the Amazon Mechanical Turk web site, the HIT title appears in search results,
 and everywhere the HIT is mentioned.
 """
-task_config['hit_title'] = ('Chat as a child companion. Workers who perform well will be reached out to'
-                            'and given more hits at a higher reward level')
+task_config['hit_title'] = 'Chat with Child Companion Robot as a Child.'
 
 """A description includes detailed information about the kind of task the HIT contains.
 On the Amazon Mechanical Turk web site, the HIT description appears in the expanded
@@ -23,7 +22,8 @@ view of search results, and in the HIT and assignment screens.
 """
 task_config[
     'hit_description'] = (
-    '5 minute task where you will play the role of a child companion robot, Karu. '
+    '5 minute task where you will play the role of a child aged 5-10 and '
+    'chat with a child companion robot. '
     'You should aim for a conversation that is typical of children. Workers accepting '
     'HIT for the first time need to pass a qualification test.'
 )
@@ -31,7 +31,7 @@ task_config[
 """One or more words or phrases that describe the HIT, separated by commas.
 On MTurk website, these words are used in searches to find HITs.
 """
-task_config['hit_keywords'] = 'chat,dialog,conversation,text,child'
+task_config['hit_keywords'] = 'chat,dialog,conversation,text,child,robot'
 
 """A detailed task description that will be shown on the HIT task preview page
 and on the left side of the chat page. Supports HTML formatting.
@@ -42,18 +42,14 @@ task_config[
 <b><h4>Task Description</h4></b>
 <br>
 <b>
-You will play the role of a child companion robot, Karu.
+You will play the role of a child aged 5 to 10 talking with a child companion robot.
 </b>
 <br>
-Overall, Karu communicates in a tone that is comparable to an eight year old child.
+Karu is a robot from GRL and it communicates in a tone that is comparable to an eight year old child.
 <br>
 Karu is a robot on a mission to understand how to be a good friend to humans.
 <br>
-<b>Your response should be as specific as possible and match the length of other party.</b>
-<br>
-<b>Note:</b>
-<ul>
-<li><b><span style="color:red">Please try to stick to the theme of conversation and be as specific as possible. For example, when talking about movies, talk about specific movies, characters and plots.</b></span></li>
-<li><b><span style="color:red">Workers who conduct good specific conversations will be eligible for higher pay rate.</b></span></li>
-</ul>
+<b>Chat with Karu naturally and try to get to know each other, i.e. 
+both ask questions and answer questions. Your response should be as specific as possible and 
+match the length of other party.</b>
 '''

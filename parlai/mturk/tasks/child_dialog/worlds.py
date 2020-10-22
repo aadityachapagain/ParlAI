@@ -342,7 +342,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         if tag == 'end':
             return 'Thanks for taking part in this HIT. If you like you can do more HITs.'
         if tag == 'eval':
-            return 'How would you <b>rate the conversation with Karu in scale of 1 to 5</b>?'
+            return 'How would you <b>rate the conversation with Moxie in scale of 1 to 5</b>?'
         if tag == 'eval_warn':
             return 'Please rate within the <b>scale of 1 to 5.</b>'
         if tag == 'exceed_min_turns':

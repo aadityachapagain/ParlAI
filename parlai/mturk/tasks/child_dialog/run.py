@@ -283,9 +283,9 @@ def single_run(opt,
         def run_conversation(mturk_manager, opt, workers):
             shared_utils.print_and_log(logging.INFO, f"Launching conversation for {workers[0].worker_id}")
             if workers[0].id == 'CHILD':
-                bot_agent_id = 'KARU'
+                bot_agent_id = 'MOXIE'
             else:
-                bot_agent_id = 'CHILD'
+                bot_agent_id = 'MOXIE'
             bot = BotAgent(opt, bot_agent_id, mturk_manager.task_group_id)
             world = InteractParlAIModelWorld(opt, workers[0], bot)
 

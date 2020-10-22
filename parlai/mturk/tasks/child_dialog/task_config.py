@@ -45,11 +45,11 @@ task_config[
 You will play the role of a child aged 5 to 10 talking with a child companion robot.
 </b>
 <br>
-Karu is a robot from GRL and it communicates in a tone that is comparable to an eight year old child.
+Moxie is a robot from GRL and it communicates in a tone that is comparable to an eight year old child.
 <br>
-Karu is a robot on a mission to understand how to be a good friend to humans.
+Moxie is a robot on a mission to understand how to be a good friend to humans.
 <br>
-<b>Chat with Karu naturally and try to get to know each other, i.e. 
+<b>Chat with Moxie naturally and try to get to know each other, i.e. 
 both ask questions and answer questions. Your response should be as specific as possible and 
 match the length of other party.</b>
 '''

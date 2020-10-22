@@ -17,7 +17,6 @@ class BotAgent(Agent):
         self.bot_response_time = []
         self.bot_request_error_counter = 0
         self.run_id = run_id
-        self.context_data = []
 
     def observe(self, observation):
         if observation.get('persona', False):
@@ -37,9 +36,10 @@ class BotAgent(Agent):
             bot_request_data.update({'session_id': self.session_id})
         else:
             # It is a new session; add context data
-            bot_request_data['remote_chat_request'].update({
-                'extra_lines': self.context_data
-            })
+            # bot_request_data['remote_chat_request'].update({
+            #     'extra_lines': self.context_data
+            # })
+            pass
         try:
             shared_utils.print_and_log(logging.INFO,
                                        f"Sending {observation} to bot......")

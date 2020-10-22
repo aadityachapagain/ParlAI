@@ -177,15 +177,15 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             self.mturk_agent.persona_text = robot_persona_text
             self.parlai_agent.persona_text = child_persona_text
 
-        bot_persona = 'your persona: ' + self.mturk_agent.context['conv_theme']['theme_sentence'] \
-                      + ' \\nyour persona: ' + self.parlai_agent.persona_text
-        self.parlai_agent.observe({
-            'text': bot_persona,
-            'persona': True
-        })
-        personaset_resp = self.parlai_agent.act()
-        if personaset_resp:
-            print(personaset_resp['text'], ' ', bot_persona)
+        # bot_persona = 'your persona: ' + self.mturk_agent.context['conv_theme']['theme_sentence'] \
+        #               + ' \\nyour persona: ' + self.parlai_agent.persona_text
+        # self.parlai_agent.observe({
+        #     'text': bot_persona,
+        #     'persona': True
+        # })
+        # personaset_resp = self.parlai_agent.act()
+        # if personaset_resp:
+        #     print(personaset_resp['text'], ' ', bot_persona)
 
     def parley(self):
         self.turn_index += 1

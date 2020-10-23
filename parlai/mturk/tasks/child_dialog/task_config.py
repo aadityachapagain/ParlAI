@@ -42,7 +42,7 @@ task_config[
 <b><h4>Task Description</h4></b>
 <br>
 <b>
-You will play the role of a child aged 5 to 10 talking with a child companion robot.
+You will play the role of a child aged 5 to 10 talking with a child companion robot named Moxie.
 </b>
 <br>
 Moxie is a robot from GRL and it communicates in a tone that is comparable to an eight year old child.

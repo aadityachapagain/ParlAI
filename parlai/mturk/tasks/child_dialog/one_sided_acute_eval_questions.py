@@ -1,7 +1,7 @@
 ACUTE_EVAL_QUESTIONS = [
     {
         "title": "Engaging",
-        "question": "Would you like to talk more with the robot?"
+        "question": "Would you like to talk more with Moxie?"
     },
     {
         "title": "Interestingness",
@@ -13,10 +13,14 @@ ACUTE_EVAL_QUESTIONS = [
     # },
     {
         "title": "Empathetic",
-        "question": "Did the robot sound empathetic?"
+        "question": "Did Moxie sound empathetic?"
     },
     {
         "title": "Contradictory",
-        "question": "Did robot repeat themselves or make contradictory statements?"
+        "question": "Did Moxie repeat itself or make contradictory statements?"
+    },
+    {
+        "title": "Adultness",
+        "question": "Did Moxie sound like a child companion robot?"
     }
 ]

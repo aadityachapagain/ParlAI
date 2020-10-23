@@ -208,6 +208,11 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             # )
             self.mturk_agent.observe(validate(control_msg))
 
+            self.parlai_agent.observe({"command": "start"})
+            start_act = self.parlai_agent.act()
+            start_act.update({'text': "I'm looking forward to chat with you. " + start_act['text']})
+            self.mturk_agent.observe(start_act)
+
         """If we get to the min turns, inform turker that they can end if they want"""
         if self.turn_index == self.n_turn + 1:
             control_msg['text'] = self.get_instruction(tag='exceed_min_turns')

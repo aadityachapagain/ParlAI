@@ -1,3 +1,4 @@
+import re
 import os
 import queue
 import time
@@ -30,6 +31,8 @@ class BotAgent(Agent):
         bot_request_data = {
             "remote_chat_request": {
                 "speech": observation['text']
+            } if "command" not in observation else {
+                "command": observation['command']
             }
         }
         if self.session_id:
@@ -62,8 +65,8 @@ class BotAgent(Agent):
     def act(self):
         bot_response = self.resp_queue.get()
         response = {'id': self.id,
-                    'text': bot_response['remote_chat_response'][
-                        'output']['text'],
+                    'text': re.sub("[\(\[].*?[\)\]]", "", bot_response['remote_chat_response'][
+                        'output']['text']),
                     'episode_done': False}
         return response
 

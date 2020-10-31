@@ -1734,8 +1734,6 @@ class TorchAgent(ABC, Agent):
         # TODO: Migration plan: TorchAgent currently supports being passed
         # observations as vanilla dicts for legacy interop; eventually we
         # want to remove this behavior and demand that teachers return Messages
-        self.MIN_BEAM_LENGTH = observation.get('min_beam_length', None)
-            
         observation = Message(observation)
 
         # Sanity check everything is in order
@@ -1990,12 +1988,13 @@ class TorchAgent(ABC, Agent):
         super().reset_metrics()
         self.global_metrics.clear()
 
-    def act(self):
+    def act(self, min_beam_length = None):
         """
         Call batch_act with the singleton batch.
         """
         # BatchWorld handles calling self_observe, but we're in a Hogwild or Interactive
         # world, so we need to handle this ourselves.
+        self.MIN_BEAM_LENGTH = int(min_beam_length)
         response = self.batch_act([self.observation])[0]
         self.self_observe(response)
         return response

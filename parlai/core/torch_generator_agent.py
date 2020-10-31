@@ -940,7 +940,7 @@ class TorchGeneratorAgent(TorchAgent, ABC):
         method = self.opt.get('inference', 'greedy')
         beam_size = self.opt.get('beam_size', 1)
         beam_min_length = self.beam_min_length
-        if self.MIN_BEAM_LENGTH :
+        if self.MIN_BEAM_LENGTH > 0:
             beam_min_length = self.MIN_BEAM_LENGTH
         if method == 'greedy':
             return GreedySearch(

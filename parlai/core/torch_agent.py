@@ -1988,7 +1988,7 @@ class TorchAgent(ABC, Agent):
         super().reset_metrics()
         self.global_metrics.clear()
 
-    def act(self, min_beam_length = None):
+    def act(self, min_beam_length = 0):
         """
         Call batch_act with the singleton batch.
         """

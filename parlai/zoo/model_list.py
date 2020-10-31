@@ -1461,13 +1461,26 @@ model_list = [
         "id": "style_gen",
         "path": "zoo:style_gen/c75_labeled_dialogue_generator/model",
         "agent": "projects.style_gen.style_gen:StyleGenAgent",
-        "task": "style_gen:BlendedSkillTalk",
+        "task": "style_gen:LabeledBlendedSkillTalk",
         "project": 'https://github.com/facebookresearch/ParlAI/tree/master/projects/style_gen',
         "description": "Generator trained on dialogue datasets, with 75% of train examples appended with Image-Chat personality labels",
         "example": "parlai eval_model --datatype test --model projects.style_gen.style_gen:StyleGenAgent --model-file zoo:style_gen/c75_labeled_dialogue_generator/model --skip-generation True --task style_gen:LabeledBlendedSkillTalk --use-style-frac 1.00",
         "result": """16:56:52 | Finished evaluating tasks ['style_gen:LabeledBlendedSkillTalk'] using datatype test
     ctpb  ctps  exps  exs  gpu_mem  loss  ltpb  ltps   ppl  token_acc   tpb  tps
      120  1855 15.46 5482    .1635 2.248 19.94 308.2 9.468      .4872 139.9 2163""",
+    },
+    {
+        "title": "Style-controlled generation: previous and current utterance classifier",
+        "id": "style_gen",
+        "path": "zoo:style_gen/prev_curr_classifier/model",
+        "agent": "projects.style_gen.classifier:ClassifierAgent",
+        "task": "style_gen:LabeledBlendedSkillTalk",
+        "project": 'https://github.com/facebookresearch/ParlAI/tree/master/projects/style_gen',
+        "description": "Classifier trained on Image-Chat turns 2 and 3 to classify the personality of an example given that utterance and the previous utterance.",
+        "example": "parlai eval_model --task style_gen:PrevCurrUttStyle --wrapper-task style_gen:LabeledBlendedSkillTalk --model-file zoo:style_gen/prev_curr_classifier/model --model projects.style_gen.classifier:ClassifierAgent --classes-from-file image_chat_personalities_file",
+        "result": """18:42:33 | Finished evaluating tasks ['style_gen:PrevCurrUttStyle'] using datatype valid
+    accuracy  bleu-4  ctpb  ctps  exps  exs    f1  gpu_mem  loss    lr  ltpb  ltps   tpb   tps
+       .9973  .01745 38.08 604.1 15.86 5651 .9973    .1622 2.129 5e-10 5.633 89.36 43.71 693.4""",
     },
     {
         "title": "Faster-R-CNN Detectron Features",
@@ -1501,5 +1514,39 @@ model_list = [
         "description": "Model trained to talk about both images and general chitchat, trained with a degendering teacher and with 75% of Image-Chat styles replaced by a generic polarity string",
         "example": "python parlai/scripts/safe_interactive.py -t blended_skill_talk -mf ${FINETUNED_MODEL_PATH} --model projects.multimodal_blenderbot.agents:BiasAgent --delimiter $'\n' --beam-block-ngram 3 --beam-context-block-ngram 3 --beam-min-length 20 --beam-size 10 --inference beam --model-parallel False",
         "result": "(results will vary)",
+    },
+    {
+        "title": "Transformer Classifier Multi-turn Dialogue Safety Model",
+        "id": "bot_adversarial_dialogue",
+        "path": "zoo:bot_adversarial_dialogue/multi_turn_v0/model",
+        "agent": "transformer/classifier",
+        "task": "bot_adversarial_dialogue",
+        "project": "",
+        "description": (
+            "Classifier trained on the filtered multi-turn bot adversarial dialogues in addition to both dialogue_safety single-turn standard and adversarial safety tasks and Wikipedia Toxic Comments."
+        ),
+        "example": (
+            "parlai eval_model -t bot_adversarial_dialogue:bad_num_turns=4 -dt test -mf zoo:bot_adversarial_dialogue/multi_turn_v0/model -bs 128"
+        ),
+        "result": (
+            "{'exs': 2598, 'accuracy': 0.8414, 'f1': 0.8414, 'loss': 0.5153, 'bleu-4': 8.414e-10, 'class___notok___recall': 0.8093, 'class___notok___prec': 0.7671, 'class___notok___f1': 0.7876, 'class___ok___recall': 0.8597, 'class___ok___prec': 0.8876, 'class___ok___f1': 0.8735, 'weighted_f1': 0.8423}"
+        ),
+    },
+    {
+        "title": "Transformer Classifier Multi-turn Dialogue Safety Model",
+        "id": "bot_adversarial_dialogue",
+        "path": "zoo:bot_adversarial_dialogue/multi_turn/model",
+        "agent": "transformer/classifier",
+        "task": "bot_adversarial_dialogue",
+        "project": "",
+        "description": (
+            "Classifier trained on the truncated multi-turn bot adversarial dialogues in addition to both dialogue_safety single-turn standard and adversarial safety tasks and Wikipedia Toxic Comments."
+        ),
+        "example": (
+            "parlai eval_model -t bot_adversarial_dialogue:bad_num_turns=4 -dt test -mf zoo:bot_adversarial_dialogue/multi_turn/model -bs 128"
+        ),
+        "result": (
+            "{'exs': 2598, 'accuracy': 0.8507, 'f1': 0.8507, 'loss': 0.3878, 'bleu-4': 8.507e-10, 'class___notok___recall': 0.8633, 'class___notok___prec': 0.7588, 'class___notok___f1': 0.8077, 'class___ok___recall': 0.8434, 'class___ok___prec': 0.9154, 'class___ok___f1': 0.8779, 'weighted_f1': 0.8524}"
+        ),
     },
 ]

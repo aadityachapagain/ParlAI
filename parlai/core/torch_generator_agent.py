@@ -481,7 +481,9 @@ class TorchGeneratorAgent(TorchAgent, ABC):
         self.beam_block_full_context = opt.get('beam_block_full_context', False)
         self.temperature = opt.get('temperature', 1.0)
         assert self.temperature > 0, '--temperature must be greater than 0'
-        self.output_token_losses = opt.get('verbose', False)
+        self.output_token_losses = opt.get(
+            'verbose', False
+        ) or 'token_losses' in opt.get('display_add_fields', '')
         self.compute_tokenized_bleu = opt.get('compute_tokenized_bleu', False)
         self.beam_block_list: Optional[SearchBlocklist] = None
 
@@ -937,6 +939,9 @@ class TorchGeneratorAgent(TorchAgent, ABC):
     def _treesearch_factory(self, device):
         method = self.opt.get('inference', 'greedy')
         beam_size = self.opt.get('beam_size', 1)
+        beam_min_length = self.beam_min_length
+        if self.MIN_BEAM_LENGTH :
+            beam_min_length = self.MIN_BEAM_LENGTH
         if method == 'greedy':
             return GreedySearch(
                 beam_size,
@@ -952,7 +957,7 @@ class TorchGeneratorAgent(TorchAgent, ABC):
         elif method == 'beam':
             return BeamSearch(
                 beam_size,
-                min_length=self.beam_min_length,
+                min_length=beam_min_length,
                 block_ngram=self.beam_block_ngram,
                 context_block_ngram=self.beam_context_block_ngram,
                 length_penalty=self.opt.get('beam_length_penalty', 0.65),
@@ -966,7 +971,7 @@ class TorchGeneratorAgent(TorchAgent, ABC):
                 self.opt['topk'],
                 self.opt['beam_delay'],
                 beam_size,
-                min_length=self.beam_min_length,
+                min_length=beam_min_length,
                 block_ngram=self.beam_block_ngram,
                 context_block_ngram=self.beam_context_block_ngram,
                 length_penalty=self.opt.get('beam_length_penalty', 0.65),
@@ -979,7 +984,7 @@ class TorchGeneratorAgent(TorchAgent, ABC):
             return TopKSampling(
                 self.opt['topk'],
                 beam_size,
-                min_length=self.beam_min_length,
+                min_length=beam_min_length,
                 block_ngram=self.beam_block_ngram,
                 context_block_ngram=self.beam_context_block_ngram,
                 length_penalty=self.opt.get('beam_length_penalty', 0.65),
@@ -992,7 +997,7 @@ class TorchGeneratorAgent(TorchAgent, ABC):
             return NucleusSampling(
                 self.opt['topp'],
                 beam_size,
-                min_length=self.beam_min_length,
+                min_length=beam_min_length,
                 block_ngram=self.beam_block_ngram,
                 context_block_ngram=self.beam_context_block_ngram,
                 length_penalty=self.opt.get('beam_length_penalty', 0.65),
@@ -1552,10 +1557,10 @@ class TreeSearch(object):
             len(n_best_list) >= 1
         ), f'TreeSearch returned {len(n_best_list)} candidates, must be >= 1'
         for (pred, score) in n_best_list:
-            assert (
-                pred == self.eos
-            ).sum() == 1, f'TreeSearch returned a finalized hypo with multiple end tokens \
-            with score {score.item():.2f}'
+            assert (pred == self.eos).sum() == 1, (
+                f'TreeSearch returned a finalized hypo with multiple end tokens '
+                f'with score {score.item():.2f}'
+            )
 
         return n_best_list
 

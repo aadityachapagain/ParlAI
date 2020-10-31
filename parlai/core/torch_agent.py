@@ -754,7 +754,6 @@ class TorchAgent(ABC, Agent):
             help='disable GPUs even if available. otherwise, will use GPUs if '
             'available on the device.',
         )
-
         cls.dictionary_class().add_cmdline_args(argparser)
         ParlAILRScheduler.add_cmdline_args(argparser)
 
@@ -1735,6 +1734,8 @@ class TorchAgent(ABC, Agent):
         # TODO: Migration plan: TorchAgent currently supports being passed
         # observations as vanilla dicts for legacy interop; eventually we
         # want to remove this behavior and demand that teachers return Messages
+        self.MIN_BEAM_LENGTH = observation.get('min_beam_length', None)
+            
         observation = Message(observation)
 
         # Sanity check everything is in order

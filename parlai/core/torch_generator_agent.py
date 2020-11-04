@@ -1382,6 +1382,9 @@ class TreeSearch(object):
                 prefix = hyp[-(ngram_size - 1) :]
                 for ngram in bad_ngrams:
                     if (ngram_size == 1) or prefix == list(ngram[:-1]):
+                        if ngram_size > 1:
+                            for gram in ngram:
+                                logprobs[beam_id][gram] = neginf(logprobs.dtype)
                         logprobs[beam_id][ngram[-1]] = neginf(logprobs.dtype)
         return logprobs
 

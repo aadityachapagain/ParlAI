@@ -24,10 +24,12 @@ import torch
 import torch.cuda
 import torch.nn as nn
 import torch.nn.functional as F
+from einops import rearrange, repeat
 
 from parlai.core.torch_generator_agent import TorchGeneratorModel
 from parlai.utils.misc import warn_once
 from parlai.utils.torch import neginf, PipelineHelper
+from functools import partial
 
 try:
     from apex.normalization.fused_layer_norm import FusedLayerNorm as LayerNorm
@@ -54,7 +56,95 @@ def _normalize(tensor, norm_layer):
             return norm_layer(tensor)
     else:
         return norm_layer(tensor)
+def exists(val):
+    return val is not None
 
+def default(val, d):
+    return val if exists(val) else d
+
+def orthogonal_matrix_chunk(cols, qr_uniform_q = False, device = None):
+    unstructured_block = torch.randn((cols, cols), device = device)
+    q, r = torch.qr(unstructured_block.cpu(), some = True)
+    q, r = map(lambda t: t.to(device), (q, r))
+
+    # proposed by @Parskatt
+    # to make sure Q is uniform https://arxiv.org/pdf/math-ph/0609050.pdf
+    if qr_uniform_q:
+        d = torch.diag(r, 0)
+        q *= d.sign()
+    return q.t()
+
+def gaussian_orthogonal_random_matrix(nb_rows, nb_columns, scaling = 0, qr_uniform_q = False, device = None):
+    nb_full_blocks = int(nb_rows / nb_columns)
+
+    block_list = []
+
+    for _ in range(nb_full_blocks):
+        q = orthogonal_matrix_chunk(nb_columns, qr_uniform_q = qr_uniform_q, device = device)
+        block_list.append(q)
+
+    remaining_rows = nb_rows - nb_full_blocks * nb_columns
+    if remaining_rows > 0:
+        q = orthogonal_matrix_chunk(nb_columns, qr_uniform_q = qr_uniform_q, device = device)
+        block_list.append(q[:remaining_rows])
+
+    final_matrix = torch.cat(block_list)
+
+    if scaling == 0:
+        multiplier = torch.randn((nb_rows, nb_columns), device = device).norm(dim = 1)
+    elif scaling == 1:
+        multiplier = math.sqrt((float(nb_columns))) * torch.ones((nb_rows,), device = device)
+    else:
+        raise ValueError(f'Invalid scaling {scaling}')
+
+    return torch.diag(multiplier) @ final_matrix
+
+def generalized_kernel(data, *, projection_matrix, kernel_fn = nn.ReLU(), kernel_epsilon = 0.001, normalize_data = True, device = None):
+    b, h, *_ = data.shape
+
+    data_normalizer = (data.shape[-1] ** -0.25) if normalize_data else 1.
+
+    if projection_matrix is None:
+        return kernel_fn(data_normalizer * data) + kernel_epsilon
+
+    projection = repeat(projection_matrix, 'j d -> b h j d', b = b, h = h)
+
+    data_dash = torch.einsum('...id,...jd->...ij', (data_normalizer * data), projection)
+
+    data_prime = kernel_fn(data_dash) + kernel_epsilon
+    return data_prime
+
+def linear_attention(q, k, v):
+    D_inv = 1. / torch.einsum('...nd,...d->...n', q, k.sum(dim = -2))
+    context = torch.einsum('...nd,...ne->...de', k, v)
+    out = torch.einsum('...de,...nd,...n->...ne', context, q, D_inv)
+    return out
+
+def softmax_kernel(data, *, projection_matrix, is_query, normalize_data=True, eps=1e-4, device = None):
+    b, h, *_ = data.shape
+
+    data_normalizer = (data.shape[-1] ** -0.25) if normalize_data else 1.
+
+    ratio = (projection_matrix.shape[0] ** -0.5)
+
+    projection = repeat(projection_matrix, 'j d -> b h j d', b = b, h = h)
+
+    data_dash = torch.einsum('...id,...jd->...ij', (data_normalizer * data), projection)
+
+    diag_data = data ** 2
+    diag_data = torch.sum(diag_data, dim=-1)
+    diag_data = (diag_data / 2.0) * (data_normalizer ** 2)
+    diag_data = diag_data.unsqueeze(dim=-1)
+
+    if is_query:
+        data_dash = ratio * (
+            torch.exp(data_dash - diag_data -
+                    torch.max(data_dash, dim=-1, keepdim=True).values) + eps)
+    else:
+        data_dash = ratio * (
+            torch.exp(data_dash - diag_data - torch.max(data_dash)) + eps)
+
+    return data_dash
 
 def _create_embeddings(dictionary, embedding_size, padding_idx):
     """
@@ -1273,6 +1363,53 @@ class BasicAttention(nn.Module):
         else:
             return lhs_emb.squeeze(self.dim - 1)
 
+class FastAttention(nn.Module):
+    def __init__(self, dim, n_heads, nb_features = None, redraw_projection = True, ortho_scaling = 0, generalized_attention = False, kernel_fn = nn.ReLU(), qr_uniform_q = False):
+        super().__init__()
+        nb_features = default(nb_features, int(dim // n_heads * math.log(dim // n_heads)))
+
+        self.dim = dim
+        self.n_heads = n_heads
+        self.dim_heads = dim // n_heads
+        self.nb_features = nb_features
+        self.ortho_scaling = ortho_scaling
+        self.redraw_projection = redraw_projection
+
+        self.create_projection = partial(gaussian_orthogonal_random_matrix, nb_rows = self.nb_features, nb_columns = self.dim_heads, scaling = ortho_scaling, qr_uniform_q = qr_uniform_q)
+
+        self.generalized_attention = generalized_attention
+        self.kernel_fn = kernel_fn
+
+        if not redraw_projection:
+            self.set_projection_matrix()
+
+    def set_projection_matrix(self, device):
+        projection_matrix = self.create_projection(device = device)
+        self.register_buffer('projection_matrix', projection_matrix)
+
+    def forward(self, q, k, v):
+        q = rearrange(q, '(b h) n d -> b h n d', h = self.n_heads)
+        k = rearrange(k, '(b h) n d -> b h n d', h = self.n_heads)
+        v = rearrange(v, '(b h) n d -> b h n d', h = self.n_heads)
+
+        device = q.device
+
+        if self.redraw_projection and not hasattr(self, 'projection_matrix'):
+            projection_matrix = self.create_projection(device = device)
+        else:
+            projection_matrix = self.projection_matrix
+
+        if self.generalized_attention:
+            create_kernel = partial(generalized_kernel, kernel_fn = self.kernel_fn, projection_matrix = projection_matrix, device = device)
+            q, k = map(create_kernel, (q, k))
+        else:
+            create_kernel = partial(softmax_kernel, projection_matrix = projection_matrix, device = device)
+            q = create_kernel(q, is_query = True)
+            k = create_kernel(k, is_query = False)
+
+        attn_fn = linear_attention
+        out = attn_fn(q, k, v)
+        return out   
 
 class MultiHeadAttention(nn.Module):
     """
@@ -1281,7 +1418,7 @@ class MultiHeadAttention(nn.Module):
     See Vaswani (2017) for an extensive description.
     """
 
-    def __init__(self, n_heads, dim, dropout=0):
+    def __init__(self, n_heads, dim, dropout=0, performer = True):
         super(MultiHeadAttention, self).__init__()
         self.n_heads = n_heads
         self.dim = dim
@@ -1296,7 +1433,9 @@ class MultiHeadAttention(nn.Module):
         nn.init.xavier_normal_(self.v_lin.weight)
         # and set biases to 0
         self.out_lin = nn.Linear(dim, dim)
-
+        # trying my best to use performer
+        self.performer = performer
+        self.fast_attention = FastAttention(dim, n_heads, None, True, generalized_attention = True, kernel_fn = nn.ReLU(), qr_uniform_q = False)
         nn.init.xavier_normal_(self.out_lin.weight)
 
     def forward(  # type: ignore
@@ -1406,33 +1545,39 @@ class MultiHeadAttention(nn.Module):
         }
 
         full_key_len = k.size(1)
-        dot_prod = q.div_(scale).bmm(k.transpose(1, 2))
-        # [B * n_heads, query_len, key_len]
-        attn_mask = (
-            (mask == 0)
-            .view(batch_size, 1, -1, full_key_len)
-            .repeat(1, n_heads, 1, 1)
-            .expand(batch_size, n_heads, query_len, full_key_len)
-            .view(batch_size * n_heads, query_len, full_key_len)
-        )
-        assert attn_mask.shape == dot_prod.shape
-        dot_prod.masked_fill_(attn_mask, neginf(dot_prod.dtype))
+        if not self.performer:
+            dot_prod = q.div_(scale).bmm(k.transpose(1, 2))
+            # [B * n_heads, query_len, key_len]
+            attn_mask = (
+                (mask == 0)
+                .view(batch_size, 1, -1, full_key_len)
+                .repeat(1, n_heads, 1, 1)
+                .expand(batch_size, n_heads, query_len, full_key_len)
+                .view(batch_size * n_heads, query_len, full_key_len)
+            )
+            assert attn_mask.shape == dot_prod.shape
+            dot_prod.masked_fill_(attn_mask, neginf(dot_prod.dtype))
 
-        attn_weights = F.softmax(
-            dot_prod, dim=-1, dtype=torch.float  # type: ignore
-        ).type_as(query)
-        attn_weights = self.attn_dropout(attn_weights)  # --attention-dropout
+            attn_weights = F.softmax(
+                dot_prod, dim=-1, dtype=torch.float  # type: ignore
+            ).type_as(query)
+            attn_weights = self.attn_dropout(attn_weights)  # --attention-dropout
 
-        attentioned = attn_weights.bmm(v)
-        attentioned = (
-            attentioned.type_as(query)
-            .view(batch_size, n_heads, query_len, dim_per_head)
-            .transpose(1, 2)
-            .contiguous()
-            .view(batch_size, query_len, dim)
-        )
+            attentioned = attn_weights.bmm(v)
+            attentioned = (
+                attentioned.type_as(query)
+                .view(batch_size, n_heads, query_len, dim_per_head)
+                .transpose(1, 2)
+                .contiguous()
+                .view(batch_size, query_len, dim)
+            )
 
-        out = self.out_lin(attentioned)
+            out = self.out_lin(attentioned)
+        else:
+            attentioned = self.fast_attention(q, k, v)
+            attentioned = self.attn_dropout(attentioned)
+            attentioned = rearrange(attentioned, 'b h n d -> b n (h d)')
+            out = self.out_lin(attentioned)
 
         return out, new_incr_state
 

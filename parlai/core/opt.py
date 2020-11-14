@@ -16,6 +16,8 @@ import parlai.utils.logging as logging
 
 from typing import List
 
+from parlai.utils.io import PathManager
+
 # these keys are automatically removed upon save. This is a rather blunt hammer.
 # It's preferred you indicate this at option definiton time.
 __AUTOCLEAN_KEYS__: List[str] = [
@@ -24,8 +26,9 @@ __AUTOCLEAN_KEYS__: List[str] = [
     "download_path",
     "datapath",
     "batchindex",
-    # we don't save interactive mode, it's only decided by scripts or CLI
+    # we don't save interactive mode or load from checkpoint, it's only decided by scripts or CLI
     "interactive_mode",
+    "load_from_checkpoint",
 ]
 
 
@@ -43,7 +46,7 @@ class Opt(dict):
         self.deepcopies = []
 
     def __setitem__(self, key, val):
-        loc = traceback.format_stack()[-2]
+        loc = traceback.format_stack(limit=2)[-2]
         self.history.append((key, val, loc))
         super().__setitem__(key, val)
 
@@ -62,7 +65,7 @@ class Opt(dict):
         Override deepcopy so that history is copied over to new object.
         """
         # track location of deepcopy
-        loc = traceback.format_stack()[-3]
+        loc = traceback.format_stack(limit=3)[-3]
         self.deepcopies.append(loc)
         # copy all our children
         memo = Opt({k: copy.deepcopy(v) for k, v in self.items()})
@@ -110,7 +113,7 @@ class Opt(dict):
             if key in dct:
                 del dct[key]
 
-        with open(filename, 'w', encoding='utf-8') as f:
+        with PathManager.open(filename, 'w', encoding='utf-8') as f:
             json.dump(dct, fp=f, indent=4)
             # extra newline for convenience of working with jq
             f.write('\n')
@@ -122,11 +125,11 @@ class Opt(dict):
         """
         try:
             # try json first
-            with open(optfile, 'r') as t_handle:
+            with PathManager.open(optfile, 'r', encoding='utf-8') as t_handle:
                 dct = json.load(t_handle)
         except UnicodeDecodeError:
             # oops it's pickled
-            with open(optfile, 'rb') as b_handle:
+            with PathManager.open(optfile, 'rb') as b_handle:
                 dct = pickle.load(b_handle)
         for key in __AUTOCLEAN_KEYS__:
             if key in dct:

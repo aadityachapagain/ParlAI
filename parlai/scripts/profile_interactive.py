@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 """
-Basic script which allows to profile interaction with a model using repeat_query to
+Basic script which allows to profile interaction with a model using `repeat_query` to
 avoid human interaction (so we can time it, only).
 """
 from parlai.core.params import ParlaiParser
@@ -33,10 +33,10 @@ def setup_args(parser=None):
         'examples with text candidates',
     )
     parser.add_argument(
-        '--display-ignore-fields',
+        '--display-add-fields',
         type=str,
-        default='label_candidates,text_candidates',
-        help='Do not display these fields',
+        default='',
+        help='Display these fields when verbose is off (e.g., "--display-add-fields label_candidates,beam_texts")',
     )
     parser.add_argument(
         '-it',

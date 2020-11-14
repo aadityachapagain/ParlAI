@@ -22,6 +22,7 @@ from abc import ABC, abstractmethod
 from parlai.core.agents import create_agent_from_shared
 from parlai.core.opt import Opt
 from parlai.core.teachers import create_task_agent_from_taskname, Teacher
+from parlai.utils.misc import warn_once
 
 
 class AbstractWrapperTeacher(Teacher, ABC):
@@ -40,7 +41,13 @@ class AbstractWrapperTeacher(Teacher, ABC):
             help='The task whose fields will be manipulated.',
         )
         known_args, _ = parser.parse_known_args(nohelp=True)
-        parser.add_task_args(known_args.wrapper_task)
+        try:
+            parser.add_task_args(known_args.wrapper_task)
+        except RuntimeError:
+            warn_once(
+                'The task name cannot be parsed from command-line arguments! '
+                'Task-specific flags will not be added.'
+            )
 
     def __init__(self, opt: Opt, shared=None):
         if ',' in opt['task']:
@@ -60,6 +67,8 @@ class AbstractWrapperTeacher(Teacher, ABC):
     def act(self):
         """
         Act on the previous observation.
+
+        Typically, self.task.act() will need to be called in this method.
         """
         raise NotImplementedError('Abstract class: user must implement act() method')
 
@@ -122,15 +131,6 @@ class AbstractWrapperTeacher(Teacher, ABC):
         shared['opt'] = self.opt
         shared['task'] = self.task.share()
         return shared
-
-    def shutdown(self):
-        """
-        Shutdown the subtask.
-        """
-        self.task.shutdown()
-
-    def update_counters(self):
-        self.task.update_counters()
 
 
 class LabelToTextTeacher(AbstractWrapperTeacher):

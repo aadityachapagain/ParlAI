@@ -6,16 +6,10 @@
 from parlai.core.torch_ranker_agent import TorchRankerAgent
 from parlai.utils.torch import padded_3d
 from parlai.zoo.bert.build import download
+from parlai.utils.io import PathManager
 
 from .bert_dictionary import BertDictionaryAgent
-from .helpers import (
-    get_bert_optimizer,
-    BertWrapper,
-    BertModel,
-    add_common_args,
-    surround,
-    MODEL_PATH,
-)
+from .helpers import BertWrapper, BertModel, add_common_args, surround, MODEL_PATH
 
 import os
 import torch
@@ -32,7 +26,9 @@ class BiEncoderRankerAgent(TorchRankerAgent):
     @staticmethod
     def add_cmdline_args(parser):
         add_common_args(parser)
-        parser.set_defaults(encode_candidate_vecs=True)
+        parser.set_defaults(
+            encode_candidate_vecs=True, dict_maxexs=0  # skip building dictionary
+        )
 
     def __init__(self, opt, shared=None):
         # download pretrained models
@@ -58,14 +54,6 @@ class BiEncoderRankerAgent(TorchRankerAgent):
     @staticmethod
     def dictionary_class():
         return BertDictionaryAgent
-
-    def init_optim(self, params, optim_states=None, saved_optim_type=None):
-        self.optimizer = get_bert_optimizer(
-            [self.model],
-            self.opt['type_optimization'],
-            self.opt['learningrate'],
-            fp16=self.opt.get('fp16'),
-        )
 
     def set_vocab_candidates(self, shared):
         """
@@ -101,7 +89,7 @@ class BiEncoderRankerAgent(TorchRankerAgent):
                     "".format(len(self.vocab_candidates))
                 )
                 enc_path = self.opt.get('model_file') + '.vocab.encs'
-                if os.path.isfile(enc_path):
+                if PathManager.exists(enc_path):
                     self.vocab_candidate_encs = self.load_candidates(
                         enc_path, cand_type='vocab encodings'
                     )

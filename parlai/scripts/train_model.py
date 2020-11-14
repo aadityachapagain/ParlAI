@@ -7,18 +7,19 @@
 """
 Training script for ParlAI.
 
-The standard way to train a model. After training, also computes validation
-and test error.
+The standard way to train a model. After training, also computes
+validation and test error.
 
-The user must provide a model (with ``--model``) and a task (with ``--task``).
+The user must provide a model (with `--model`) and a task (with
+`--task`).
 
-Examples
---------
-.. code-block:: shell
+## Examples
 
-  parlai train_model -m ir_baseline -t dialog_babi:Task:1 -mf /tmp/model
-  parlai train_model -m seq2seq -t babi:Task10k:1 -mf '/tmp/model' -bs 32 -lr 0.5 -hs 128
-  parlai train_model -m drqa -t babi:Task10k:1 -mf /tmp/model -bs 10
+```shell
+parlai train_model -m ir_baseline -t dialog_babi:Task:1 -mf /tmp/model
+parlai train_model -m seq2seq -t babi:Task10k:1 -mf '/tmp/model' -bs 32 -lr 0.5 -hs 128
+parlai train_model -m drqa -t babi:Task10k:1 -mf /tmp/model -bs 10
+```
 """  # noqa: E501
 
 # TODO List:
@@ -26,15 +27,21 @@ Examples
 
 import json
 import numpy as np
-import os
 import signal
 from typing import Dict
+import os
+import traceback
 
 from parlai.core.metrics import Metric
+from parlai.gcp.gcs_service import gcp as storage_agent
 from parlai.core.agents import create_agent, create_agent_from_shared
 from parlai.core.exceptions import StopTrainException
-from parlai.core.logs import TensorboardLogger
-from parlai.core.metrics import aggregate_named_reports, aggregate_unnamed_reports
+from parlai.distillation.logs import TensorboardLogger, WandbLogger
+from parlai.core.metrics import (
+    aggregate_named_reports,
+    aggregate_unnamed_reports,
+    dict_report,
+)
 from parlai.core.params import ParlaiParser, print_announcements
 from parlai.core.worlds import create_task
 from parlai.scripts.build_dict import build_dict, setup_args as setup_dict_args
@@ -48,6 +55,9 @@ from parlai.utils.distributed import (
 from parlai.utils.misc import Timer, nice_report
 from parlai.core.script import ParlaiScript, register_script
 import parlai.utils.logging as logging
+import time
+import calendar
+from parlai.utils.io import PathManager
 
 
 def setup_args(parser=None) -> ParlaiParser:
@@ -62,6 +72,17 @@ def setup_args(parser=None) -> ParlaiParser:
     """
     if parser is None:
         parser = ParlaiParser(True, True, 'Train a model')
+    storage_tag = parser.add_argument_group('Training tag to store training data in gcs')
+    storage_tag.add_argument(
+        '--run-tag',
+        type=str,
+        help='specifc tag for training run with specific hyper-paramter or model'
+    )
+    storage_tag.add_argument(
+        '--gcs-data-path',
+        type=str,
+        help='path for train data in gcs storage'
+    )
     train = parser.add_argument_group('Training Loop Arguments')
     train.add_argument(
         '-et',
@@ -193,6 +214,7 @@ def setup_args(parser=None) -> ParlaiParser:
         recommended=False,
     )
     TensorboardLogger.add_cmdline_args(parser)
+    WandbLogger.add_cmdline_args(parser)
 
     parser = setup_dict_args(parser)
     return parser
@@ -242,6 +264,19 @@ def load_eval_worlds(agent, opt, datatype):
 
     return worlds
 
+def create_timestamp():
+    ts = calendar.timegm(time.gmtime())
+    return str(519994056)
+
+def get_latest_train(file_path):
+    try:
+        cand = list(set([ os.path.join(*os.path.split(i)[:1]) for i in storage_agent.list_files(file_path) if os.path.split(i)[1].strip() !='']))
+        cand = {int(i.split('_')[-1]):i for i in cand}
+        latest = sorted(list(cand.keys()), reverse=True)[0]
+        latest = cand[latest]
+        return latest
+    except:
+        return False
 
 class TrainLoop:
     """
@@ -253,12 +288,16 @@ class TrainLoop:
         # it will by-default ignore SIGINTs, and KeyboardInterrupt exceptions are
         # not produced. This line brings them back
         signal.signal(signal.SIGINT, signal.default_int_handler)
+        latest_train_path = get_latest_train(opt['run_tag'])
+        if latest_train_path:
+            if not os.path.isfile(opt['model_file']+'.checkpoint'):
+                storage_agent.download_all(latest_train_path, os.path.join(*os.path.split(opt['model_file'])[:-1]))
         # Possibly load from checkpoint
         trainstats_suffix = '.trainstats'  # we might load training statistics from here
         if (
             opt['load_from_checkpoint']
             and opt.get('model_file')
-            and os.path.isfile(opt['model_file'] + '.checkpoint')
+            and PathManager.exists(opt['model_file'] + '.checkpoint')
         ):
             opt['init_model'] = opt['model_file'] + '.checkpoint'
             trainstats_suffix = '.checkpoint.trainstats'
@@ -329,12 +368,12 @@ class TrainLoop:
 
         # we may have been preempted, make sure we note that amount
         self._preempted_epochs = 0.0
-        if opt.get('model_file') and os.path.isfile(
+        if opt.get('model_file') and PathManager.exists(
             opt['model_file'] + trainstats_suffix
         ):
             # looks like we were preempted. make sure we load up our total
             # training stats, etc
-            with open(opt['model_file'] + trainstats_suffix) as ts:
+            with PathManager.open(opt['model_file'] + trainstats_suffix) as ts:
                 obj = json.load(ts)
                 self.parleys = obj.get('parleys', 0)
                 self._preempted_epochs = obj.get('total_epochs', 0)
@@ -346,16 +385,18 @@ class TrainLoop:
                     self.best_valid = obj['best_valid']
                 else:
                     # old method
-                    if opt.get('model_file') and os.path.isfile(
+                    if opt.get('model_file') and PathManager.exists(
                         opt['model_file'] + '.best_valid'
                     ):
-                        with open(opt['model_file'] + ".best_valid", 'r') as f:
+                        with PathManager.open(
+                            opt['model_file'] + ".best_valid", 'r'
+                        ) as f:
                             x = f.readline()
                             self.best_valid = float(x)
                             f.close()
 
         if opt['tensorboard_log'] and is_primary_worker():
-            self.tb_logger = TensorboardLogger(opt)
+            self.wand_logger = WandbLogger(opt)
 
     def save_model(self, suffix=None):
         """
@@ -377,19 +418,26 @@ class TrainLoop:
             try:
                 self.agent.save(fn)
                 self._save_train_stats(suffix)
+                if suffix:
+                    suffix = suffix.replace('.','')
+                    storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(self.opt['run_tag'],'train'+'_'+create_timestamp()))
+                else:
+                    storage_agent.upload_all(os.path.join(*os.path.split(fn)[:-1]),os.path.join(self.opt['run_tag'],'train'+'_'+create_timestamp()))
                 break
             except KeyboardInterrupt:
                 pass
-
-    def _safe_report(self, report: Dict[str, Metric]):
-        return {k: v.value() if isinstance(v, Metric) else v for k, v in report.items()}
+            except:
+                exceptions_str = traceback.format_exc()
+                print(exceptions_str)
+                with open('extreme.logs', 'a+') as fw:
+                    fw.write(exceptions_str)
 
     def _save_train_stats(self, suffix=None):
         fn = self.opt['model_file']
         if suffix:
             fn += suffix
         fn += '.trainstats'
-        with open(fn, 'w') as f:
+        with PathManager.open(fn, 'w') as f:
             json.dump(
                 {
                     'parleys': self.parleys,
@@ -420,7 +468,7 @@ class TrainLoop:
         valid_report = self._run_eval(
             self.valid_worlds, opt, 'valid', opt['validation_max_exs']
         )
-        v = self._safe_report(valid_report.copy())
+        v = dict_report(valid_report)
         v['train_time'] = self.train_time.time()
         v['parleys'] = self.parleys
         v['total_exs'] = self._total_exs
@@ -429,9 +477,7 @@ class TrainLoop:
         # logging
         if opt['tensorboard_log'] and is_primary_worker():
             valid_report['total_exs'] = self._total_exs
-            self.tb_logger.log_metrics('valid', self.parleys, valid_report)
-            # flush on a validation
-            self.tb_logger.flush()
+            self.wand_logger.log_metrics('valid', self.parleys, valid_report)
         # saving
         if (
             opt.get('model_file')
@@ -469,11 +515,14 @@ class TrainLoop:
             self.impatience = 0
             if opt.get('model_file') and is_primary_worker():
                 logging.info(f"saving best valid model: {opt['model_file']}")
-                self.save_model()
+                self.save_model('.best')
                 self.saved = True
             if (
-                opt['validation_metric'] == 'accuracy'
+                opt['validation_metric_mode'] == 'max'
                 and self.best_valid >= opt['validation_cutoff']
+            ) or (
+                opt['validation_metric_mode'] == 'min'
+                and self.best_valid <= opt['validation_cutoff']
             ):
                 logging.info('task solved! stopping.')
                 return True
@@ -554,9 +603,8 @@ class TrainLoop:
         # write to file
         if write_log and opt.get('model_file') and is_primary_worker():
             # Write out metrics
-            f = open(opt['model_file'] + '.' + datatype, 'a+')
-            f.write(f'{metrics}\n')
-            f.close()
+            with PathManager.open(opt['model_file'] + '.' + datatype, 'a') as f:
+                f.write(f'{metrics}\n')
 
         return report
 
@@ -611,7 +659,7 @@ class TrainLoop:
         train_report = self._sync_metrics(train_report)
         self.world.reset_metrics()
 
-        train_report_trainstats = self._safe_report(train_report)
+        train_report_trainstats = dict_report(train_report)
         train_report_trainstats['total_epochs'] = self._total_epochs
         train_report_trainstats['total_exs'] = self._total_exs
         train_report_trainstats['parleys'] = self.parleys
@@ -635,7 +683,7 @@ class TrainLoop:
         self.log_time.reset()
 
         if opt['tensorboard_log'] and is_primary_worker():
-            self.tb_logger.log_metrics('train', self.parleys, train_report)
+            self.wand_logger.log_metrics('train', self.parleys, train_report)
 
     def train(self):
         """
@@ -651,11 +699,8 @@ class TrainLoop:
                 # do one example / batch of examples
                 try:
                     world.parley()
-                except StopTrainException:
-                    if is_distributed():
-                        raise RuntimeError(
-                            "StopTrainException not supported for " "distributed mode"
-                        )
+                except StopTrainException as e:
+                    logging.info(f"Stopping from {e}")
                     break
 
                 self.parleys += 1
@@ -698,10 +743,6 @@ class TrainLoop:
                         world.reset_metrics()
                         stop_training = self.validate()
                     except StopTrainException:
-                        if is_distributed():
-                            raise RuntimeError(
-                                "StopTrainException not supported for distributed mode"
-                            )
                         break
                     # reset the log time because we logged right before validating
                     self.log_time.reset()
@@ -718,8 +759,6 @@ class TrainLoop:
                     logging.info(
                         f"saving model checkpoint: {opt['model_file']}.checkpoint"
                     )
-                    if opt['tensorboard_log'] and is_primary_worker():
-                        self.tb_logger.flush()
                     self.save_model('.checkpoint')
                     self.save_time.reset()
 

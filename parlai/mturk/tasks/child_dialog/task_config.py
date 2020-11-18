@@ -52,4 +52,12 @@ Moxie is a robot on a mission to understand how to be a good friend to humans.
 <b>Chat with Moxie naturally and try to get to know each other, i.e. 
 both ask questions and answer questions. Your response should be as specific as possible and 
 match the length of other party.</b>
+<br>
+<br>
+While having conversation, please also check the checkboxes before utterances made by Moxie that does not suit its 
+characteristics. We call such utterances adult utterances. For example you can mark utterances like 
+<br>
+<i>"I'm a manager in IT, it was a lot at first but now I feel like I got used to it, they do not pay me enough"
+<br>"I'm in my early twenties. I've been working here for a few years now."</i>
+<br> as adult utterances.
 '''

@@ -52,6 +52,35 @@
 
 {% block additional_scripts %}
 <script type="text/javascript">
+    var collect_ar_review = false;
+    function add_message_to_conversation(agent_id, message_text, require_ar_review, is_self) {
+        // Select the right display style given if the message is from self
+        var float_loc = 'left';
+        var alert_class = 'alert-warning';
+        if (is_self) {
+            float_loc = 'right';
+            alert_class = 'alert-info';
+        }
+
+        if (require_ar_review) {
+            var ar_review_checkbox = '<input class="adult_utterance" type="checkbox" value="' + message_text + '"/>'
+        } else {
+            ar_review_checkbox = ''
+        }
+
+        $('div#message_thread').append(
+            '<div class="row" style="margin-left: 0; margin-right: 0">' +
+            '<div class="alert ' + alert_class + '" role="alert" style="float: ' + float_loc + '; display:table">' +
+            ar_review_checkbox  + ' ' +
+            '<span style="font-size: 16px"><b>' + agent_id + '</b>: ' + message_text + '</span>' +
+            '</div>' +
+            '</div>'
+        );
+
+        $("div#message_thread").css("display", "");
+        scroll_conversation_to_bottom();
+        $("div#waiting-for-message").css("display", "");
+    }
     function handle_new_message(new_message_id, message) {
       var agent_id = message.id;
       var message_text = message.text.replace(/(?:\r\n|\r|\n)/g, '<br />');
@@ -62,10 +91,24 @@
       }
       log('New message, ' + new_message_id + ' from agent ' + agent_id, 1);
       displayed_messages.push(new_message_id);
-      if (agent_id !== cur_agent_id) {
-        add_message_to_conversation(agent_id, message_text, false);
+
+      if ("require_ar_review" in message) {
+          var require_ar_review = message.require_ar_review;
       } else {
-        add_message_to_conversation(agent_id, message_text, true);
+          require_ar_review = false;
+      }
+
+      if ("collect_ar_review" in message) {
+          collect_ar_review = message.collect_ar_review;
+          $("button#id_send_msg_button")
+      } else {
+          collect_ar_review = false;
+      }
+
+      if (agent_id !== cur_agent_id) {
+        add_message_to_conversation(agent_id, message_text, require_ar_review, false);
+      } else {
+        add_message_to_conversation(agent_id, message_text, require_ar_review, true);
       }
       if ("show_persona" in message) {
         message.persona_description = message.persona_description.replace(/(?:\r\n|\r|\n)/g, '<br />');
@@ -80,6 +123,60 @@
         $(window).resize(window_resize);
       }
     }
+
+    // Handle submitting a message
+    $("button#id_send_msg_button").off('click');
+    $("button#id_send_msg_button").on('click', function () {
+        var text = $("input#id_text_input").val();
+        if (collect_ar_review) {
+            text = 'Sent adult utterances.'
+        }
+        if (!(text == '')) {
+            // Disable the send button
+            $("button#id_send_msg_button").addClass("disabled");
+            $("button#id_send_msg_button").prop("disabled", true);
+            new_message_id = uuidv4()
+
+            if (collect_ar_review) {
+                var adult_utterances = $(".adult_utterance:checkbox:checked").map(function (_, el){
+                    return $(el).val();
+                }).get();
+                console.log('Adult Utterances: ' + adult_utterances);
+                var send_packet_data = {
+                    text: text,
+                    id: cur_agent_id,
+                    message_id: new_message_id,
+                    episode_done: false,
+                    adult_utterances: adult_utterances
+                }
+            } else {
+                send_packet_data = {
+                    text: text,
+                    id: cur_agent_id,
+                    message_id: new_message_id,
+                    episode_done: false
+                }
+            }
+            // Send a packet
+            send_packet(
+                TYPE_MESSAGE,
+                send_packet_data,
+                true,
+                true,
+                function(msg) {
+                    // On callback enable the button and clear the text field
+                    $("button#id_send_msg_button").removeClass("disabled");
+                    $("button#id_send_msg_button").prop("disabled", false);
+                    $("input#id_text_input").val("");
+                    $("div#response-type-text-input").css("display", "none");
+                    // push the message into the conversation
+                    handle_new_message(new_message_id, msg.data);
+                    after_send_packet();
+                }
+            );
+        }
+  });
+
     $("button#id_done_button").on('click', function () {
         var text = "I am done with the chat and clicked the 'Done' button, thank you!";
         if (!(text == '')) {

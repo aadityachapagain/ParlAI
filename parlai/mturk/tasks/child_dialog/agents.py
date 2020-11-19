@@ -67,7 +67,8 @@ class BotAgent(Agent):
         response = {'id': self.id,
                     'text': re.sub("[\(\[].*?[\)\]]", "", bot_response['remote_chat_response'][
                         'output']['text']),
-                    'episode_done': False}
+                    'episode_done': False,
+                    'new_session_reason': bot_response['new_session_reason']}
         return response
 
     def shutdown(self):

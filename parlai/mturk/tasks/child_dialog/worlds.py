@@ -213,6 +213,9 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             start_act.update({'text': "I'm looking forward to chat with you. " + start_act['text'],
                               'require_ar_review': True})
             self.mturk_agent.observe(start_act)
+            self.dialog.append({"turn_index": 0,
+                                "id": self.parlai_agent.id,
+                                "text": start_act['text']})
 
         """If we get to the min turns, inform turker that they can end if they want"""
         if self.turn_index == self.n_turn + 1:
@@ -286,7 +289,8 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             else:
                 self.dialog.append({"turn_index": self.turn_index,
                                     "id": agent.id,
-                                    "text": acts[agent.id]["text"]})
+                                    "text": acts[agent.id]["text"],
+                                    "new_session_reason": acts[agent.id].get("new_session_reason", None)})
                 for other_agent in [self.mturk_agent, self.parlai_agent]:
                     if other_agent != agent:
                         other_agent.observe(validate(acts[agent.id]))

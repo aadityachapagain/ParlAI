@@ -54,7 +54,7 @@ both ask questions and answer questions. Your response should be as specific as 
 match the length of other party.</b>
 <br>
 <br>
-While having conversation, please also check the checkboxes before utterances made by Moxie that does not suit its 
+While having conversation, please also mark the checkboxes before utterances made by Moxie that does not suit its 
 characteristics. We call such utterances adult utterances. For example you can mark utterances like 
 <br>
 <i>"I'm a manager in IT, it was a lot at first but now I feel like I got used to it, they do not pay me enough"

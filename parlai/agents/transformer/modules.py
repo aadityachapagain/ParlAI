@@ -1432,7 +1432,7 @@ class MultiHeadAttention(nn.Module):
         }
 
         full_key_len = k.size(1)
-        dot_prod = q.bmm(k.transpose(1, 2))
+        dot_prod = q.div_(scale).bmm(k.transpose(1, 2))
         # [B * n_heads, query_len, key_len]
         attn_mask = (
             (mask == 0)
@@ -1442,7 +1442,6 @@ class MultiHeadAttention(nn.Module):
             .view(batch_size * n_heads, query_len, full_key_len)
         )
         assert attn_mask.shape == dot_prod.shape
-        dot_prod.masked_fill_(attn_mask, neginf(dot_prod.dtype))
         attn_weights = MaskedSoftmax.apply(dot_prod, attn_mask, scale)
         attn_weights = self.attn_dropout(attn_weights)  # --attention-dropout
 

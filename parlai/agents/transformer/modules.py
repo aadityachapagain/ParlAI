@@ -29,6 +29,7 @@ import torch.nn.functional as F
 from parlai.core.torch_generator_agent import TorchGeneratorModel
 from parlai.utils.misc import warn_once
 from parlai.utils.torch import neginf, PipelineHelper
+from einops import rearrange
 
 try:
     from apex.normalization.fused_layer_norm import FusedLayerNorm as LayerNorm
@@ -1387,9 +1388,11 @@ class MultiHeadAttention(nn.Module):
         assert key is not None  # let mypy know we sorted this
         _, _key_len, dim = key.size()
 
-        q = prepare_head(self.q_lin(query))
-        k = prepare_head(self.k_lin(key))
-        v = prepare_head(self.v_lin(value))
+        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h = n_heads), (self.q_lin(query), self.k_lin(key), self.v_lin(value)))
+
+        # q = prepare_head(self.q_lin(query))
+        # k = prepare_head(self.k_lin(key))
+        # v = prepare_head(self.v_lin(value))
 
         # Prepend incremental states. For each of the key, value, and mask, see if
         # a previous incremental state exists, and if so, reshape it to match the shape

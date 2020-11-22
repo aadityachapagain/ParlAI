@@ -29,7 +29,6 @@ import torch.nn.functional as F
 from parlai.core.torch_generator_agent import TorchGeneratorModel
 from parlai.utils.misc import warn_once
 from parlai.utils.torch import neginf, PipelineHelper
-from tcop.masked_softmax import MaskedSoftmax
 
 try:
     from apex.normalization.fused_layer_norm import FusedLayerNorm as LayerNorm
@@ -1442,7 +1441,11 @@ class MultiHeadAttention(nn.Module):
             .view(batch_size * n_heads, query_len, full_key_len)
         )
         assert attn_mask.shape == dot_prod.shape
-        attn_weights = MaskedSoftmax.apply(dot_prod, attn_mask, scale)
+        dot_prod.masked_fill_(attn_mask, neginf(dot_prod.dtype))
+
+        attn_weights = F.softmax(
+            dot_prod, dim=-1, dtype=torch.float  # type: ignore
+        ).type_as(query)
         attn_weights = self.attn_dropout(attn_weights)  # --attention-dropout
 
         # Head Mask here. I still need to figure out the shape of mask tho ...

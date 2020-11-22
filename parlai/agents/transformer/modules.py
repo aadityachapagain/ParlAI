@@ -23,6 +23,7 @@ import numpy as np
 import torch
 import torch.cuda
 import torch.nn as nn
+from torch import Tensor
 import torch.nn.functional as F
 
 from parlai.core.torch_generator_agent import TorchGeneratorModel
@@ -84,7 +85,30 @@ def get_n_positions_from_options(opt):
             n_positions = 1024
     return n_positions
 
+def get_head_mask(
+        self, head_mask: Optional[Tensor], num_hidden_layers: int, is_attention_chunked: bool = False
+    ) -> Tensor:
+        """
+        Prepare the head mask if needed.
+        Args:
+            head_mask (:obj:`torch.Tensor` with shape :obj:`[num_heads]` or :obj:`[num_hidden_layers x num_heads]`, `optional`):
+                The mask indicating if we should keep the heads or not (1.0 for keep, 0.0 for discard).
+            num_hidden_layers (:obj:`int`):
+                The number of hidden layers in the model.
+            is_attention_chunked: (:obj:`bool`, `optional, defaults to :obj:`False`):
+                Whether or not the attentions scores are computed by chunks or not.
+        Returns:
+            :obj:`torch.Tensor` with shape :obj:`[num_hidden_layers x batch x num_heads x seq_length x seq_length]` or
+            list with :obj:`[None]` for each layer.
+        """
+        if head_mask is not None:
+            head_mask = self._convert_head_mask_to_5d(head_mask, num_hidden_layers)
+            if is_attention_chunked is True:
+                head_mask = head_mask.unsqueeze(-1)
+        else:
+            head_mask = [None] * num_hidden_layers
 
+        return head_mask
 class TransformerMemNetModel(nn.Module):
     """
     Model which takes context, memories, candidates and encodes them.
@@ -971,7 +995,7 @@ class TransformerDecoderLayer(nn.Module):
         )
         self.norm3 = LayerNorm(embedding_size, eps=LAYER_NORM_EPS)
 
-    def forward(self, x, encoder_output, encoder_mask, incr_state=None):
+    def forward(self, x, encoder_output, encoder_mask, incr_state=None, head_mask = None):
         """
         Forward pass.
 
@@ -1309,6 +1333,7 @@ class MultiHeadAttention(nn.Module):
         mask: torch.Tensor = None,
         incr_state: Optional[Dict[str, torch.Tensor]] = None,
         static_kv: bool = False,
+        head_mask = None
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
         """
         Forward pass.
@@ -1422,6 +1447,10 @@ class MultiHeadAttention(nn.Module):
             dot_prod, dim=-1, dtype=torch.float  # type: ignore
         ).type_as(query)
         attn_weights = self.attn_dropout(attn_weights)  # --attention-dropout
+
+        # Head Mask here. I still need to figure out the shape of mask tho ...
+        if head_mask is not None:
+            attn_weights = attn_weights * head_mask
 
         attentioned = attn_weights.bmm(v)
         attentioned = (

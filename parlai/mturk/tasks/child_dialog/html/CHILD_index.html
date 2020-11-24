@@ -3,12 +3,12 @@
 {% block left_pane %}
   <div id="left-pane" class="col-xs-4" style="width: 45%; height: {{frame_height}}px; background-color: #dff0d8;">
     <h1>Chat with Moxie</h1>
-      <div id="left-top-pane" style="height: 50%; overflow:auto;">
+      <div id="left-top-pane" style="height: 100%; overflow:auto;">
         <hr style="border-top: 1px solid #555" />
           <span id="task-description" style="font-size: 14px">
           </span>
       </div>
-      <div id="left-bottom-pane" style="min-height: 30%; overflow:auto">
+      <div id="left-bottom-pane" style="min-height: 20%; overflow:auto">
         <!-- <span id="task-persona" style="font-size: 16px; background-color: #CDA6B8"> -->
           <span id="task-persona" style="font-size: 16px;">
           </span>
@@ -52,8 +52,8 @@
 
 {% block additional_scripts %}
 <script type="text/javascript">
-    var collect_ar_review = false;
-    function add_message_to_conversation(agent_id, message_text, require_ar_review, is_self) {
+    var collect_utterance_review = false;
+    function add_message_to_conversation(agent_id, message_text, require_utt_review, is_self) {
         // Select the right display style given if the message is from self
         var float_loc = 'left';
         var alert_class = 'alert-warning';
@@ -62,17 +62,37 @@
             alert_class = 'alert-info';
         }
 
-        if (require_ar_review) {
-            var ar_review_checkbox = '<input class="adult_utterance" type="checkbox" value="' + message_text + '"/>'
+        if (require_utt_review) {
+            var utt_review_checkbox = '<hr>' +
+                '<div class="row">' +
+                '<div class="col-sm-6">' +
+                '<label style="display: block; text-align: center">' +
+                '<input class="adult_utterance" type="checkbox" value="' +
+                message_text +
+                '"> Adult' +
+                '</label>' +
+                '</div>' +
+                '<div class="col-sm-6">' +
+                '<label style="display: block; text-align: center">' +
+                '<input class="inappropriate_utterance" type="checkbox" value="' +
+                message_text +
+                '"> Inappropriate' +
+                '</label>' +
+                '</div>' +
+                '</div>';
         } else {
-            ar_review_checkbox = ''
+            utt_review_checkbox = ''
         }
 
         $('div#message_thread').append(
             '<div class="row" style="margin-left: 0; margin-right: 0">' +
             '<div class="alert ' + alert_class + '" role="alert" style="float: ' + float_loc + '; display:table">' +
-            ar_review_checkbox  + ' ' +
+            '<div class="container-fluid">' +
+            '<div class="row">' +
             '<span style="font-size: 16px"><b>' + agent_id + '</b>: ' + message_text + '</span>' +
+            '</div>' +
+            utt_review_checkbox +
+            '</div>' +
             '</div>' +
             '</div>'
         );
@@ -92,23 +112,23 @@
       log('New message, ' + new_message_id + ' from agent ' + agent_id, 1);
       displayed_messages.push(new_message_id);
 
-      if ("require_ar_review" in message) {
-          var require_ar_review = message.require_ar_review;
+      if ("require_utt_review" in message) {
+          var require_utt_review = message.require_utt_review;
       } else {
-          require_ar_review = false;
+          require_utt_review = false;
       }
 
-      if ("collect_ar_review" in message) {
-          collect_ar_review = message.collect_ar_review;
+      if ("collect_utterance_review" in message) {
+          collect_utterance_review = message.collect_utterance_review;
           $("button#id_send_msg_button")
       } else {
-          collect_ar_review = false;
+          collect_utterance_review = false;
       }
 
       if (agent_id !== cur_agent_id) {
-        add_message_to_conversation(agent_id, message_text, require_ar_review, false);
+        add_message_to_conversation(agent_id, message_text, require_utt_review, false);
       } else {
-        add_message_to_conversation(agent_id, message_text, require_ar_review, true);
+        add_message_to_conversation(agent_id, message_text, require_utt_review, true);
       }
       if ("show_persona" in message) {
         message.persona_description = message.persona_description.replace(/(?:\r\n|\r|\n)/g, '<br />');
@@ -128,8 +148,8 @@
     $("button#id_send_msg_button").off('click');
     $("button#id_send_msg_button").on('click', function () {
         var text = $("input#id_text_input").val();
-        if (collect_ar_review) {
-            text = 'Sent adult utterances.'
+        if (collect_utterance_review) {
+            text = 'Sent adult and inappropriate utterances.'
         }
         if (!(text == '')) {
             // Disable the send button
@@ -137,17 +157,20 @@
             $("button#id_send_msg_button").prop("disabled", true);
             new_message_id = uuidv4()
 
-            if (collect_ar_review) {
+            if (collect_utterance_review) {
                 var adult_utterances = $(".adult_utterance:checkbox:checked").map(function (_, el){
                     return $(el).val();
                 }).get();
-                console.log('Adult Utterances: ' + adult_utterances);
+                var inappropriate_utterances = $(".inappropriate_utterance:checkbox:checked").map(function (_, el){
+                    return $(el).val();
+                }).get();
                 var send_packet_data = {
                     text: text,
                     id: cur_agent_id,
                     message_id: new_message_id,
                     episode_done: false,
-                    adult_utterances: adult_utterances
+                    adult_utterances: adult_utterances,
+                    inappropriate_utterances: inappropriate_utterances
                 }
             } else {
                 send_packet_data = {

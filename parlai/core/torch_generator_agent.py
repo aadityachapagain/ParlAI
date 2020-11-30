@@ -159,7 +159,7 @@ class TorchGeneratorModel(nn.Module, ABC):
         """
         return torch.cat([self.START.detach().expand(bsz, 1), inputs], 1)
 
-    def decode_forced(self, encoder_states, ys):
+    def decode_forced(self, encoder_states, ys, head_mask = None):
         """
         Decode with a fixed, true sequence, computing loss.
 
@@ -194,7 +194,7 @@ class TorchGeneratorModel(nn.Module, ABC):
                 "you intended."
             )
         inputs = self._get_initial_forced_decoder_input(bsz, inputs)
-        latent, _ = self.decoder(inputs, encoder_states)
+        latent, _ = self.decoder(inputs, encoder_states, head_mask = head_mask)
         logits = self.output(latent)
         _, preds = logits.max(dim=2)
         return logits, preds
@@ -281,7 +281,7 @@ class TorchGeneratorModel(nn.Module, ABC):
         """
         pass
 
-    def forward(self, *xs, ys=None, prev_enc=None, maxlen=None, bsz=None):
+    def forward(self, *xs, ys=None, prev_enc=None, maxlen=None, bsz=None, head_mask = None):
         """
         Get output predictions from the model.
 
@@ -322,10 +322,10 @@ class TorchGeneratorModel(nn.Module, ABC):
         self.longest_label = max(self.longest_label, ys.size(1))
 
         # use cached encoding if available
-        encoder_states = prev_enc if prev_enc is not None else self.encoder(*xs)
+        encoder_states = prev_enc if prev_enc is not None else self.encoder(*xs, head_mask = head_mask)
 
         # use teacher forcing
-        scores, preds = self.decode_forced(encoder_states, ys)
+        scores, preds = self.decode_forced(encoder_states, ys, head_mask = head_mask)
         return scores, preds, encoder_states
 
 

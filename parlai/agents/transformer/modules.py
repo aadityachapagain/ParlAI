@@ -84,31 +84,6 @@ def get_n_positions_from_options(opt):
         if n_positions == 0:
             n_positions = 1024
     return n_positions
-
-def get_head_mask(
-        self, head_mask: Optional[Tensor], num_hidden_layers: int, is_attention_chunked: bool = False
-    ) -> Tensor:
-        """
-        Prepare the head mask if needed.
-        Args:
-            head_mask (:obj:`torch.Tensor` with shape :obj:`[num_heads]` or :obj:`[num_hidden_layers x num_heads]`, `optional`):
-                The mask indicating if we should keep the heads or not (1.0 for keep, 0.0 for discard).
-            num_hidden_layers (:obj:`int`):
-                The number of hidden layers in the model.
-            is_attention_chunked: (:obj:`bool`, `optional, defaults to :obj:`False`):
-                Whether or not the attentions scores are computed by chunks or not.
-        Returns:
-            :obj:`torch.Tensor` with shape :obj:`[num_hidden_layers x batch x num_heads x seq_length x seq_length]` or
-            list with :obj:`[None]` for each layer.
-        """
-        if head_mask is not None:
-            head_mask = self._convert_head_mask_to_5d(head_mask, num_hidden_layers)
-            if is_attention_chunked is True:
-                head_mask = head_mask.unsqueeze(-1)
-        else:
-            head_mask = [None] * num_hidden_layers
-
-        return head_mask
 class TransformerMemNetModel(nn.Module):
     """
     Model which takes context, memories, candidates and encodes them.
@@ -850,6 +825,7 @@ class TransformerDecoder(nn.Module):
         encoder_output: torch.Tensor,
         encoder_mask: torch.Tensor,
         incr_state: Dict[int, torch.Tensor],
+        head_mask = None
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
         """
         Forward pass of decoder layers.
@@ -879,11 +855,12 @@ class TransformerDecoder(nn.Module):
                     encoder_output=encoder_output,
                     encoder_mask=encoder_mask,
                     incr_state=incr_state.get(idx),
+                    head_mask = head_mask
                 )
 
         return tensor, new_incr_state
 
-    def forward(self, input, encoder_state, incr_state=None):
+    def forward(self, input, encoder_state, incr_state=None, head_mask = None):
         """
         Forward pass.
 
@@ -914,7 +891,7 @@ class TransformerDecoder(nn.Module):
         tensor = self.dropout(tensor)  # --dropout
 
         tensor, new_incr_state = self.forward_layers(
-            tensor, encoder_output, encoder_mask, incr_state
+            tensor, encoder_output, encoder_mask, incr_state, head_mask = head_mask
         )
 
         if self.variant == 'prelayernorm':
@@ -1018,6 +995,7 @@ class TransformerDecoderLayer(nn.Module):
             mask=decoder_mask,
             incr_state=incr_state.get('self_attn'),
             static_kv=False,
+            head_mask = head_mask,
         )
         x = self.dropout(x)  # --dropout
         x = x + residual
@@ -1035,6 +1013,7 @@ class TransformerDecoderLayer(nn.Module):
             mask=encoder_mask,
             incr_state=incr_state.get('encoder_attn'),
             static_kv=True,
+            head_mask = head_mask,
         )
         x = self.dropout(x)  # --dropout
         x = residual + x
@@ -1448,8 +1427,15 @@ class MultiHeadAttention(nn.Module):
         ).type_as(query)
         attn_weights = self.attn_dropout(attn_weights)  # --attention-dropout
 
-        # Head Mask here. I still need to figure out the shape of mask tho ...
+        # Head Mask here
         if head_mask is not None:
+            head_mask = (
+                head_mask
+                .view(batch_size, 1, -1)
+                .repeat(1, n_heads, 1)
+                .expand(batch_size, n_heads, query_len)
+                .view(batch_size * n_heads, query_len)
+            )
             attn_weights = attn_weights * head_mask
 
         attentioned = attn_weights.bmm(v)

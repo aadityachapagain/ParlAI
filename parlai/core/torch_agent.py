@@ -798,7 +798,7 @@ class TorchAgent(ABC, Agent):
             # check that the implementation requested is available
             self.fp16_impl = self.opt.get('fp16_impl', 'apex')
             if self.fp16_impl == 'apex' and not fp16_apex_available():
-                self.fp16 = False
+                self.fp16_impl = 'mem_efficient'
 
         if shared is None:
             # intitialize any important structures from scratch
@@ -859,7 +859,7 @@ class TorchAgent(ABC, Agent):
         self.rank_candidates = opt['rank_candidates']
         self.add_person_tokens = opt.get('person_tokens', False)
         # set interactive mode or not according to options.
-        self.set_interactive_mode(opt.get('interactive_mode', False), shared)
+        self.set_interactive_mode(True, shared)
 
     def build_history(self):
         """

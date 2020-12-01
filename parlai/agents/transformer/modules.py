@@ -526,13 +526,13 @@ class TransformerEncoder(nn.Module):
         :return tensor:
             return embedding after applying transformer layers
         """
-        if getattr(self.layers, 'is_model_parallel', False):
-            # factored out for readability. It is equivalent to the other
-            # condition
-            tensor = self._apply_model_parallel(tensor, mask)
-        else:
-            for i in range(self.n_layers):
-                tensor = self.layers[i](tensor, mask)
+        # if getattr(self.layers, 'is_model_parallel', False):
+        #     # factored out for readability. It is equivalent to the other
+        #     # condition
+        #     tensor = self._apply_model_parallel(tensor, mask)
+        # else:
+        for i in range(self.n_layers):
+            tensor = self.layers[i](tensor, mask)
 
         return tensor
 
@@ -844,18 +844,18 @@ class TransformerDecoder(nn.Module):
             as new incremental decoding state.
         """
         new_incr_state = {}
-        if getattr(self.layers, 'is_model_parallel', False):
-            tensor, new_incr_state = self._apply_model_parallel(
-                tensor, encoder_output, encoder_mask, incr_state
+        # if getattr(self.layers, 'is_model_parallel', False):
+        #     tensor, new_incr_state = self._apply_model_parallel(
+        #         tensor, encoder_output, encoder_mask, incr_state
+        #     )
+        # else:
+        for idx, layer in enumerate(self.layers):
+            tensor, new_incr_state[idx] = layer(
+                x=tensor,
+                encoder_output=encoder_output,
+                encoder_mask=encoder_mask,
+                incr_state=incr_state.get(idx),
             )
-        else:
-            for idx, layer in enumerate(self.layers):
-                tensor, new_incr_state[idx] = layer(
-                    x=tensor,
-                    encoder_output=encoder_output,
-                    encoder_mask=encoder_mask,
-                    incr_state=incr_state.get(idx),
-                )
 
         return tensor, new_incr_state
 

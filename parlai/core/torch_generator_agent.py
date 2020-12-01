@@ -505,23 +505,16 @@ class TorchGeneratorAgent(TorchAgent, ABC):
                     'build_model() and build_criterion() need to return the model or criterion'
                 )
             if self.use_cuda:
-                if self.model_parallel:
-                    ph = PipelineHelper()
-                    ph.check_compatibility(self.opt)
-                    self.model = ph.make_parallel(self.model)
-                else:
-                    self.model.cuda()
+                self.model.cuda()
                 self.criterion.cuda()
 
-            sync_parameters(self.model)
             train_params = trainable_parameters(self.model)
             total_params = total_parameters(self.model)
             logging.info(
                 f"Total parameters: {total_params:,d} ({train_params:,d} trainable)"
             )
-
-            if self.fp16:
-                self.model = self.model.half()
+            
+            self.model = self.model.half()
 
             if init_model is not None:
                 # load model parameters if available

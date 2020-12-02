@@ -84,8 +84,8 @@ class GCP_Service(object):
                 logger.info(f'{dest_file} downloaded from bucket.')
             except:
                 traceback.print_exc()
-                if os.path.isfile(dest_file):
-                    os.remove(dest_file)
+                # if os.path.isfile(dest_file):
+                #     os.remove(dest_file)
                 continue
 
     def download(self, bucket_filename:str, local_dir:str) -> str:

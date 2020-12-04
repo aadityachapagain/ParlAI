@@ -182,7 +182,7 @@ def email_workers(worker_ids, subject, message_text, is_sandbox):
     return failures
 
 
-def get_hit_notification_message(hit_link, max_hits):
+def get_hit_notification_message(hit_link, max_hits, run_timelimit):
     subject = "Chat with Child Companion Robot as a Child: HITs exclusive to you"
     message = (
         "Thank you for your outstanding performance in the previous HITs you did for us. "
@@ -193,13 +193,13 @@ def get_hit_notification_message(hit_link, max_hits):
         "Please find the HITs using following link. "
         f"\nLink: {hit_link} \n"
         "Note: If you can't find the HIT please wait for few moments and retry. "
-        "Also, above link is valid for 24 hours only."
+        f"Also, above link is valid for {int(run_timelimit/3600)} hours only."
     )
     return subject, message
 
 
-def send_hit_notification(worker_ids, hit_link, is_sandbox, max_hits):
-    subject, message = get_hit_notification_message(hit_link, max_hits)
+def send_hit_notification(worker_ids, hit_link, is_sandbox, max_hits, run_timelimit):
+    subject, message = get_hit_notification_message(hit_link, max_hits, run_timelimit)
     _ = email_workers(worker_ids, subject, message, is_sandbox)
 
 
@@ -269,7 +269,11 @@ def single_run(opt,
         mturk_page_url = mturk_manager.create_hits(qualifications=agent_qualifications)
 
         if dedicated_worker_ids:
-            send_hit_notification(dedicated_worker_ids, mturk_page_url, opt['is_sandbox'], opt['max_hits_per_worker'])
+            send_hit_notification(dedicated_worker_ids,
+                                  mturk_page_url,
+                                  opt['is_sandbox'],
+                                  opt['max_hits_per_worker'],
+                                  opt['run_timelimit'])
 
         def check_workers_eligibility(workers):
             return workers

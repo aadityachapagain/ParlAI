@@ -48,7 +48,7 @@ def setup_args():
     argparser.add_argument(
         '--bot-port',
         type=int,
-        default=80,
+        default=443,
         dest='bot_port',
         help='Remote Chat Backend Port'
     )

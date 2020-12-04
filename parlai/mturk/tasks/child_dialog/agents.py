@@ -47,10 +47,10 @@ class BotAgent(Agent):
             shared_utils.print_and_log(logging.INFO,
                                        f"Sending {observation} to bot......")
             t = time.time()
-            response = requests.get(f'http://{self.opt["bot_host"]}:{str(self.opt.get("bot_port", 80))}/interact',
-                                    json=bot_request_data,
-                                    auth=(self.opt['bot_username'],
-                                          self.opt['bot_password']))
+            response = requests.post(f'http{"s" if self.opt.get("bot_port") in [80, 443] else ""}://{self.opt["bot_host"]}:{str(self.opt.get("bot_port", 443))}/interact',
+                                     json=bot_request_data,
+                                     auth=(self.opt['bot_username'],
+                                           self.opt['bot_password']))
             self.bot_response_time.append(time.time() - t)
             response = json.loads(response.content)
             if "session_id" in response:

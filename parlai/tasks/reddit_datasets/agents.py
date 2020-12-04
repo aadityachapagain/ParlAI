@@ -2,7 +2,7 @@ from parlai.core.teachers import DialogTeacher, ChunkTeacher, ChunkOutput
 from parlai.core.message import Message
 from .build import build, matcher
 import parlai.utils.logging as logging
-from parlai.utils.misc import str_to_msg
+from parlai.utils.misc import str_to_msg, warn_once
 import random
 
 import os
@@ -42,17 +42,19 @@ class RedditTeacher(DialogTeacher):
                             f"in {path}. The line is:\n\t{line}"
                         )
                     if msg and 'text' not in msg:
-                        raise ValueError(
-                            f'ParlaiDialogTeacher requires a "text" field in every '
-                            f'entry, but one is missing in Line {line_no} in {path}. '
+                        warn_once(
+                            f'ParlaiDialogTeacher requires a "text" field in every ' +
+                            f'entry, but one is missing in Line {line_no} in {path}. ' +
                             f'The line is:\n\t{line}'
                         )
+                        continue
                     if msg and 'labels' not in msg:
-                        raise ValueError(
-                            f'ParlaiDialogTeacher requires a "labels" field in every '
-                            f'entry, but one is missing in Line {line_no} in {path}. '
+                        warn_once(
+                            f'ParlaiDialogTeacher requires a "labels" field in every ' +
+                            f'entry, but one is missing in Line {line_no} in {path}. ' +
                             f'The line is:\n\t{line}'
                         )
+                        continue
                     if msg:
                         episode_done = msg.get('episode_done', False)
                         yield (msg['text'], msg['labels']), episode_done

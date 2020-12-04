@@ -23,7 +23,26 @@ class RedditTeacher(DialogTeacher):
             opt['datapath'], 'reddit_datasets/train_data'
         )
         self.id = 'reddit_datasets'
+        self.visited = self.get_visited_chunk(opt)
+                    
         super().__init__(opt, shared)
+
+    def get_visited_chunk(self, opt):
+        visited = []
+        if os.path.isfile(os.path.join(opt['datapath'],'reddit_datasets','status.build' )):
+            with open(os.path.join(opt['datapath'],'reddit_datasets','status.build' )) as fp:
+                for line in fp:
+                    visited.append(line.replace('\n', '').strip())
+
+        return visited
+    
+    def set_visited_chunk(self, chunk):
+        with open(os.path.join(self.opt['datapath'],'reddit_datasets','status.build' ), 'a+') as fw:
+            fw.write(chunk+ '\n')
+
+    def epoch_end_cleanup(self):
+        self.visited = []
+        os.remove(os.path.join(self.opt['datapath'],'reddit_datasets','status.build' ))
 
     def setup_data(self, path):
         req_files = random.sample([ '{}-00{:03}-of-00200.txt'.format(self.datasets_type,i) for i in range(200)], 200)
@@ -31,6 +50,11 @@ class RedditTeacher(DialogTeacher):
             req_files = random.sample(req_files,100)
         for subdir in req_files:
             subdir_path = os.path.join(path, subdir)
+            if subdir_path in self.visited:
+                logging.log(f'Model already Trained on file {subdir_path}, Skipping batch!')
+                continue
+            # storing batch progression in file to make sure it will not loaded next time
+            self.set_visited_chunk(subdir_path)
             with open(subdir_path, newline='\n', encoding="utf-8") as read:
                 for line_no, line in enumerate(read, 1):
                     msg = str_to_msg(line.rstrip('\n'))
@@ -58,6 +82,8 @@ class RedditTeacher(DialogTeacher):
                     if msg:
                         episode_done = msg.get('episode_done', False)
                         yield (msg['text'], msg['labels']), episode_done
+        # clean up at the end of epoch
+        self.epoch_end_cleanup()
 
 class RedditChunkTeacher(ChunkTeacher):
     """

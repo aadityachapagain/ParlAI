@@ -56,7 +56,7 @@ from parlai.utils.misc import Timer, nice_report
 from parlai.core.script import ParlaiScript, register_script
 import parlai.utils.logging as logging
 import time
-import calendar
+from datetime import datetime
 from parlai.utils.io import PathManager
 
 
@@ -265,8 +265,8 @@ def load_eval_worlds(agent, opt, datatype):
     return worlds
 
 def create_timestamp():
-    ts = calendar.timegm(time.gmtime())
-    return str(519994056)
+    # ts = calendar.timegm(time.gmtime())
+    return datetime.strftime(datetime.now(),'%Y%m%d%H%M')
 
 def get_latest_train(file_path):
     try:

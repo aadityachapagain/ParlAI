@@ -861,6 +861,37 @@ class TorchGeneratorAgent(TorchAgent, ABC):
         """
         pass
 
+    def prune_step(self, batch, head_mask):
+        """
+        Rune this if you want to run structured pruning on model
+        """
+        self.model.eval()
+
+        if batch.label_vec is None:
+            raise ValueError('Cannot compute loss without a label.')
+
+        model_output = self.model(*self._model_input(batch), ys=batch.label_vec, head_mask=head_mask)
+        scores, preds, *_ = model_output
+        score_view = scores.view(-1, scores.size(-1))
+        loss = self.criterion(score_view, batch.label_vec.view(-1))
+        loss = loss.view(scores.shape[:-1]).sum(dim=1)
+        # save loss to metrics
+        notnull = batch.label_vec.ne(self.NULL_IDX)
+        target_tokens = notnull.long().sum(dim=-1)
+        correct = ((batch.label_vec == preds) * notnull).sum(dim=-1)
+
+        self.record_local_metric('loss', AverageMetric.many(loss, target_tokens))
+        self.record_local_metric('head_importance', SumMetric(head_mask.grad.abs().detach()))
+        
+        # actually do backwards loss
+        loss = loss.sum()
+        loss /= target_tokens.sum()  # average loss per token
+
+        self.record_local_metric('eval_loss', SumMetric(loss))
+        self.record_local_metric('tot_tokens', SumMetric(batch.text_vec.ne(self.NULL_IDX).long().sum(dim=-1).sum())
+
+        self.backward(loss)
+
     def eval_step(self, batch):
         """
         Evaluate a single batch of examples.

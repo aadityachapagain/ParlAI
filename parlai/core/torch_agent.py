@@ -2081,16 +2081,18 @@ class TorchAgent(ABC, Agent):
             ttpb = GlobalAverageMetric(ct + lt, float(is_primary_worker()))
             self.global_metrics.add('tpb', ttpb)
             self.global_metrics.add('tps', GlobalTimerMetric(ct + lt))
-
-        if self.is_training:
-            # register the start of updates for later counting when they occur
-            self.global_metrics.add('ups', GlobalTimerMetric(0))
-            output = self.train_step(batch)
+        if self.is_pruning:
+            output = self.prune_step(batch)
         else:
-            with torch.no_grad():
-                # save memory and compute by disabling autograd.
-                # use `with torch.enable_grad()` to gain back gradients.
-                output = self.eval_step(batch)
+            if self.is_training:
+                # register the start of updates for later counting when they occur
+                self.global_metrics.add('ups', GlobalTimerMetric(0))
+                output = self.train_step(batch)
+            else:
+                with torch.no_grad():
+                    # save memory and compute by disabling autograd.
+                    # use `with torch.enable_grad()` to gain back gradients.
+                    output = self.eval_step(batch)
 
         if output is not None:
             # local metrics are automatically matched up

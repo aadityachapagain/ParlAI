@@ -1584,4 +1584,22 @@ model_list = [
             "[MDGender Classifier]: SELF: female"
         ),
     },
+    {
+        "title": "Pruned_1_8B_blender.zip",
+        "id": "blender",
+        "path": "zoo:blender/Pruned_1_8B_blender/model",
+        "agent": "transformer/generator",
+        "task": "blended_skill_talk",
+        "project": "https://github.com/facebookresearch/ParlAI/tree/master/projects/blender",
+        "description": (
+            "..."
+        ),
+        "example": (
+            "python parlai/scripts/safe_interactive.py -mf zoo:blender/blender_3B/model -t blended_skill_talk"
+        ),
+        "result": (
+            "Enter Your Message: Hi how are you?\n"
+            "[TransformerGenerator]: I'm doing well. How are you doing? What do you like to do in your spare time?"
+        ),
+    },
 ]

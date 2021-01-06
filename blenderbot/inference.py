@@ -144,7 +144,7 @@ class Inference:
                                 add_special_tokens=False)['input_ids']
         tokens = torch.tensor(tokens).to(self.device)
         self.history = torch.cat((self.history, tokens, self.eos_token_id), dim=0)
-        self.history = self.history[-(self.input_maxlen-1):]
+        self.history = self.history[-(self.input_maxlen):]
         preds, scores = self.generate(self.history.view(1, -1))
         preds = preds[0]
         text = self.tokenizer.decode(preds, skip_special_tokens=True)

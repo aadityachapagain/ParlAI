@@ -686,6 +686,7 @@ class TrainLoop:
         self.log_time.reset()
 
         if opt['tensorboard_log'] and is_primary_worker():
+            train_report['total_epochs'] = self._total_epochs
             self.wand_logger.log_metrics('train', self.parleys, train_report)
 
     def train(self):

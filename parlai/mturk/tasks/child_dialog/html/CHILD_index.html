@@ -65,14 +65,21 @@
         if (require_utt_review) {
             var utt_review_checkbox = '<hr>' +
                 '<div class="row">' +
-                '<div class="col-sm-6">' +
+                '<div class="col-sm-4">' +
+                '<label style="display: block; text-align: center">' +
+                '<input class="termination_utterance" type="checkbox" value="' +
+                message_text +
+                '"> Termination' +
+                '</label>' +
+                '</div>' +
+                '<div class="col-sm-4">' +
                 '<label style="display: block; text-align: center">' +
                 '<input class="adult_utterance" type="checkbox" value="' +
                 message_text +
                 '"> Adult' +
                 '</label>' +
                 '</div>' +
-                '<div class="col-sm-6">' +
+                '<div class="col-sm-4">' +
                 '<label style="display: block; text-align: center">' +
                 '<input class="inappropriate_utterance" type="checkbox" value="' +
                 message_text +
@@ -149,7 +156,7 @@
     $("button#id_send_msg_button").on('click', function () {
         var text = $("input#id_text_input").val();
         if (collect_utterance_review) {
-            text = 'Sent adult and inappropriate utterances.'
+            text = 'Sent termination, adult and inappropriate utterances.'
         }
         if (!(text == '')) {
             // Disable the send button
@@ -158,6 +165,9 @@
             new_message_id = uuidv4()
 
             if (collect_utterance_review) {
+                var termination_utterances = $(".termination_utterance:checkbox:checked").map(function (_, el){
+                    return $(el).val();
+                }).get();
                 var adult_utterances = $(".adult_utterance:checkbox:checked").map(function (_, el){
                     return $(el).val();
                 }).get();
@@ -169,6 +179,7 @@
                     id: cur_agent_id,
                     message_id: new_message_id,
                     episode_done: false,
+                    termination_utterances: termination_utterances,
                     adult_utterances: adult_utterances,
                     inappropriate_utterances: inappropriate_utterances
                 }

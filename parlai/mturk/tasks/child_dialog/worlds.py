@@ -316,8 +316,8 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
         if self.check_timeout(ar_review_act):
             return
         while ("adult_utterances" not in ar_review_act) and ("inappropriate_utterances" not in ar_review_act) and (
-            ar_review_act['text'] != 'Sent adult and inappropriate utterances.'
-        ):
+            ar_review_act['text'] != 'Sent termination, adult and inappropriate utterances.'
+        ) and ("termination_utterances" not in ar_review_act):
             agent.observe(validate({
                 'id': 'SYSTEM',
                 'text': 'Please once again review adult and inappropriate utterances and click "Send" button to send your review without entering text.',
@@ -327,6 +327,7 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             ar_review_act = agent.act(timeout=self.opt["max_resp_time"] + 60)
             if self.check_timeout(ar_review_act):
                 return
+        self.termination_utterances = ar_review_act['termination_utterances']
         self.adult_utterances = ar_review_act['adult_utterances']
         self.inappropriate_utterances = ar_review_act['inappropriate_utterances']
 
@@ -451,6 +452,8 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
                        'bot_role': self.parlai_agent.id,
                        'context': self.mturk_agent.context,
                        'bot_eval_by_worker': self.bot_eval_by_worker}
+        if hasattr(self, 'termination_utterances'):
+            custom_data.update({'termination_utterances': self.termination_utterances})
         if hasattr(self, 'adult_utterances'):
             custom_data.update({'adult_utterances': self.adult_utterances})
         if hasattr(self, 'inappropriate_utterances'):

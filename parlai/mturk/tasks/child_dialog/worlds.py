@@ -375,10 +375,9 @@ class InteractParlAIModelWorld(MTurkTaskWorld):
             return (
                 '\nPlease chat with the robot. '
                 '\nYou can read task description on the left.'
-                '\n<b>Please try to match the length of other party\'s message. '
-                'Share information relevant to a child  and try to know other party as much as you can. '
+                '\n<b>Please share information relevant to a child  and try to know other party as much as you can. '
                 '</b>'
-                '\n<b>Also check for adult and inappropriate utterances made by Moxie.</b>'
+                '\n<b>Also mark respective checkbox if applicable in each Moxie utterance.</b>'
             )
         if tag == 'end':
             return 'Thanks for taking part in this HIT. If you like you can do more HITs.'

@@ -374,6 +374,7 @@ class TransformerEncoder(nn.Module):
         embedding_size,
         ffn_size,
         vocabulary_size,
+        attention_head_size=-1,
         embedding=None,
         dropout=0.0,
         attention_dropout=0.0,
@@ -460,6 +461,7 @@ class TransformerEncoder(nn.Module):
                     n_heads,
                     embedding_size,
                     ffn_size,
+                    attention_head_size=attention_head_size,
                     attention_dropout=attention_dropout,
                     relu_dropout=relu_dropout,
                     dropout=dropout,
@@ -633,6 +635,7 @@ class TransformerEncoderLayer(nn.Module):
         n_heads,
         embedding_size,
         ffn_size,
+        attention_head_size=-1,
         attention_dropout=0.0,
         relu_dropout=0.0,
         dropout=0.0,
@@ -645,7 +648,9 @@ class TransformerEncoderLayer(nn.Module):
         self.activation = activation
         self.variant = variant
         self.attention = MultiHeadAttention(
-            n_heads, embedding_size, dropout=attention_dropout  # --attention-dropout
+            n_heads, embedding_size,
+            attention_head_size=attention_head_size,
+            dropout=attention_dropout  # --attention-dropout
         )
         self.norm1 = LayerNorm(embedding_size, eps=LAYER_NORM_EPS)
         self.ffn = TransformerFFN(
@@ -710,6 +715,7 @@ class TransformerDecoder(nn.Module):
         embedding_size,
         ffn_size,
         vocabulary_size,
+        attention_head_size=-1,
         embedding=None,
         dropout=0.0,
         attention_dropout=0.0,
@@ -775,6 +781,7 @@ class TransformerDecoder(nn.Module):
                     n_heads,
                     embedding_size,
                     ffn_size,
+                    attention_head_size=attention_head_size,
                     attention_dropout=attention_dropout,
                     relu_dropout=relu_dropout,
                     dropout=dropout,
@@ -943,6 +950,7 @@ class TransformerDecoderLayer(nn.Module):
         n_heads,
         embedding_size,
         ffn_size,
+        attention_head_size=-1,
         attention_dropout=0.0,
         relu_dropout=0.0,
         dropout=0.0,
@@ -957,12 +965,16 @@ class TransformerDecoderLayer(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
         self.self_attention = MultiHeadAttention(
-            n_heads, embedding_size, dropout=attention_dropout
+            n_heads, embedding_size,
+            attention_head_size=attention_head_size,
+            dropout=attention_dropout
         )
         self.norm1 = LayerNorm(embedding_size, eps=LAYER_NORM_EPS)
 
         self.encoder_attention = MultiHeadAttention(
-            n_heads, embedding_size, dropout=attention_dropout
+            n_heads, embedding_size,
+            attention_head_size=attention_head_size,
+            dropout=attention_dropout
         )
         self.norm2 = LayerNorm(embedding_size, eps=LAYER_NORM_EPS)
 
@@ -1087,6 +1099,7 @@ class TransformerGeneratorModel(TorchGeneratorModel):
             n_layers=n_layers,
             embedding_size=opt['embedding_size'],
             ffn_size=opt['ffn_size'],
+            attention_head_size=opt['attention_head_size'],
             vocabulary_size=len(dictionary),
             embedding=embedding,
             dropout=opt['dropout'],
@@ -1123,6 +1136,7 @@ class TransformerGeneratorModel(TorchGeneratorModel):
             n_layers=n_layers,
             embedding_size=opt['embedding_size'],
             ffn_size=opt['ffn_size'],
+            attention_head_size=opt['attention_head_size'],
             vocabulary_size=len(dictionary),
             embedding=embedding,
             dropout=opt['dropout'],
@@ -1281,21 +1295,27 @@ class MultiHeadAttention(nn.Module):
     See Vaswani (2017) for an extensive description.
     """
 
-    def __init__(self, n_heads, dim, dropout=0):
+    def __init__(self, n_heads, dim, attention_head_size=-1, dropout=0):
         super(MultiHeadAttention, self).__init__()
         self.n_heads = n_heads
         self.dim = dim
+        if attention_head_size > 0:
+            self.dim_per_head = attention_head_size
+            self.all_head_size = attention_head_size * self.n_heads
+        else:
+            self.dim_per_head = dim // self.n_heads
+            self.all_head_size = dim
 
         self.attn_dropout = nn.Dropout(p=dropout)  # --attention-dropout
-        self.q_lin = nn.Linear(dim, dim)
-        self.k_lin = nn.Linear(dim, dim)
-        self.v_lin = nn.Linear(dim, dim)
+        self.q_lin = nn.Linear(dim, self.all_head_size)
+        self.k_lin = nn.Linear(dim, self.all_head_size)
+        self.v_lin = nn.Linear(dim, self.all_head_size)
         # TODO: merge for the initialization step
         nn.init.xavier_normal_(self.q_lin.weight)
         nn.init.xavier_normal_(self.k_lin.weight)
         nn.init.xavier_normal_(self.v_lin.weight)
         # and set biases to 0
-        self.out_lin = nn.Linear(dim, dim)
+        self.out_lin = nn.Linear(self.all_head_size, dim)
 
         nn.init.xavier_normal_(self.out_lin.weight)
 
@@ -1334,7 +1354,7 @@ class MultiHeadAttention(nn.Module):
         ), 'Dimensions do not match: {} query vs {} configured'.format(dim, self.dim)
         assert mask is not None, 'Mask is None, please specify a mask'
         n_heads = self.n_heads
-        dim_per_head = dim // n_heads
+        dim_per_head = self.dim_per_head
         scale = math.sqrt(dim_per_head)
 
         def prepare_head(tensor):
@@ -1429,7 +1449,7 @@ class MultiHeadAttention(nn.Module):
             .view(batch_size, n_heads, query_len, dim_per_head)
             .transpose(1, 2)
             .contiguous()
-            .view(batch_size, query_len, dim)
+            .view(batch_size, query_len, self.all_head_size)
         )
 
         out = self.out_lin(attentioned)

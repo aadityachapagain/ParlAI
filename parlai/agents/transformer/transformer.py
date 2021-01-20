@@ -59,6 +59,9 @@ def add_common_cmdline_args(argparser):
     argparser.add_argument(
         '--n-heads', type=int, default=2, help='Number of multihead attention heads'
     )
+    argparser.add_argument('--attention-head-size', type=int, default=-1,
+                           help='Size of single attention head, if not provided embedding size is used '
+                                'as total multihead attention head size.')
     argparser.add_argument('--learn-positional-embeddings', type='bool', default=False)
     argparser.add_argument('--embeddings-scale', type='bool', default=True)
     argparser.add_argument(

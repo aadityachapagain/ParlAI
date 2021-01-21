@@ -2033,7 +2033,7 @@ class TorchAgent(ABC, Agent):
         self.self_observe(response)
         return response
 
-    def batch_act(self, observations):
+    def batch_act(self, observations, min_beam_length=0):
         """
         Process a batch of observations (batchsize list of message dicts).
 
@@ -2044,6 +2044,7 @@ class TorchAgent(ABC, Agent):
         ``eval_step`` methods instead. The former is called when labels are
         present in the observations batch; otherwise, the latter is called.
         """
+        self.MIN_BEAM_LENGTH = int(min_beam_length)
         # clear local metrics before anything else
         self._local_metrics.clear()
 

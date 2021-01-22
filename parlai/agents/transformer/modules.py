@@ -407,9 +407,10 @@ class TransformerEncoder(nn.Module):
 
         self.n_positions = n_positions
         self.out_dim = embedding_size
-        assert (
-            embedding_size % n_heads == 0
-        ), 'Transformer embedding size must be a multiple of n_heads'
+        if attention_head_size <= 0:
+            assert (
+                embedding_size % n_heads == 0
+            ), 'Transformer embedding size must be a multiple of n_heads'
 
         # check input formats:
         if embedding is not None:

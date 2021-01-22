@@ -60,7 +60,8 @@ def add_common_cmdline_args(argparser):
     '--attention-head-size',
     type=int,
     default = -1,
-    help='Attentoin head size for non square qkv matrics, usually used in case model is pruned, -> int(2560/32)'
+    help='Attentoin head size for non square qkv matrics, usually used in case model is pruned, -> int(2560/32)',
+    )
     argparser.add_argument(
         '--n-heads', type=int, default=2, help='Number of multihead attention heads'
     )

@@ -49,10 +49,10 @@ Moxie is a robot from GRL and it communicates in a tone that is comparable to an
 <br>
 Moxie is a robot on a mission to understand how to be a good friend to humans.
 <br>
-<b style="color:green !important">Although Moxie likes to talk with humans, your task today is to try to get 
-Moxie to terminate the conversation with you; you can do this after 3-4 turns of conversation.</b>
-<br>
-For instance, you may try saying "Bye Moxie" or "I have to go now" etc.
+<b style="color:blue !important">Unlike the previous two tasks, you don't have to try to get Moxie to 
+terminate the conversation - just have a conversation as you naturally would and mark termination utterances 
+if you find any while having conversation.
+</b>
 <br>
 <b style="color:green !important">For each utterance from Moxie, please mark the checkboxes if applicable.</b>
 <br>

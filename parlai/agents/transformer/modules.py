@@ -17,18 +17,15 @@ literature (BERT and XLM; https://arxiv.org/abs/1901.07291).
 """
 
 import math
-from typing import Dict, Tuple, Optional, Union
+import logging
+from abc import ABC, abstractmethod
+from typing import Dict, Tuple, Optional, Union, Set
 
 import numpy as np
 import torch
 import torch.cuda
 import torch.nn as nn
-from torch import Tensor
 import torch.nn.functional as F
-
-from parlai.core.torch_generator_agent import TorchGeneratorModel
-from parlai.utils.misc import warn_once
-from parlai.utils.torch import neginf, PipelineHelper
 
 try:
     from apex.normalization.fused_layer_norm import FusedLayerNorm as LayerNorm
@@ -40,6 +37,33 @@ except ImportError:
     APEX_LAYER_NORM = False
 
 LAYER_NORM_EPS = 1e-5  # Epsilon for layer norm.
+"""Near infinity, useful as a large penalty for scoring when inf is bad."""
+NEAR_INF = 1e20
+NEAR_INF_FP16 = 65504
+
+_seen_logs: Set[str] = set()
+
+
+def neginf(dtype: torch.dtype) -> float:
+    """
+    Return a representable finite number near -inf for a dtype.
+    """
+    if dtype is torch.float16:
+        return -NEAR_INF_FP16
+    else:
+        return -NEAR_INF
+
+
+def warn_once(msg: str) -> None:
+    """
+    Log a warning, but only once.
+
+    :param str msg: Message to display
+    """
+    global _seen_logs
+    if msg not in _seen_logs:
+        _seen_logs.add(msg)
+        logging.warning(msg)
 
 
 def _normalize(tensor, norm_layer):
@@ -57,214 +81,14 @@ def _normalize(tensor, norm_layer):
         return norm_layer(tensor)
 
 
-def _create_embeddings(dictionary, embedding_size, padding_idx):
+def _create_embeddings(tokenizer, embedding_size, padding_idx):
     """
     Create and initialize word embeddings.
     """
-    e = nn.Embedding(len(dictionary), embedding_size, padding_idx)
+    e = nn.Embedding(tokenizer.vocab_size, embedding_size, padding_idx)
     nn.init.normal_(e.weight, mean=0, std=embedding_size ** -0.5)
     nn.init.constant_(e.weight[padding_idx], 0)
     return e
-
-
-def get_n_positions_from_options(opt):
-    """
-    Determine n_positions from options dict.
-    """
-    if opt.get('n_positions'):
-        # if the number of positions is explicitly provided, use that
-        n_positions = opt['n_positions']
-    else:
-        # else, use the worst case from truncate
-        n_positions = max(
-            opt.get('truncate') or 0,
-            opt.get('text_truncate') or 0,
-            opt.get('label_truncate') or 0,
-        )
-        if n_positions == 0:
-            n_positions = 1024
-    return n_positions
-class TransformerMemNetModel(nn.Module):
-    """
-    Model which takes context, memories, candidates and encodes them.
-    """
-
-    @classmethod
-    def build_encoder(
-        cls,
-        opt,
-        dictionary,
-        embedding=None,
-        padding_idx=None,
-        reduction_type='mean',
-        n_positions=1024,
-        n_segments=0,
-    ):
-        n_layers = (
-            opt['n_encoder_layers']
-            if opt.get('n_encoder_layers', -1) > 0
-            else opt['n_layers']
-        )
-        return TransformerEncoder(
-            n_heads=opt['n_heads'],
-            n_layers=n_layers,
-            embedding_size=opt['embedding_size'],
-            ffn_size=opt['ffn_size'],
-            vocabulary_size=len(dictionary),
-            embedding=embedding,
-            dropout=opt['dropout'],
-            attention_dropout=opt['attention_dropout'],
-            relu_dropout=opt['relu_dropout'],
-            padding_idx=padding_idx,
-            learn_positional_embeddings=opt['learn_positional_embeddings'],
-            embeddings_scale=opt['embeddings_scale'],
-            reduction_type=reduction_type,
-            n_positions=n_positions,
-            n_segments=n_segments,
-            activation=opt['activation'],
-            variant=opt['variant'],
-            output_scaling=opt['output_scaling'],
-        )
-
-    def __init__(self, opt, dictionary):
-        super().__init__()
-        self.opt = opt
-        self.pad_idx = dictionary[dictionary.null_token]
-
-        # set up embeddings
-        self.embeddings = _create_embeddings(
-            dictionary, opt['embedding_size'], self.pad_idx
-        )
-
-        self.share_word_embedding = opt.get('share_word_embeddings', True)
-        if not self.share_word_embedding:
-            self.cand_embeddings = _create_embeddings(
-                dictionary, opt['embedding_size'], self.pad_idx
-            )
-
-        if not opt.get('learn_embeddings'):
-            self.embeddings.weight.requires_grad = False
-            if not self.share_word_embedding:
-                self.cand_embeddings.weight.requires_grad = False
-
-        n_positions = get_n_positions_from_options(opt)
-
-        if n_positions < 0:
-            raise ValueError('n_positions must be positive')
-
-        self.reduction_type = opt.get('reduction_type', 'mean')
-        self.n_segments = opt.get('n_segments', 0)
-
-        self.context_encoder = self.build_encoder(
-            opt,
-            dictionary,
-            self.embeddings,
-            self.pad_idx,
-            reduction_type=self.reduction_type,
-            n_positions=n_positions,
-            n_segments=self.n_segments,
-        )
-
-        if opt.get('share_encoders'):
-            self.cand_encoder = TransformerResponseWrapper(
-                self.context_encoder, self.context_encoder.out_dim
-            )
-        else:
-            if not self.share_word_embedding:
-                cand_embeddings = self.cand_embeddings
-            else:
-                cand_embeddings = self.embeddings
-            self.cand_encoder = self.build_encoder(
-                opt,
-                dictionary,
-                cand_embeddings,
-                self.pad_idx,
-                n_positions=n_positions,
-                reduction_type=self.reduction_type,
-                n_segments=self.n_segments,
-            )
-
-        # build memory encoder
-        if opt.get('wrap_memory_encoder', False):
-            self.memory_transformer = TransformerResponseWrapper(
-                self.context_encoder, self.context_encoder.out_dim
-            )
-        else:
-            self.memory_transformer = self.context_encoder
-
-        self.attender = BasicAttention(
-            dim=2, attn=opt['memory_attention'], residual=True
-        )
-
-    def encode_cand(self, words):
-        """
-        Encode the candidates.
-        """
-        if words is None:
-            return None
-
-        # flatten if there are many candidates
-        if words.dim() == 3:
-            oldshape = words.shape
-            words = words.reshape(oldshape[0] * oldshape[1], oldshape[2])
-        else:
-            oldshape = None
-
-        encoded = self.cand_encoder(words)
-
-        if oldshape is not None:
-            encoded = encoded.reshape(oldshape[0], oldshape[1], -1)
-
-        return encoded
-
-    def encode_context_memory(self, context_w, memories_w, context_segments=None):
-        """
-        Encode the context and memories.
-        """
-        # [batch, d]
-        if context_w is None:
-            # it's possible that only candidates were passed into the
-            # forward function, return None here for LHS representation
-            return None, None
-
-        context_h = self.context_encoder(context_w, segments=context_segments)
-
-        if memories_w is None:
-            return [], context_h
-
-        bsz = memories_w.size(0)
-        memories_w = memories_w.view(-1, memories_w.size(-1))
-        memories_h = self.memory_transformer(memories_w)
-        memories_h = memories_h.view(bsz, -1, memories_h.size(-1))
-
-        context_h = context_h.unsqueeze(1)
-        context_h, weights = self.attender(context_h, memories_h)
-
-        return weights, context_h
-
-    def forward(self, xs, mems, cands, context_segments=None):
-        """
-        Forward pass.
-
-        :param LongTensor[batch,seqlen] xs: input tokens IDs
-        :param LongTensor[batch,num_mems,seqlen] mems: memory token IDs
-        :param LongTensor[batch,num_cands,seqlen] cands: candidate token IDs
-        :param LongTensor[batch,seqlen] context_segments: segment IDs for xs,
-            used if n_segments is > 0 for the context encoder
-        """
-        # encode the context and memories together
-        weights, context_h = self.encode_context_memory(
-            xs, mems, context_segments=context_segments
-        )
-        # encode the candidates
-        cands_h = self.encode_cand(cands)
-
-        # possibly normalize the context and candidate representations
-        if self.opt['normalize_sent_emb']:
-            context_h = context_h / context_h.norm(2, dim=1, keepdim=True)
-            cands_h = cands_h / cands_h.norm(2, dim=1, keepdim=True)
-
-        return context_h, cands_h
 
 
 def create_position_codes(n_pos, dim, out):
@@ -284,49 +108,18 @@ def create_position_codes(n_pos, dim, out):
     out[:, 1::2] = torch.FloatTensor(np.cos(position_enc)).type_as(out)
 
 
-class TransformerResponseWrapper(nn.Module):
-    """
-    Wrap transformer response.
-
-    Pushes input through transformer and MLP.
-    """
-
-    def __init__(self, transformer, hdim):
-        super(TransformerResponseWrapper, self).__init__()
-        dim = transformer.out_dim
-        self.transformer = transformer
-        self.mlp = nn.Sequential(
-            nn.Linear(dim, hdim),
-            nn.ReLU(),  # TODO: should this also be gelu?
-            nn.Linear(hdim, dim),
-        )
-
-    def forward(self, *args):
-        """
-        Forward pass.
-        """
-        return self.mlp(self.transformer(*args))
-
-
-class TransformerLinearWrapper(nn.Module):
-    """
-    Wrap a transformer in a linear layer.
-    """
-
-    def __init__(self, transformer, output_dim):
-        super().__init__()
-        self.transformer = transformer
-        input_dim = transformer.out_dim
-        self.additional_linear_layer = nn.Linear(input_dim, output_dim)
-
-    def forward(self, *args):
-        """
-        Forward pass.
-
-        Apply transformer, then additional linear layer.
-        """
-        context_h = self.transformer(*args)
-        return self.additional_linear_layer(context_h)
+def get_head_mask(head_mask, batch_size, n_layers):
+    if head_mask is not None:
+        if head_mask.dim() == 1:
+            head_mask = head_mask.unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+            head_mask = head_mask.expand(n_layers, batch_size, -1, -1, -1)
+        elif head_mask.dim() == 2:
+            head_mask = head_mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)
+            head_mask = head_mask.expand(-1, batch_size, -1, -1, -1)
+        assert head_mask.dim() == 5, f"head_mask.dim != 5, instead {head_mask.dim()}"
+        n_heads = head_mask.size()[2]
+        head_mask = head_mask.reshape(-1, batch_size*n_heads, 1, 1)
+    return head_mask
 
 
 class TransformerEncoder(nn.Module):
@@ -372,6 +165,7 @@ class TransformerEncoder(nn.Module):
         n_layers,
         embedding_size,
         ffn_size,
+        attention_head_size,
         vocabulary_size,
         embedding=None,
         dropout=0.0,
@@ -459,6 +253,7 @@ class TransformerEncoder(nn.Module):
                     n_heads,
                     embedding_size,
                     ffn_size,
+                    attention_head_size=attention_head_size,
                     attention_dropout=attention_dropout,
                     relu_dropout=relu_dropout,
                     dropout=dropout,
@@ -512,7 +307,10 @@ class TransformerEncoder(nn.Module):
         return tensor, mask
 
     def forward_layers(
-        self, tensor: torch.Tensor, mask: torch.BoolTensor
+        self,
+        tensor: torch.Tensor,
+        mask: torch.BoolTensor,
+        head_mask: Optional[torch.LongTensor]=None,
     ) -> torch.Tensor:
         """
         Apply transformer layers to input.
@@ -525,13 +323,12 @@ class TransformerEncoder(nn.Module):
         :return tensor:
             return embedding after applying transformer layers
         """
-        if getattr(self.layers, 'is_model_parallel', False):
-            # factored out for readability. It is equivalent to the other
-            # condition
-            tensor = self._apply_model_parallel(tensor, mask)
-        else:
-            for i in range(self.n_layers):
-                tensor = self.layers[i](tensor, mask)
+        batch_size = tensor.size()[0]
+        head_mask = get_head_mask(head_mask, batch_size, self.n_layers)
+
+        for i in range(self.n_layers):
+            tensor = self.layers[i](tensor, mask,
+                                    head_mask=head_mask[i] if head_mask is not None else head_mask)
 
         return tensor
 
@@ -570,6 +367,7 @@ class TransformerEncoder(nn.Module):
         input: torch.LongTensor,
         positions: Optional[torch.LongTensor] = None,
         segments: Optional[torch.LongTensor] = None,
+        head_mask: Optional[torch.LongTensor] = None,
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.BoolTensor]]:
         """
         Forward pass.
@@ -593,7 +391,7 @@ class TransformerEncoder(nn.Module):
         tensor *= mask.unsqueeze(-1).type_as(tensor)
 
         # apply transformer layers
-        tensor = self.forward_layers(tensor, mask)
+        tensor = self.forward_layers(tensor, mask, head_mask=head_mask)
 
         if self.variant == 'prelayernorm':
             tensor = _normalize(tensor, self.norm_embeddings)
@@ -604,22 +402,6 @@ class TransformerEncoder(nn.Module):
             return tensor, out_mask
         else:
             return tensor
-
-    def _apply_model_parallel(self, tensor, mask):
-        """
-        Pipeline application of model parallelism.
-        """
-        chunks = PipelineHelper.split((tensor, mask))
-        work_items = PipelineHelper.schedule_work_items(self.layers, chunks)
-
-        for chunk_idx, layer_nos, next_device in work_items:
-            s_tensor, s_mask = chunks[chunk_idx]
-            for layer_no in layer_nos:
-                s_tensor = self.layers[layer_no](s_tensor, s_mask)
-            chunks[chunk_idx] = PipelineHelper.chunk_to((s_tensor, s_mask), next_device)
-
-        tensor_out, mask_out = PipelineHelper.join(chunks)
-        return tensor_out
 
 
 class TransformerEncoderLayer(nn.Module):
@@ -632,6 +414,7 @@ class TransformerEncoderLayer(nn.Module):
         n_heads,
         embedding_size,
         ffn_size,
+        attention_head_size=-1,
         attention_dropout=0.0,
         relu_dropout=0.0,
         dropout=0.0,
@@ -644,7 +427,9 @@ class TransformerEncoderLayer(nn.Module):
         self.activation = activation
         self.variant = variant
         self.attention = MultiHeadAttention(
-            n_heads, embedding_size, dropout=attention_dropout  # --attention-dropout
+            n_heads, embedding_size,
+            attention_head_size=attention_head_size,
+            dropout=attention_dropout  # --attention-dropout
         )
         self.norm1 = LayerNorm(embedding_size, eps=LAYER_NORM_EPS)
         self.ffn = TransformerFFN(
@@ -656,14 +441,14 @@ class TransformerEncoderLayer(nn.Module):
         self.norm2 = LayerNorm(embedding_size, eps=LAYER_NORM_EPS)
         self.dropout = nn.Dropout(p=dropout)
 
-    def forward(self, tensor, mask):
+    def forward(self, tensor, mask, head_mask=None):
         """
         Forward pass.
         """
         residual = tensor
         if self.variant == 'prelayernorm':
             tensor = _normalize(tensor, self.norm1)
-        attended_tensor, _ = self.attention(tensor, mask=mask)
+        attended_tensor, _ = self.attention(tensor, mask=mask, head_mask=head_mask)
         tensor = residual + self.dropout(attended_tensor)
         if self.variant == 'aiayn' or self.variant == 'xlm' or self.variant == 'bart':
             tensor = _normalize(tensor, self.norm1)
@@ -708,6 +493,7 @@ class TransformerDecoder(nn.Module):
         n_layers,
         embedding_size,
         ffn_size,
+        attention_head_size,
         vocabulary_size,
         embedding=None,
         dropout=0.0,
@@ -774,6 +560,7 @@ class TransformerDecoder(nn.Module):
                     n_heads,
                     embedding_size,
                     ffn_size,
+                    attention_head_size=attention_head_size,
                     attention_dropout=attention_dropout,
                     relu_dropout=relu_dropout,
                     dropout=dropout,
@@ -825,7 +612,8 @@ class TransformerDecoder(nn.Module):
         encoder_output: torch.Tensor,
         encoder_mask: torch.Tensor,
         incr_state: Dict[int, torch.Tensor],
-        head_mask = None
+        self_head_mask: Optional[torch.Tensor] = None,
+        cross_head_mask: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
         """
         Forward pass of decoder layers.
@@ -844,23 +632,24 @@ class TransformerDecoder(nn.Module):
             as new incremental decoding state.
         """
         new_incr_state = {}
-        if getattr(self.layers, 'is_model_parallel', False):
-            tensor, new_incr_state = self._apply_model_parallel(
-                tensor, encoder_output, encoder_mask, incr_state
+
+        batch_size = tensor.size()[0]
+        self_head_mask = get_head_mask(self_head_mask, batch_size, self.n_layers)
+        cross_head_mask = get_head_mask(cross_head_mask, batch_size, self.n_layers)
+
+        for idx, layer in enumerate(self.layers):
+            tensor, new_incr_state[idx] = layer(
+                x=tensor,
+                encoder_output=encoder_output,
+                encoder_mask=encoder_mask,
+                incr_state=incr_state.get(idx),
+                self_head_mask=self_head_mask[idx] if self_head_mask is not None else self_head_mask,
+                cross_head_mask=cross_head_mask[idx] if cross_head_mask is not None else cross_head_mask
             )
-        else:
-            for idx, layer in enumerate(self.layers):
-                tensor, new_incr_state[idx] = layer(
-                    x=tensor,
-                    encoder_output=encoder_output,
-                    encoder_mask=encoder_mask,
-                    incr_state=incr_state.get(idx),
-                    head_mask = head_mask
-                )
 
         return tensor, new_incr_state
 
-    def forward(self, input, encoder_state, incr_state=None, head_mask = None):
+    def forward(self, input, encoder_state, incr_state=None, self_head_mask=None, cross_head_mask=None):
         """
         Forward pass.
 
@@ -891,42 +680,14 @@ class TransformerDecoder(nn.Module):
         tensor = self.dropout(tensor)  # --dropout
 
         tensor, new_incr_state = self.forward_layers(
-            tensor, encoder_output, encoder_mask, incr_state, head_mask = head_mask
+            tensor, encoder_output, encoder_mask, incr_state,
+            self_head_mask=self_head_mask, cross_head_mask=cross_head_mask
         )
 
         if self.variant == 'prelayernorm':
             tensor = _normalize(tensor, self.norm_embeddings)
 
         return tensor, new_incr_state
-
-    def _apply_model_parallel(self, tensor, encoder_output, encoder_mask, incr_state):
-        """
-        Pipeline application of model parallelism.
-        """
-        chunks = PipelineHelper.split(
-            (tensor, encoder_output, encoder_mask, incr_state)
-        )
-        work_items = PipelineHelper.schedule_work_items(self.layers, chunks)
-
-        new_incr_state = [{} for _ in chunks]
-
-        for chunk_idx, layer_nos, next_device in work_items:
-            s_tensor, s_enc_out, s_enc_mask, s_incr_state = chunks[chunk_idx]
-            for layer_no in layer_nos:
-                s_tensor, new_incr_state[chunk_idx][layer_no] = self.layers[layer_no](
-                    x=s_tensor,
-                    encoder_output=s_enc_out,
-                    encoder_mask=s_enc_mask,
-                    incr_state=s_incr_state.get(layer_no),
-                )
-            chunks[chunk_idx] = PipelineHelper.chunk_to(
-                (s_tensor, s_enc_out, s_enc_mask, s_incr_state), next_device
-            )
-
-        tensor_out = PipelineHelper.join([c[0] for c in chunks])
-        new_incr_state = PipelineHelper.join(new_incr_state)
-
-        return tensor_out, new_incr_state
 
 
 class TransformerDecoderLayer(nn.Module):
@@ -944,6 +705,7 @@ class TransformerDecoderLayer(nn.Module):
         n_heads,
         embedding_size,
         ffn_size,
+        attention_head_size=-1,
         attention_dropout=0.0,
         relu_dropout=0.0,
         dropout=0.0,
@@ -958,12 +720,16 @@ class TransformerDecoderLayer(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
         self.self_attention = MultiHeadAttention(
-            n_heads, embedding_size, dropout=attention_dropout
+            n_heads, embedding_size,
+            attention_head_size=attention_head_size,
+            dropout=attention_dropout
         )
         self.norm1 = LayerNorm(embedding_size, eps=LAYER_NORM_EPS)
 
         self.encoder_attention = MultiHeadAttention(
-            n_heads, embedding_size, dropout=attention_dropout
+            n_heads, embedding_size,
+            attention_head_size=attention_head_size,
+            dropout=attention_dropout
         )
         self.norm2 = LayerNorm(embedding_size, eps=LAYER_NORM_EPS)
 
@@ -972,7 +738,7 @@ class TransformerDecoderLayer(nn.Module):
         )
         self.norm3 = LayerNorm(embedding_size, eps=LAYER_NORM_EPS)
 
-    def forward(self, x, encoder_output, encoder_mask, incr_state=None, head_mask = None):
+    def forward(self, x, encoder_output, encoder_mask, incr_state=None, self_head_mask=None, cross_head_mask=None):
         """
         Forward pass.
 
@@ -995,7 +761,7 @@ class TransformerDecoderLayer(nn.Module):
             mask=decoder_mask,
             incr_state=incr_state.get('self_attn'),
             static_kv=False,
-            head_mask = head_mask,
+            head_mask=self_head_mask,
         )
         x = self.dropout(x)  # --dropout
         x = x + residual
@@ -1013,7 +779,7 @@ class TransformerDecoderLayer(nn.Module):
             mask=encoder_mask,
             incr_state=incr_state.get('encoder_attn'),
             static_kv=True,
-            head_mask = head_mask,
+            head_mask=cross_head_mask,
         )
         x = self.dropout(x)  # --dropout
         x = residual + x
@@ -1064,6 +830,227 @@ class TransformerDecoderLayer(nn.Module):
         }
 
 
+class TorchGeneratorModel(nn.Module, ABC):
+    """
+    Abstract TorchGeneratorModel.
+
+    This interface expects you to implement model with the following reqs:
+
+    :attribute model.encoder:
+        takes input returns tuple (enc_out, enc_hidden, attn_mask)
+
+    :attribute model.decoder:
+        takes decoder params and returns decoder outputs after attn
+
+    :attribute model.output:
+        takes decoder outputs and returns distr over dictionary
+    """
+
+    def __init__(
+        self,
+        padding_idx=0,
+        start_idx=1,
+        end_idx=2,
+        unknown_idx=3,
+        input_dropout=0,
+        longest_label=1,
+    ):
+        super().__init__()
+        self.NULL_IDX = padding_idx
+        self.END_IDX = end_idx
+        self.START_IDX = start_idx
+        self.register_buffer('START', torch.LongTensor([start_idx]))
+        self.longest_label = longest_label
+
+    def _get_initial_forced_decoder_input(self, bsz: int, inputs: torch.LongTensor):
+        """
+        Return initial input to the decoder.
+
+        :param bsz:
+            batchsize
+        :param inputs:
+            inputs to decode
+
+        :return initial_input:
+            initial input for the decoder.
+        """
+        return torch.cat([self.START.detach().expand(bsz, 1), inputs], 1)
+
+    def decode_forced(self, encoder_states, ys, self_head_mask=None, cross_head_mask=None):
+        """
+        Decode with a fixed, true sequence, computing loss.
+
+        Useful for training, or ranking fixed candidates.
+
+        :param ys:
+            the prediction targets. Contains both the start and end tokens.
+
+        :type ys:
+            LongTensor[bsz, time]
+
+        :param encoder_states:
+            Output of the encoder. Model specific types.
+
+        :type encoder_states:
+            model specific
+
+        :return:
+            pair (logits, choices) containing the logits and MLE predictions
+
+        :rtype:
+            (FloatTensor[bsz, ys, vocab], LongTensor[bsz, ys])
+        """
+        bsz = ys.size(0)
+        seqlen = ys.size(1)
+        inputs = ys.narrow(1, 0, seqlen - 1)
+        if (ys[:, 0] == self.START_IDX).any():
+            raise AssertionError(
+                "The Beginning of Sentence token is automatically added to the "
+                "label in decode_forced, but you included it in the label. This means "
+                "your model will have a double BOS token, which is probably not what "
+                "you intended."
+            )
+        inputs = self._get_initial_forced_decoder_input(bsz, inputs)
+        latent, _ = self.decoder(inputs, encoder_states,
+                                 self_head_mask=self_head_mask,
+                                 cross_head_mask=cross_head_mask)
+        logits = self.output(latent)
+        _, preds = logits.max(dim=2)
+        return logits, preds
+
+    @abstractmethod
+    def reorder_encoder_states(self, encoder_states, indices):
+        """
+        Reorder encoder states according to a new set of indices.
+
+        This is an abstract method, and *must* be implemented by the user.
+
+        Its purpose is to provide beam search with a model-agnostic interface for
+        beam search. For example, this method is used to sort hypotheses,
+        expand beams, etc.
+
+        For example, assume that encoder_states is an bsz x 1 tensor of values
+
+        .. code-block:: python
+
+            indices = [0, 2, 2]
+            encoder_states = [[0.1]
+                              [0.2]
+                              [0.3]]
+
+        then the output will be
+
+        .. code-block:: python
+
+            output = [[0.1]
+                      [0.3]
+                      [0.3]]
+
+        :param encoder_states:
+            output from encoder. type is model specific.
+
+        :type encoder_states:
+            model specific
+
+        :param indices:
+            the indices to select over. The user must support non-tensor
+            inputs.
+
+        :type indices: list[int]
+
+        :return:
+            The re-ordered encoder states. It should be of the same type as
+            encoder states, and it must be a valid input to the decoder.
+
+        :rtype:
+            model specific
+        """
+        pass
+
+    @abstractmethod
+    def reorder_decoder_incremental_state(self, incremental_state, inds):
+        """
+        Reorder incremental state for the decoder.
+
+        Used to expand selected beams in beam search. Unlike reorder_encoder_states,
+        implementing this method is optional. However, without incremental decoding,
+        decoding a single beam becomes O(n^2) instead of O(n), which can make
+        beam search impractically slow.
+
+        In order to fall back to non-incremental decoding, just return None from this
+        method.
+
+        :param incremental_state:
+            second output of model.decoder
+        :type incremental_state:
+            model specific
+        :param inds:
+            indices to select and reorder over.
+        :type inds:
+            LongTensor[n]
+
+        :return:
+            The re-ordered decoder incremental states. It should be the same
+            type as incremental_state, and usable as an input to the decoder.
+            This method should return None if the model does not support
+            incremental decoding.
+
+        :rtype:
+            model specific
+        """
+        pass
+
+    def forward(self, *xs, ys=None, prev_enc=None, maxlen=None, bsz=None,
+                encoder_head_mask=None, decoder_self_head_mask=None, decoder_cross_head_mask=None):
+        """
+        Get output predictions from the model.
+
+        :param xs:
+            input to the encoder
+        :type xs:
+            LongTensor[bsz, seqlen]
+        :param ys:
+            Expected output from the decoder. Used
+            for teacher forcing to calculate loss.
+        :type ys:
+            LongTensor[bsz, outlen]
+        :param prev_enc:
+            if you know you'll pass in the same xs multiple times, you can pass
+            in the encoder output from the last forward pass to skip
+            recalcuating the same encoder output.
+        :param maxlen:
+            max number of tokens to decode. if not set, will use the length of
+            the longest label this model has seen. ignored when ys is not None.
+        :param bsz:
+            if ys is not provided, then you must specify the bsz for greedy
+            decoding.
+
+        :return:
+            (scores, candidate_scores, encoder_states) tuple
+
+            - scores contains the model's predicted token scores.
+              (FloatTensor[bsz, seqlen, num_features])
+            - candidate_scores are the score the model assigned to each candidate.
+              (FloatTensor[bsz, num_cands])
+            - encoder_states are the output of model.encoder. Model specific types.
+              Feed this back in to skip encoding on the next call.
+        """
+        assert ys is not None, "Greedy decoding in TGModel.forward no longer supported."
+        # TODO: get rid of longest_label
+        # keep track of longest label we've ever seen
+        # we'll never produce longer ones than that during prediction
+        self.longest_label = max(self.longest_label, ys.size(1))
+
+        # use cached encoding if available
+        encoder_states = prev_enc if prev_enc is not None else self.encoder(*xs, head_mask=encoder_head_mask)
+
+        # use teacher forcing
+        scores, preds = self.decode_forced(encoder_states, ys,
+                                           self_head_mask=decoder_self_head_mask,
+                                           cross_head_mask=decoder_cross_head_mask)
+        return scores, preds, encoder_states
+
+
 class TransformerGeneratorModel(TorchGeneratorModel):
     """
     Implements a full generator model, with one encoder and one decoder.
@@ -1073,7 +1060,7 @@ class TransformerGeneratorModel(TorchGeneratorModel):
     def build_encoder(
         cls,
         opt,
-        dictionary,
+        tokenizer,
         embedding=None,
         padding_idx=None,
         reduction_type='mean',
@@ -1090,7 +1077,8 @@ class TransformerGeneratorModel(TorchGeneratorModel):
             n_layers=n_layers,
             embedding_size=opt['embedding_size'],
             ffn_size=opt['ffn_size'],
-            vocabulary_size=len(dictionary),
+            attention_head_size=opt['attention_head_size'],
+            vocabulary_size=tokenizer.vocab_size,
             embedding=embedding,
             dropout=opt['dropout'],
             attention_dropout=opt['attention_dropout'],
@@ -1110,7 +1098,7 @@ class TransformerGeneratorModel(TorchGeneratorModel):
     def build_decoder(
         cls,
         opt,
-        dictionary,
+        tokenizer,
         embedding=None,
         padding_idx=None,
         n_positions=1024,
@@ -1126,7 +1114,8 @@ class TransformerGeneratorModel(TorchGeneratorModel):
             n_layers=n_layers,
             embedding_size=opt['embedding_size'],
             ffn_size=opt['ffn_size'],
-            vocabulary_size=len(dictionary),
+            attention_head_size=opt['attention_head_size'],
+            vocabulary_size=tokenizer.vocab_size,
             embedding=embedding,
             dropout=opt['dropout'],
             attention_dropout=opt['attention_dropout'],
@@ -1140,13 +1129,13 @@ class TransformerGeneratorModel(TorchGeneratorModel):
             n_segments=n_segments,
         )
 
-    def __init__(self, opt, dictionary):
-        self.pad_idx = dictionary[dictionary.null_token]
-        self.start_idx = dictionary[dictionary.start_token]
-        self.end_idx = dictionary[dictionary.end_token]
+    def __init__(self, opt, tokenizer):
+        self.pad_idx = tokenizer.pad_token_id
+        self.start_idx = tokenizer.bos_token_id
+        self.end_idx = tokenizer.eos_token_id
         super().__init__(self.pad_idx, self.start_idx, self.end_idx)
         self.embeddings = _create_embeddings(
-            dictionary, opt['embedding_size'], self.pad_idx
+            tokenizer, opt['embedding_size'], self.pad_idx
         )
 
         if opt.get('n_positions'):
@@ -1169,7 +1158,7 @@ class TransformerGeneratorModel(TorchGeneratorModel):
 
         self.encoder = self.build_encoder(
             opt,
-            dictionary,
+            tokenizer,
             self.embeddings,
             self.pad_idx,
             reduction_type=None,
@@ -1177,7 +1166,7 @@ class TransformerGeneratorModel(TorchGeneratorModel):
             n_segments=n_segments,
         )
         self.decoder = self.build_decoder(
-            opt, dictionary, self.embeddings, self.pad_idx, n_positions=n_positions
+            opt, tokenizer, self.embeddings, self.pad_idx, n_positions=n_positions
         )
 
     def reorder_encoder_states(self, encoder_states, indices):
@@ -1221,62 +1210,6 @@ class TransformerGeneratorModel(TorchGeneratorModel):
         return output
 
 
-class BasicAttention(nn.Module):
-    """
-    Implements simple/classical attention.
-    """
-
-    def __init__(self, dim=1, attn='cosine', residual=False, get_weights=True):
-        super().__init__()
-        if attn == 'cosine':
-            self.cosine = nn.CosineSimilarity(dim=dim)
-        self.attn = attn
-        self.dim = dim
-        self.get_weights = get_weights
-        self.residual = residual
-
-    def forward(self, xs, ys, mask_ys=None, values=None):
-        """
-        Compute attention.
-
-        Attend over ys with query xs to obtain weights, then apply weights to
-        values (ys if yalues is None)
-
-        Args:
-            xs: B x query_len x dim (queries)
-            ys: B x key_len x dim (keys)
-            mask_ys: B x key_len (mask)
-            values: B x value_len x dim (values); if None, default to ys
-        """
-        bsz = xs.size(0)
-        y_len = ys.size(1)
-        x_len = xs.size(1)
-        if self.attn == 'cosine':
-            l1 = self.cosine(xs, ys).unsqueeze(self.dim - 1)
-        else:
-            l1 = torch.bmm(xs, ys.transpose(1, 2))
-            if self.attn == 'sqrt':
-                d_k = ys.size(-1)
-                l1 = l1 / math.sqrt(d_k)
-        if mask_ys is not None:
-            attn_mask = (mask_ys == 0).view(bsz, 1, y_len)
-            attn_mask = attn_mask.repeat(1, x_len, 1)
-            l1.masked_fill_(attn_mask, neginf(l1.dtype))
-        l2 = F.softmax(l1, dim=self.dim, dtype=torch.float).type_as(l1)
-        if values is None:
-            values = ys
-        lhs_emb = torch.bmm(l2, values)
-
-        # # add back the query
-        if self.residual:
-            lhs_emb = lhs_emb.add(xs)
-
-        if self.get_weights:
-            return lhs_emb.squeeze(self.dim - 1), l2
-        else:
-            return lhs_emb.squeeze(self.dim - 1)
-
-
 class MultiHeadAttention(nn.Module):
     """
     Implements MultiHeadAttention; this is the core workhorse of the Transformer.
@@ -1284,21 +1217,27 @@ class MultiHeadAttention(nn.Module):
     See Vaswani (2017) for an extensive description.
     """
 
-    def __init__(self, n_heads, dim, dropout=0):
+    def __init__(self, n_heads, dim, attention_head_size=-1, dropout=0):
         super(MultiHeadAttention, self).__init__()
         self.n_heads = n_heads
         self.dim = dim
+        if attention_head_size > 0:
+            self.dim_per_head = attention_head_size
+            self.all_head_size = attention_head_size * self.n_heads
+        else:
+            self.dim_per_head = dim // self.n_heads
+            self.all_head_size = dim
 
         self.attn_dropout = nn.Dropout(p=dropout)  # --attention-dropout
-        self.q_lin = nn.Linear(dim, dim)
-        self.k_lin = nn.Linear(dim, dim)
-        self.v_lin = nn.Linear(dim, dim)
+        self.q_lin = nn.Linear(dim, self.all_head_size)
+        self.k_lin = nn.Linear(dim, self.all_head_size)
+        self.v_lin = nn.Linear(dim, self.all_head_size)
         # TODO: merge for the initialization step
         nn.init.xavier_normal_(self.q_lin.weight)
         nn.init.xavier_normal_(self.k_lin.weight)
         nn.init.xavier_normal_(self.v_lin.weight)
         # and set biases to 0
-        self.out_lin = nn.Linear(dim, dim)
+        self.out_lin = nn.Linear(self.all_head_size, dim)
 
         nn.init.xavier_normal_(self.out_lin.weight)
 
@@ -1312,7 +1251,7 @@ class MultiHeadAttention(nn.Module):
         mask: torch.Tensor = None,
         incr_state: Optional[Dict[str, torch.Tensor]] = None,
         static_kv: bool = False,
-        head_mask = None
+        head_mask: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
         """
         Forward pass.
@@ -1338,7 +1277,7 @@ class MultiHeadAttention(nn.Module):
         ), 'Dimensions do not match: {} query vs {} configured'.format(dim, self.dim)
         assert mask is not None, 'Mask is None, please specify a mask'
         n_heads = self.n_heads
-        dim_per_head = dim // n_heads
+        dim_per_head = self.dim_per_head
         scale = math.sqrt(dim_per_head)
 
         def prepare_head(tensor):
@@ -1427,15 +1366,8 @@ class MultiHeadAttention(nn.Module):
         ).type_as(query)
         attn_weights = self.attn_dropout(attn_weights)  # --attention-dropout
 
-        # Head Mask here
+        # head mask here
         if head_mask is not None:
-            head_mask = (
-                head_mask
-                .view(batch_size, 1, -1)
-                .repeat(1, n_heads, 1)
-                .expand(batch_size, n_heads, query_len)
-                .view(batch_size * n_heads, query_len)
-            )
             attn_weights = attn_weights * head_mask
 
         attentioned = attn_weights.bmm(v)
@@ -1444,7 +1376,7 @@ class MultiHeadAttention(nn.Module):
             .view(batch_size, n_heads, query_len, dim_per_head)
             .transpose(1, 2)
             .contiguous()
-            .view(batch_size, query_len, dim)
+            .view(batch_size, query_len, self.all_head_size)
         )
 
         out = self.out_lin(attentioned)

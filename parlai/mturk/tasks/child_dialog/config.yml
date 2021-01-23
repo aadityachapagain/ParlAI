@@ -68,7 +68,7 @@ run_config1:
   num_conversations: 20 # number of conversations you want to create for this task, ignored in dedicated run
   number_of_runs: 1
   sleep_between_runs: 600
-  run_timelimit: 172800
+  run_timelimit: 86400
   unique_worker: False  # enforce that no worker can work on your task twice
   max_hits_per_worker: 22  # Max number of hits each worker can perform during current group run, 0 means unlimited
   unique_qual_name: EmbChildCompanionDialogMax50SubmissionMoxieRunTerminalNatCollection21 # qualification name to use for uniqueness between HITs
@@ -131,7 +131,7 @@ run_config2:
   num_conversations: 20 # number of conversations you want to create for this task, ignored in dedicated run
   number_of_runs: 1
   sleep_between_runs: 600
-  run_timelimit: 172800
+  run_timelimit: 86400
   unique_worker: False  # enforce that no worker can work on your task twice
   max_hits_per_worker: 22  # Max number of hits each worker can perform during current group run, 0 means unlimited
   unique_qual_name: EmbChildCompanionDialogMax50SubmissionMoxieRunTerminalNatCollection22 # qualification name to use for uniqueness between HITs

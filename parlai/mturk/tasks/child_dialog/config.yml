@@ -7,9 +7,9 @@ run_config1:
   number_of_runs: 1  # runs to lunch one after another
   sleep_between_runs: 600  # Gap between each run
   run_timelimit: 172800  # Maximum time to launch run for
-  unique_worker: False  # enforce that no worker can work on your task twice
+  unique_worker: False  # enforce that no worker can work on your task twice[Set different name in each run]
   max_hits_per_worker: 21  # Max number of hits each worker can perform during current group run, 0 means unlimited
-  unique_qual_name: EmbChildCompanionDialogMax50SubmissionMoxieRunTerminalNatCollection1 # qualification name to use for uniqueness between HITs
+  unique_qual_name: EmbChildCompanionDialogMax50SubmissionMoxieRunTerminalNatCollection1 # [Set different name in each run]qualification name to use for uniqueness between HITs
   max_hits_limit_in_a_run_only: True
   reward: 0.80  # reward for each worker for finishing the conversation, in US dollars
   is_sandbox: False  # submit the HITs to MTurk sandbox site, if False go Live
@@ -53,7 +53,7 @@ run_config1:
   force_bot: True  # If true force worker to chat with Bot
   qual_test_qualification: EmbChildCompanionDialogQualification  # Qualification name to assign to turker to flag if they pass or not pass our qualification test
   delete_qual_test_qualification: False  #  TODO if True might throw error(need fixing), Delete `qual_test_qualification` after all HITs are complete
-  dedicated_worker_qualification: EmbChildCompanionDialogDedicatedMoxieRunTerminalNatCollection1  # qualification assign to dedicated worker during dedicated worker run
+  dedicated_worker_qualification: EmbChildCompanionDialogDedicatedMoxieRunTerminalNatCollection1  # [Set different name in each run]qualification assign to dedicated worker during dedicated worker run
   ExcludeWorkerWithQualifications: []  # Exclude workers with these qualifications in task
   min_hit_approval_rate: 90  # Min hit approval rate required to perform task if open batch
   no_cuda: False

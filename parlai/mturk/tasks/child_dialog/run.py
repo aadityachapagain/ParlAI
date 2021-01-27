@@ -6,6 +6,8 @@ import yaml
 import copy
 import random
 import logging
+import requests
+import json
 from threading import Thread
 from tqdm import tqdm
 
@@ -417,4 +419,18 @@ def main(opt, cfgs):
 
 if __name__ == '__main__':
     args, cfgs = setup_args()
-    main(args, cfgs)
+    response = requests.post(f'http{"s" if args.get("bot_port") in [80, 443] else ""}://{args["bot_host"]}:{str(args.get("bot_port", 443))}/interact',
+                             json={
+                                 "remote_chat_request": {
+                                     "command": "start"
+                                 }
+                             },
+                             auth=(args['bot_username'],
+                                   args['bot_password'])
+                             )
+    if response.status_code == 200:
+        print("Bot server test start command successful.")
+        main(args, cfgs)
+    else:
+        print("Bot server not available. Got following command on start command")
+        print(json.loads(response.content))

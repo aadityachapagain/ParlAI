@@ -81,7 +81,13 @@ class RedditTeacher(DialogTeacher):
                         continue
                     if msg:
                         episode_done = msg.get('episode_done', False)
-                        yield (msg['text'], msg['labels']), episode_done
+                        return_msg = {
+                            'text': msg['text'],
+                            'labels': msg['labels']
+                        }
+                        if 'subreddit' in msg:
+                            return_msg['subreddit'] = msg['subreddit']
+                        yield return_msg, episode_done
         # clean up at the end of epoch
         self.epoch_end_cleanup()
 

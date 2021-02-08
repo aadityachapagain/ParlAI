@@ -45,16 +45,17 @@ class RedditTeacher(DialogTeacher):
         os.remove(os.path.join(self.opt['datapath'],'reddit_datasets','status.build' ))
 
     def setup_data(self, path):
-        req_files = random.sample([ '{}-00{:03}-of-00200.txt'.format(self.datasets_type,i) for i in range(200)], 200)
-        if self.datasets_type == 'valid':
-            req_files = random.sample(req_files,100)
+        req_files = ['{}-00{:03}-of-00200.txt'.format(self.datasets_type, i) for i in range(200)]
+        if 'ordered' not in self.opt['datatype']:
+            req_files = random.sample(req_files, len(req_files))
         for subdir in req_files:
             subdir_path = os.path.join(path, subdir)
-            if subdir_path in self.visited:
-                logging.log(f'Model already Trained on file {subdir_path}, Skipping batch!')
+            if (subdir_path in self.visited) and ('ordered' not in self.opt['datatype']):
+                logging.log(f'Model already Trained on file {subdir_path}, Skipping batch when not ordered!')
                 continue
             # storing batch progression in file to make sure it will not loaded next time
-            self.set_visited_chunk(subdir_path)
+            if 'ordered' not in self.opt['datatype']:
+                self.set_visited_chunk(subdir_path)
             with open(subdir_path, newline='\n', encoding="utf-8") as read:
                 for line_no, line in enumerate(read, 1):
                     msg = str_to_msg(line.rstrip('\n'))
@@ -89,7 +90,8 @@ class RedditTeacher(DialogTeacher):
                             return_msg['subreddit'] = msg['subreddit']
                         yield return_msg, episode_done
         # clean up at the end of epoch
-        self.epoch_end_cleanup()
+        if 'ordered' not in self.opt['datatype']:
+            self.epoch_end_cleanup()
 
 class RedditChunkTeacher(ChunkTeacher):
     """

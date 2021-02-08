@@ -24,7 +24,7 @@ class RedditTeacher(DialogTeacher):
         )
         self.id = 'reddit_datasets'
         self.visited = self.get_visited_chunk(opt)
-                    
+
         super().__init__(opt, shared)
 
     def get_visited_chunk(self, opt):
@@ -35,7 +35,7 @@ class RedditTeacher(DialogTeacher):
                     visited.append(line.replace('\n', '').strip())
 
         return visited
-    
+
     def set_visited_chunk(self, chunk):
         with open(os.path.join(self.opt['datapath'],'reddit_datasets','status.build' ), 'a+') as fw:
             fw.write(chunk+ '\n')
@@ -56,6 +56,8 @@ class RedditTeacher(DialogTeacher):
             # storing batch progression in file to make sure it will not loaded next time
             if 'ordered' not in self.opt['datatype']:
                 self.set_visited_chunk(subdir_path)
+
+            new_episode = True
             with open(subdir_path, newline='\n', encoding="utf-8") as read:
                 for line_no, line in enumerate(read, 1):
                     msg = str_to_msg(line.rstrip('\n'))
@@ -88,7 +90,9 @@ class RedditTeacher(DialogTeacher):
                         }
                         if 'subreddit' in msg:
                             return_msg['subreddit'] = msg['subreddit']
-                        yield return_msg, episode_done
+                        yield return_msg, new_episode
+                        # Next entry will be from another episode if episode_done
+                        new_episode = episode_done
         # clean up at the end of epoch
         if 'ordered' not in self.opt['datatype']:
             self.epoch_end_cleanup()

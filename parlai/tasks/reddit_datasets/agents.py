@@ -58,6 +58,7 @@ class RedditTeacher(DialogTeacher):
                 self.set_visited_chunk(subdir_path)
 
             new_episode = True
+            current_subreddit = None
             with open(subdir_path, newline='\n', encoding="utf-8") as read:
                 for line_no, line in enumerate(read, 1):
                     msg = str_to_msg(line.rstrip('\n'))
@@ -83,16 +84,20 @@ class RedditTeacher(DialogTeacher):
                         )
                         continue
                     if msg:
-                        episode_done = msg.get('episode_done', False)
-                        return_msg = {
-                            'text': msg['text'],
-                            'labels': msg['labels']
-                        }
-                        if 'subreddit' in msg:
-                            return_msg['subreddit'] = msg['subreddit']
+                        if ('text' not in msg) or ('labels' not in msg):
+                            continue
+                        return_msg = {'text': msg['text'],
+                                      'labels': msg['labels'],
+                                      'subreddit': msg['subreddit']}
+
+                        if current_subreddit is not None:
+                            episode_done = (current_subreddit != msg['subreddit'])
+                        else:
+                            episode_done = False
                         yield return_msg, new_episode
                         # Next entry will be from another episode if episode_done
                         new_episode = episode_done
+                        current_subreddit = msg['subreddit']
         # clean up at the end of epoch
         if 'ordered' not in self.opt['datatype']:
             self.epoch_end_cleanup()

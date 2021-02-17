@@ -20,7 +20,7 @@ class RedditTeacher(DialogTeacher):
         self.opt = opt
         self.datasets_type = 'train' if 'train' in opt.get('datatype','train') else 'valid'
         opt['datafile'] = os.path.join(
-            opt['datapath'], 'reddit_datasets/train_data'
+            opt['datapath'], 'reddit_cleaned_omit_maybe_datasets/train_data'
         )
         self.id = 'reddit_datasets'
         self.visited = self.get_visited_chunk(opt)
@@ -29,23 +29,23 @@ class RedditTeacher(DialogTeacher):
 
     def get_visited_chunk(self, opt):
         visited = []
-        if os.path.isfile(os.path.join(opt['datapath'],'reddit_datasets','status.build' )):
-            with open(os.path.join(opt['datapath'],'reddit_datasets','status.build' )) as fp:
+        if os.path.isfile(os.path.join(opt['datapath'],'reddit_cleaned_omit_maybe_datasets','status.build' )):
+            with open(os.path.join(opt['datapath'],'reddit_cleaned_omit_maybe_datasets','status.build' )) as fp:
                 for line in fp:
                     visited.append(line.replace('\n', '').strip())
 
         return visited
 
     def set_visited_chunk(self, chunk):
-        with open(os.path.join(self.opt['datapath'],'reddit_datasets','status.build' ), 'a+') as fw:
+        with open(os.path.join(self.opt['datapath'],'reddit_cleaned_omit_maybe_datasets','status.build' ), 'a+') as fw:
             fw.write(chunk+ '\n')
 
     def epoch_end_cleanup(self):
         self.visited = []
-        os.remove(os.path.join(self.opt['datapath'],'reddit_datasets','status.build' ))
+        os.remove(os.path.join(self.opt['datapath'],'reddit_cleaned_omit_maybe_datasets','status.build' ))
 
     def setup_data(self, path):
-        req_files = ['{}-00{:03}-of-00200.txt'.format(self.datasets_type, i) for i in range(200)]
+        req_files = ['clean-{}-00{:03}-of-00200.txt'.format(self.datasets_type, i) for i in range(200)]
         if 'ordered' not in self.opt['datatype']:
             req_files = random.sample(req_files, len(req_files))
         for subdir in req_files:

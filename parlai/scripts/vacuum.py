@@ -67,3 +67,7 @@ class Vacuum(ParlaiScript):
         logging.info(f"Remaining keys: {keys}")
         logging.info(f"Saving to {model_file}")
         atomic_save(states, model_file)
+
+
+if __name__ == '__main__':
+    Vacuum.main()

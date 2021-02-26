@@ -45,13 +45,18 @@ task_config[
 You will play the role of a child aged 5 to 10 talking with a child companion robot named Moxie.
 </b>
 <br>
-Moxie is a robot from GRL and it communicates in a tone that is comparable to an eight year old child.
+Moxie is a robot from GRL (the Global Robotics Lab) and it communicates in a tone that is comparable to an eight year old child.
 <br>
 Moxie is a robot on a mission to understand how to be a good friend to humans.
 <br>
-<b style="color:blue !important">Unlike the previous two tasks, you don't have to try to get Moxie to 
-terminate the conversation - just have a conversation as you naturally would and mark termination utterances 
-if you find any while having conversation.
+<b>
+Moxie might talk about characters from the G.R.L., such as Z, LB the library bot, Zaygo, 
+Cruncher, and others, as well as pretend to have talked to you in the past.
+</b>
+<br>
+<br>
+<b style="color:blue !important">Have a conversation as you naturally would and mark utterances 
+if you find any of the following while having conversation.
 </b>
 <br>
 <b style="color:green !important">For each utterance from Moxie, please mark the checkboxes if applicable.</b>

@@ -28,11 +28,14 @@ class BotAgent(Agent):
             })
             return
 
+        command = observation.get('command', 'continue')
+        if (command == 'start') and self.opt['run_guided_conversation']:
+            command = 'start_guided_conversation'
+
         bot_request_data = {
             "remote_chat_request": {
-                "speech": observation['text']
-            } if "command" not in observation else {
-                "command": observation['command']
+                "speech": observation.get('text', ''),
+                "command": command
             }
         }
         if self.session_id:

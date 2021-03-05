@@ -16,9 +16,9 @@ The user must provide a model (with `--model`) and a task (with
 ## Examples
 
 ```shell
-parlai train_model -m ir_baseline -t dialog_babi:Task:1 -mf /tmp/model
-parlai train_model -m seq2seq -t babi:Task10k:1 -mf '/tmp/model' -bs 32 -lr 0.5 -hs 128
-parlai train_model -m drqa -t babi:Task10k:1 -mf /tmp/model -bs 10
+parlai train_model --model ir_baseline --task dialog_babi:Task:1 --model-file /tmp/model
+parlai train_model --model seq2seq --task babi:Task10k:1 --model-file '/tmp/model' --batchsize 32 --learningrate 0.5
+parlai train_model --model drqa --task babi:Task10k:1 --model-file /tmp/model --batchsize 10
 ```
 """  # noqa: E501
 
@@ -94,6 +94,17 @@ def setup_args(parser=None) -> ParlaiParser:
         type=int,
         hidden=True,
         help='Eval time batch size (defaults to same as -bs)',
+    )
+    train.add_argument(
+        '--eval-dynamic-batching',  # FIXME: see https://github.com/facebookresearch/ParlAI/issues/3367
+        default=None,
+        type='nonestr',
+        choices={None, 'off', 'full', 'batchsort'},
+        help=(
+            'Set dynamic batching at evaluation time. Set to off for '
+            'train-only dynamic batching. Set to none (default) to use same '
+            'setting as --dynamic-batching.'
+        ),
     )
     train.add_argument('--display-examples', type='bool', default=False, hidden=True)
     train.add_argument('-eps', '--num-epochs', type=float, default=-1)
@@ -247,6 +258,15 @@ def load_eval_worlds(agent, opt, datatype):
     if opt.get('eval_batchsize'):
         # override eval time batchsize
         opt['batchsize'] = opt['eval_batchsize']
+    if opt.get('eval_dynamic_batching'):
+        # FIXME: see issue tracked in https://github.com/facebookresearch/ParlAI/issues/3367
+        # override eval time dynamic batching settings
+        eval_dyn_batch = (
+            None
+            if opt['eval_dynamic_batching'] == 'off'
+            else opt['eval_dynamic_batching']
+        )
+        opt['dynamic_batching'] = eval_dyn_batch
 
     tasks = opt['task'].split(',')
     worlds = []
@@ -380,6 +400,10 @@ class TrainLoop:
                 self.train_time.total = obj.get('train_time', 0)
                 self.impatience = obj.get('impatience', 0)
                 self.valid_reports = obj.get('valid_reports', [])
+                if self.valid_reports:
+                    self.last_valid_epoch = self.valid_reports[-1].get(
+                        'total_epochs', 0.0
+                    )
                 self.train_reports = obj.get('train_reports', [])
                 if 'best_valid' in obj:
                     self.best_valid = obj['best_valid']
@@ -790,6 +814,12 @@ class TrainLoop:
         v_report = self._run_eval(valid_worlds, opt, 'valid', max_exs, write_log=True)
         test_worlds = load_eval_worlds(self.agent, opt, 'test')
         t_report = self._run_eval(test_worlds, opt, 'test', max_exs, write_log=True)
+
+        if opt['wandb_log'] and is_primary_worker():
+            self.wb_logger.log_final('valid', v_report)
+            self.wb_logger.log_final('test', t_report)
+            self.wb_logger.finish()
+
         if valid_worlds:
             for valid_world in valid_worlds:
                 valid_world.shutdown()

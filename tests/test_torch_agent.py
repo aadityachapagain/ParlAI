@@ -34,7 +34,7 @@ def get_agent(**kwargs):
     from parlai.core.params import ParlaiParser
 
     parser = ParlaiParser()
-    MockTorchAgent.add_cmdline_args(parser)
+    MockTorchAgent.add_cmdline_args(parser, partial_opt=None)
     parser.set_params(**kwargs)
     opt = parser.parse_args([])
     return MockTorchAgent(opt)
@@ -320,7 +320,6 @@ class TestTorchAgent(unittest.TestCase):
             self.assertIsNone(batch.label_vec)
             self.assertIsNone(batch.label_lengths)
             self.assertIsNone(batch.labels)
-            self.assertIsNone(batch.valid_indices)
             self.assertIsNone(batch.candidates)
             self.assertIsNone(batch.candidate_vecs)
             self.assertIsNone(batch.image)
@@ -345,7 +344,6 @@ class TestTorchAgent(unittest.TestCase):
             self.assertIsNone(batch.label_vec)
             self.assertIsNone(batch.label_lengths)
             self.assertIsNone(batch.labels)
-            self.assertIsNone(batch.valid_indices)
             self.assertIsNone(batch.candidates)
             self.assertIsNone(batch.candidate_vecs)
             self.assertIsNone(batch.image)
@@ -363,7 +361,6 @@ class TestTorchAgent(unittest.TestCase):
             self.assertIsNotNone(batch.label_vec)
             self.assertIsNotNone(batch.label_lengths)
             self.assertIsNotNone(batch.labels)
-            self.assertIsNotNone(batch.valid_indices)
             self.assertIsNone(batch.candidates)
             self.assertIsNone(batch.candidate_vecs)
             self.assertIsNone(batch.image)

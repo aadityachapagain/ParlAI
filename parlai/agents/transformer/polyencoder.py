@@ -8,6 +8,7 @@
 Poly-encoder Agent.
 """
 
+from parlai.core.params import ParlaiParser
 from typing import Any, Dict, Optional, Tuple
 
 import torch
@@ -18,12 +19,7 @@ from parlai.utils.misc import recursive_getattr
 from parlai.utils.logging import logging
 
 from .biencoder import AddLabelFixedCandsTRA
-from .modules import (
-    BasicAttention,
-    MultiHeadAttention,
-    TransformerEncoder,
-    get_n_positions_from_options,
-)
+from .modules import BasicAttention, MultiHeadAttention, TransformerEncoder
 from .transformer import TransformerRankerAgent
 
 
@@ -36,12 +32,14 @@ class PolyencoderAgent(TorchRankerAgent):
     """
 
     @classmethod
-    def add_cmdline_args(cls, argparser):
+    def add_cmdline_args(
+        cls, parser: ParlaiParser, partial_opt: Optional[Opt] = None
+    ) -> ParlaiParser:
         """
         Add command-line arguments specifically for this agent.
         """
-        TransformerRankerAgent.add_cmdline_args(argparser)
-        agent = argparser.add_argument_group('Polyencoder Arguments')
+        TransformerRankerAgent.add_cmdline_args(parser, partial_opt=partial_opt)
+        agent = parser.add_argument_group('Polyencoder Arguments')
         agent.add_argument(
             '--polyencoder-type',
             type=str,
@@ -355,29 +353,15 @@ class PolyEncoderModule(torch.nn.Module):
         :return:
             a TransformerEncoder, initialized correctly
         """
-        n_positions = get_n_positions_from_options(opt)
         embeddings = self._get_embeddings(
             dict_=dict_, null_idx=null_idx, embedding_size=opt['embedding_size']
         )
         return TransformerEncoder(
-            n_heads=opt['n_heads'],
-            n_layers=opt['n_layers'],
-            embedding_size=opt['embedding_size'],
-            ffn_size=opt['ffn_size'],
-            vocabulary_size=len(dict_),
+            opt=opt,
             embedding=embeddings,
-            dropout=opt['dropout'],
-            attention_dropout=opt['attention_dropout'],
-            relu_dropout=opt['relu_dropout'],
+            vocabulary_size=len(dict_),
             padding_idx=null_idx,
-            learn_positional_embeddings=opt['learn_positional_embeddings'],
-            embeddings_scale=opt['embeddings_scale'],
             reduction_type=reduction_type,
-            n_positions=n_positions,
-            n_segments=opt.get('n_segments', 2),
-            activation=opt['activation'],
-            variant=opt['variant'],
-            output_scaling=opt['output_scaling'],
         )
 
     def _get_embeddings(self, dict_, null_idx, embedding_size):
@@ -595,9 +579,12 @@ class IRFriendlyPolyencoderAgent(AddLabelFixedCandsTRA, PolyencoderAgent):
     """
 
     @classmethod
-    def add_cmdline_args(cls, argparser):
+    def add_cmdline_args(
+        cls, parser: ParlaiParser, partial_opt: Optional[Opt] = None
+    ) -> ParlaiParser:
         """
         Add cmd line args.
         """
-        AddLabelFixedCandsTRA.add_cmdline_args(argparser)
-        PolyencoderAgent.add_cmdline_args(argparser)
+        AddLabelFixedCandsTRA.add_cmdline_args(parser, partial_opt=partial_opt)
+        PolyencoderAgent.add_cmdline_args(parser, partial_opt=partial_opt)
+        return parser

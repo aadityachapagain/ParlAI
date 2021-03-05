@@ -297,7 +297,13 @@ def _untar(path, fname, delete=True, flatten=False):
                 raise NotImplementedError("No support for symlinks etc. right now.")
 
     if delete:
-        PathManager.rm(fullpath)
+        try:
+            PathManager.rm(fullpath)
+        except PermissionError:
+            logging.error(
+                f"Tried to delete {fullpath} but got a permission error. This "
+                "is known to happen in Windows and is probably not fatal."
+            )
 
 
 def ungzip(path, fname, deleteGZip=True):
@@ -324,7 +330,7 @@ def ungzip(path, fname, deleteGZip=True):
     logging.debug(f'unzipping {fname}')
     fullpath = os.path.join(path, fname)
 
-    with gzip.open(fullpath, 'rb') as fin, open(
+    with gzip.open(PathManager.open(fullpath, 'rb'), 'r') as fin, PathManager.open(
         _get_output_filename(fullpath), 'wb'
     ) as fout:
         shutil.copyfileobj(fin, fout)
@@ -361,7 +367,13 @@ def _unzip(path, fname, delete=True):
             with zf.open(member, 'r') as inf, PathManager.open(outpath, 'wb') as outf:
                 shutil.copyfileobj(inf, outf)
     if delete:
-        PathManager.rm(fullpath)
+        try:
+            PathManager.rm(fullpath)
+        except PermissionError:
+            logging.error(
+                f"Tried to delete {fullpath} but got a permission error. This "
+                "is known to happen in Windows and is probably not fatal."
+            )
 
 
 def _get_confirm_token(response):
@@ -484,11 +496,12 @@ def modelzoo_path(datapath, path):
                 module_name_ = 'parlai.zoo.{}'.format(animal_)
                 my_module = importlib.import_module(module_name_)
                 my_module.download(datapath)
-            except (ImportError, AttributeError):
+            except (ImportError, AttributeError) as exc:
                 # truly give up
                 raise ImportError(
                     f'Could not find pretrained model in {module_name} or {module_name_}.'
-                )
+                    ' Please check your spelling and make sure you\'ve pulled from master.'
+                ) from exc
 
         return os.path.join(datapath, 'models', model_path)
     else:

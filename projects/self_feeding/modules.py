@@ -4,6 +4,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from typing import Optional
+from parlai.core.params import ParlaiParser
+from parlai.core.opt import Opt
 import torch
 import torch.nn as nn
 
@@ -12,8 +15,10 @@ from parlai.agents.transformer.modules import TransformerEncoder
 
 class SelfFeedingModel(nn.Module):
     @classmethod
-    def add_cmdline_args(cls, argparser):
-        model = argparser.add_argument_group('Self Feeding Model')
+    def add_cmdline_args(
+        cls, parser: ParlaiParser, partial_opt: Optional[Opt] = None
+    ) -> ParlaiParser:
+        model = parser.add_argument_group('Self Feeding Model')
 
         model.add_argument(
             '-shl',
@@ -57,6 +62,7 @@ class SelfFeedingModel(nn.Module):
             default=False,
             help="If True, the satisfaction task shares the dialog " "encoder",
         )
+        return parser
 
     def __init__(self, opt, dictionary):
         super().__init__()
@@ -180,17 +186,10 @@ class SelfFeedingModel(nn.Module):
 
     def build_encoder(self, opt, embeddings):
         return TransformerEncoder(
-            n_heads=opt['n_heads'],
-            n_layers=opt['n_layers'],
-            embedding_size=opt['embedding_size'],
-            ffn_size=opt['ffn_size'],
-            vocabulary_size=self.vocab_size,
+            opt=opt,
             embedding=embeddings,
-            attention_dropout=opt['attention_dropout'],
-            relu_dropout=opt['relu_dropout'],
+            vocabulary_size=self.vocab_size,
             padding_idx=self.pad_idx,
-            learn_positional_embeddings=opt.get('learn_positional_embeddings', False),
-            embeddings_scale=opt['embeddings_scale'],
         )
 
     def build_head(self, opt, outdim=1, num_layers=1):

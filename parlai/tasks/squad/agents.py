@@ -8,6 +8,8 @@ import copy
 import json
 import os
 
+from typing import Optional
+from parlai.core.params import ParlaiParser
 from parlai.core.message import Message
 from parlai.core.opt import Opt
 from parlai.core.teachers import FixedDialogTeacher, DialogTeacher, ParlAIDialogTeacher
@@ -166,7 +168,7 @@ class OpensquadTeacher(DialogTeacher):
                 # each question is an example
                 for qa in paragraph['qas']:
                     question = qa['question']
-                    answers = (a['text'] for a in qa['answers'])
+                    answers = [a['text'] for a in qa['answers']]
                     yield (question, answers), True
 
 
@@ -248,15 +250,19 @@ class SentenceTeacher(IndexTeacher):
         self.sent_tok = get_sentence_tokenizer()
         self.include_context = opt.get('include_context', False)
 
-    @staticmethod
-    def add_cmdline_args(argparser):
-        agent = argparser.add_argument_group('SQuAD Sentence Teacher Arguments')
+    @classmethod
+    def add_cmdline_args(
+        cls, parser: ParlaiParser, partial_opt: Optional[Opt] = None
+    ) -> ParlaiParser:
+        super().add_cmdline_args(parser, partial_opt)
+        agent = parser.add_argument_group('SQuAD Sentence Teacher Arguments')
         agent.add_argument(
             '--include-context',
             type='bool',
             default=False,
             help='include context within text instead of as a ' 'separate field',
         )
+        return parser
 
     def get(self, episode_idx, entry_idx=None):
         article_idx, paragraph_idx, qa_idx = self.examples[episode_idx]
@@ -329,15 +335,19 @@ class FulldocsentenceTeacher(FulldocTeacher):
         self.sent_tok = get_sentence_tokenizer()
         self.include_context = opt.get('include_context', False)
 
-    @staticmethod
-    def add_cmdline_args(argparser):
-        agent = argparser.add_argument_group('SQuAD Fulldoc Sentence Teacher Arguments')
+    @classmethod
+    def add_cmdline_args(
+        cls, parser: ParlaiParser, partial_opt: Optional[Opt] = None
+    ) -> ParlaiParser:
+        super().add_cmdline_args(parser, partial_opt)
+        agent = parser.add_argument_group('SQuAD Fulldoc Sentence Teacher Arguments')
         agent.add_argument(
             '--include-context',
             type='bool',
             default=False,
             help='include context within text instead of as a ' 'separate field',
         )
+        return parser
 
     def get(self, episode_idx, entry_idx=None):
         action = {}
@@ -383,8 +393,10 @@ class SquadQATeacher(AbstractWrapperTeacher):
     """
 
     @classmethod
-    def add_cmdline_args(cls, parser):
+    def add_cmdline_args(cls, parser: ParlaiParser, partial_opt: Optional[Opt] = None):
+        super().add_cmdline_args(parser, partial_opt)
         parser.set_defaults(wrapper_task='squad')
+        return parser
 
     def __init__(self, opt: Opt, shared=None):
         super().__init__(opt, shared)

@@ -5,12 +5,10 @@
 
 """
 Implements NN code for transformers.
-
 Original paper: https://arxiv.org/abs/1706.03762. (Vaswani, 2017). The
 `Annotated Transformer` (Rush, 2018) is an excellent reading guide which explains
 much of the mechanics of the Transformer model
 (http://nlp.seas.harvard.edu/2018/04/03/attention.html).
-
 This module also supports special segments (ala BERT;
 https://arxiv.org/abs/1810.04805), and a few different variations seen in the
 literature (BERT and XLM; https://arxiv.org/abs/1901.07291).
@@ -191,7 +189,6 @@ class TransformerMemNetModel(nn.Module):
     def forward(self, xs, mems, cands, context_segments=None):
         """
         Forward pass.
-
         :param LongTensor[batch,seqlen] xs: input tokens IDs
         :param LongTensor[batch,num_mems,seqlen] mems: memory token IDs
         :param LongTensor[batch,num_cands,seqlen] cands: candidate token IDs
@@ -233,7 +230,6 @@ def create_position_codes(n_pos, dim, out):
 class TransformerResponseWrapper(nn.Module):
     """
     Wrap transformer response.
-
     Pushes input through transformer and MLP.
     """
 
@@ -268,7 +264,6 @@ class TransformerLinearWrapper(nn.Module):
     def forward(self, *args):
         """
         Forward pass.
-
         Apply transformer, then additional linear layer.
         """
         context_h = self.transformer(*args)
@@ -278,10 +273,8 @@ class TransformerLinearWrapper(nn.Module):
 class TransformerEncoder(nn.Module):
     """
     Transformer encoder module.
-
     For documentation on parameters that are take directly from opt,
     see parlai/agents/transformer/transformer.py
-
     :param opt: ParlAI-parsed options.
     :param vocabulary_size: Count of tokens/words in the dictionary.
     :param embedding: an embedding matrix for the bottom layer of the transformer.
@@ -343,11 +336,20 @@ class TransformerEncoder(nn.Module):
                 or self.embedding_size == embedding.weight.shape[1]
             ), "Embedding dim must match the embedding size."
 
+        if embedding is not None:
+            self.embeddings = embedding
+        else:
+            raise AssertionError(
+                "This code should not execute. Left here in case we want to enable it."
+            )
+            assert self.padding_idx is not None
+            self.embeddings = nn.Embedding(
                 vocabulary_size, self.embedding_size, padding_idx=padding_idx
             )
             nn.init.normal_(self.embeddings.weight, 0, self.embedding_size ** -0.5)
 
         # create the positional embeddings
+        self.position_embeddings = nn.Embedding(self.n_positions, self.embedding_size)
         if not opt.get('learn_positional_embeddings', False):
             create_position_codes(
                 self.n_positions,
@@ -399,14 +401,12 @@ class TransformerEncoder(nn.Module):
     ) -> Tuple[torch.Tensor, torch.BoolTensor]:
         """
         Embed tokens prior to feeding into transformer.
-
         :param LongTensor[batch,seqlen] input:
             The input IDs
         :param LongTensor[batch,seqlen] positions:
             Positions for input IDs
         :param LongTensor[batch,seqlen]:
             If provided, additionally adds ``segments`` as extra embedding features.
-
         :return (tensor, mask):
             return embedded input and mask
         """
@@ -439,12 +439,10 @@ class TransformerEncoder(nn.Module):
     ) -> torch.Tensor:
         """
         Apply transformer layers to input.
-
         :param tensor:
             embedded input
         :param mask:
             mask of input
-
         :return tensor:
             return embedding after applying transformer layers
         """
@@ -463,12 +461,10 @@ class TransformerEncoder(nn.Module):
     ) -> Tuple[torch.Tensor, Optional[torch.BoolTensor]]:
         """
         Reduce transformer output at end of forward pass.
-
         :param tensor:
             encoded input
         :param mask:
             mask for encoded input
-
         :return (tensor, mask):
             returns the reduced tensor, and mask if appropriate
         """
@@ -496,12 +492,11 @@ class TransformerEncoder(nn.Module):
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.BoolTensor]]:
         """
         Forward pass.
-
         :param LongTensor[batch,seqlen] input:
             The input IDs
         :param LongTensor[batch,seqlen] positions:
             Positions for input IDs
-        :param LongTensor[batch,seqlen]:
+        :param LongTensor[batch,seqlen] segments:
             If provided, additionally adds ``segments`` as extra embedding features.
         """
         # embed input
@@ -555,7 +550,6 @@ class TransformerEncoderLayer(nn.Module):
         n_heads,
         embedding_size,
         ffn_size,
-        attention_head_size=-1,
         attention_dropout=0.0,
         relu_dropout=0.0,
         dropout=0.0,
@@ -568,9 +562,7 @@ class TransformerEncoderLayer(nn.Module):
         self.activation = activation
         self.variant = variant
         self.attention = MultiHeadAttention(
-            n_heads, embedding_size,
-            attention_head_size=attention_head_size,
-            dropout=attention_dropout  # --attention-dropout
+            n_heads, embedding_size, dropout=attention_dropout  # --attention-dropout
         )
         self.norm1 = torch.nn.LayerNorm(embedding_size, eps=LAYER_NORM_EPS)
         self.ffn = TransformerFFN(
@@ -606,10 +598,8 @@ class TransformerEncoderLayer(nn.Module):
 class TransformerDecoder(nn.Module):
     """
     Transformer Decoder module.
-
     For documentation on parameters that are take directly from opt,
     see parlai/agents/transformer/transformer.py
-
     :param opt: ParlAI-parsed options.
     :param embedding: an embedding matrix for the bottom layer of the transformer.
         If none, one is created for this encoder.
@@ -639,6 +629,14 @@ class TransformerDecoder(nn.Module):
         self.activation = opt.get('activation', 'relu')
         self.variant = opt.get('variant', 'aiayn')
 
+        self.embeddings_scale = opt.get('embeddings_scale', True)
+        dropout_frac = opt.get('dropout', 0.0)
+        self.dropout = nn.Dropout(p=dropout_frac)  # --dropout
+
+        self.n_positions = _default(n_positions, get_n_positions_from_options(opt))
+        self.out_dim = self.embedding_size
+        assert (
+            self.embedding_size % self.n_heads == 0
         ), 'Transformer embedding size must be a multiple of n_heads'
 
         self.embeddings = embedding
@@ -659,6 +657,7 @@ class TransformerDecoder(nn.Module):
         else:
             raise ValueError("Can't handle --variant {}".format(self.variant))
 
+        # create the positional embeddings
         self.position_embeddings = nn.Embedding(self.n_positions, self.embedding_size)
         if not opt.get('learn_positional_embeddings', False):
             create_position_codes(
@@ -695,14 +694,12 @@ class TransformerDecoder(nn.Module):
     ):
         """
         Embed tokens prior to feeding into transformer.
-
         :param LongTensor[batch, seqlen] input:
             The target input IDs
         :param LongTensor[batch, seqlen] positions:
             Positions for input IDs. If None, computes defaults.
         :param LongTensor[batch, seqlen] segements:
             Segment IDs for extra embedding features. If None, not used.
-
         :return (tensor, mask):
             embeded input and mask
         """
@@ -733,7 +730,6 @@ class TransformerDecoder(nn.Module):
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
         """
         Forward pass of decoder layers.
-
         :param tensor:
             embedded input tensor for the decoder
         :param enc_out:
@@ -742,7 +738,6 @@ class TransformerDecoder(nn.Module):
             encoder output mask
         :param incr_state:
             Dict mapping layer_idx to incremental state
-
         :return (tensor, new_incr_state):
             return encoding after applying decoder layers, as well
             as new incremental decoding state.
@@ -766,7 +761,6 @@ class TransformerDecoder(nn.Module):
     def forward(self, input, encoder_state, incr_state=None):
         """
         Forward pass.
-
         :param LongTensor[batch,seqlen] input:
             The decoder inputs (partial or full decoded token IDs).
         :param encoder_state:
@@ -841,9 +835,7 @@ class TransformerDecoder(nn.Module):
 class TransformerDecoderLayer(nn.Module):
     """
     Implements a single Transformer decoder layer.
-
     Decoder layers are similar to encoder layers but:
-
     1. Self-attention is limited in a casaul (auto-regressive) manner.
     2. Attend over all of the encoder states.
     """
@@ -853,7 +845,6 @@ class TransformerDecoderLayer(nn.Module):
         n_heads,
         embedding_size,
         ffn_size,
-        attention_head_size=-1,
         attention_dropout=0.0,
         relu_dropout=0.0,
         dropout=0.0,
@@ -868,16 +859,12 @@ class TransformerDecoderLayer(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
         self.self_attention = MultiHeadAttention(
-            n_heads, embedding_size,
-            attention_head_size=attention_head_size,
-            dropout=attention_dropout
+            n_heads, embedding_size, dropout=attention_dropout
         )
         self.norm1 = torch.nn.LayerNorm(embedding_size, eps=LAYER_NORM_EPS)
 
         self.encoder_attention = MultiHeadAttention(
-            n_heads, embedding_size,
-            attention_head_size=attention_head_size,
-            dropout=attention_dropout
+            n_heads, embedding_size, dropout=attention_dropout
         )
         self.norm2 = torch.nn.LayerNorm(embedding_size, eps=LAYER_NORM_EPS)
 
@@ -889,7 +876,6 @@ class TransformerDecoderLayer(nn.Module):
     def forward(self, x, encoder_output, encoder_mask, incr_state=None):
         """
         Forward pass.
-
         The incremental state is a dict with values for self- and encoder-attention
         states.
         """
@@ -909,7 +895,7 @@ class TransformerDecoderLayer(nn.Module):
             mask=decoder_mask,
             incr_state=incr_state.get('self_attn'),
             static_kv=False,
-        )
+        )[:2]
         x = self.dropout(x)  # --dropout
         x = x + residual
         if self.variant == 'aiayn' or self.variant == 'xlm' or self.variant == 'bart':
@@ -926,7 +912,7 @@ class TransformerDecoderLayer(nn.Module):
             mask=encoder_mask,
             incr_state=incr_state.get('encoder_attn'),
             static_kv=True,
-        )
+        )[:2]
         x = self.dropout(x)  # --dropout
         x = residual + x
         if self.variant == 'aiayn' or self.variant == 'xlm' or self.variant == 'bart':
@@ -1014,7 +1000,6 @@ class TransformerGeneratorModel(TorchGeneratorModel):
     def reorder_encoder_states(self, encoder_states, indices):
         """
         Reorder the encoder states.
-
         See ``TorchGeneratorModel.reorder_encoder_states`` for a description.
         """
         enc, mask = encoder_states
@@ -1029,9 +1014,7 @@ class TransformerGeneratorModel(TorchGeneratorModel):
     ) -> Dict[int, dict]:
         """
         Reorder the decoder incremental state.
-
         See ``TorchGeneratorModel.reorder_decoder_incremental_state`` for a description.
-
         Here, incremental_state is a dict whose keys are layer indices and whose values
         are dicts containing the incremental state for that layer.
         """
@@ -1069,10 +1052,8 @@ class BasicAttention(nn.Module):
     def forward(self, xs, ys, mask_ys=None, values=None):
         """
         Compute attention.
-
         Attend over ys with query xs to obtain weights, then apply weights to
         values (ys if yalues is None)
-
         Args:
             xs: B x query_len x dim (queries)
             ys: B x key_len x dim (keys)
@@ -1111,31 +1092,24 @@ class BasicAttention(nn.Module):
 class MultiHeadAttention(nn.Module):
     """
     Implements MultiHeadAttention; this is the core workhorse of the Transformer.
-
     See Vaswani (2017) for an extensive description.
     """
 
-    def __init__(self, n_heads, dim, attention_head_size=-1, dropout=0):
+    def __init__(self, n_heads, dim, dropout=0):
         super(MultiHeadAttention, self).__init__()
         self.n_heads = n_heads
         self.dim = dim
-        if attention_head_size > 0:
-            self.dim_per_head = attention_head_size
-            self.all_head_size = attention_head_size * self.n_heads
-        else:
-            self.dim_per_head = dim // self.n_heads
-            self.all_head_size = dim
 
         self.attn_dropout = nn.Dropout(p=dropout)  # --attention-dropout
-        self.q_lin = nn.Linear(dim, self.all_head_size)
-        self.k_lin = nn.Linear(dim, self.all_head_size)
-        self.v_lin = nn.Linear(dim, self.all_head_size)
+        self.q_lin = nn.Linear(dim, dim)
+        self.k_lin = nn.Linear(dim, dim)
+        self.v_lin = nn.Linear(dim, dim)
         # TODO: merge for the initialization step
         nn.init.xavier_normal_(self.q_lin.weight)
         nn.init.xavier_normal_(self.k_lin.weight)
         nn.init.xavier_normal_(self.v_lin.weight)
         # and set biases to 0
-        self.out_lin = nn.Linear(self.all_head_size, dim)
+        self.out_lin = nn.Linear(dim, dim)
 
         nn.init.xavier_normal_(self.out_lin.weight)
 
@@ -1149,10 +1123,9 @@ class MultiHeadAttention(nn.Module):
         mask: torch.Tensor = None,
         incr_state: Optional[Dict[str, torch.Tensor]] = None,
         static_kv: bool = False,
-    ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+    ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor], torch.Tensor]:
         """
         Forward pass.
-
         :param query: attention query
         :param key: attention key
         :param value: attention value
@@ -1160,12 +1133,16 @@ class MultiHeadAttention(nn.Module):
           means we are blocking it. Mask is:
           - [B, key_len] (encoder self-attn and decoder enc/dec attn)
           - [B, query_len, key_len] (decoder self-attn)
-          - [B, 1, 1] (decoder self-attn with incr_state caching)
+          - [B, 1, key_len] (decoder self-attn with incr_state caching)
         :param incr_state: dictionary with values representing the previous states of
           the key, value, and mask
         :param static_kv: True if the key and value are held constant during decoding
           (as in encoder/decoder attention)
-        :return: (final attended tensor, new incremental state)
+        :return: (
+          final attended tensor,
+          new incremental state,
+          key/value-multiplied tensor before softmax,
+        )
         """
 
         batch_size, query_len, dim = query.size()
@@ -1174,7 +1151,7 @@ class MultiHeadAttention(nn.Module):
         ), 'Dimensions do not match: {} query vs {} configured'.format(dim, self.dim)
         assert mask is not None, 'Mask is None, please specify a mask'
         n_heads = self.n_heads
-        dim_per_head = self.dim_per_head
+        dim_per_head = dim // n_heads
         scale = math.sqrt(dim_per_head)
 
         def prepare_head(tensor):
@@ -1269,12 +1246,12 @@ class MultiHeadAttention(nn.Module):
             .view(batch_size, n_heads, query_len, dim_per_head)
             .transpose(1, 2)
             .contiguous()
-            .view(batch_size, query_len, self.all_head_size)
+            .view(batch_size, query_len, dim)
         )
 
         out = self.out_lin(attentioned)
 
-        return out, new_incr_state
+        return out, new_incr_state, dot_prod
 
     def reorder_incremental_state(
         self, incremental_state: Dict[str, torch.Tensor], inds: torch.Tensor

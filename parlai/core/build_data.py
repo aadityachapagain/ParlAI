@@ -346,15 +346,7 @@ def _unzip(path, fname, delete=True):
     logging.debug(f'unpacking {fname}')
     fullpath = os.path.join(path, fname)
     with zipfile.ZipFile(PathManager.open(fullpath, 'rb'), 'r') as zf:
-        for member in zf.namelist():
-            outpath = os.path.join(path, member)
-            if zf.getinfo(member).is_dir():
-                logging.debug(f"Making directory {outpath}")
-                PathManager.mkdirs(outpath)
-                continue
-            logging.debug(f"Extracting to {outpath}")
-            with zf.open(member, 'r') as inf, PathManager.open(outpath, 'wb') as outf:
-                shutil.copyfileobj(inf, outf)
+        zf.extractall(path)
     if delete:
         PathManager.rm(fullpath)
 

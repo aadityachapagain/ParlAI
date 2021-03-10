@@ -37,7 +37,10 @@ RESOURCES = {
 
 def build(opt):
     dpath = os.path.join(opt['datapath'], 'child_companion_dialog')
-    version = opt.get('task_data_version', 'v0.0')
+    version = 'v0.0'
+    task_data_version = opt.get('task_data_version', 'All')
+
+    dpath = os.path.join(dpath, task_data_version)
 
     if not build_data.built(dpath, version_string=version):
         print('[building data: ' + dpath + ']')

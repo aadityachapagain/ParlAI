@@ -20,4 +20,4 @@ def _processed_data_path(opt) -> str:
     # Build the data if it doesn't exist.
     build(opt)
     dt = opt['datatype'].split(':')[0]
-    return os.path.join(opt['datapath'], 'child_companion_dialog', dt + '.txt')
+    return os.path.join(opt['datapath'], 'child_companion_dialog', opt.get('task_data_version', 'All'), dt + '.txt')

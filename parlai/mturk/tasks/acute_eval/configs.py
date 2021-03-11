@@ -57,4 +57,20 @@ CONFIG: Dict[str, Dict] = {
         'min_dialogue_turns': 5,
         'truncate_dialog_to_min_turns': True
     },
+    'Guided': {
+        'task': 'child_companion_dialog',
+        'prepended_context': False,
+        'task_data_version': 'Guided',
+        'min_dialogue_turns': 5,
+        'truncate_dialog_to_min_turns': False,
+        'ignore_improper_utterances': True,
+    },
+    'Unguided': {
+        'task': 'child_companion_dialog',
+        'prepended_context': False,
+        'task_data_version': 'Unguided',
+        'min_dialogue_turns': 5,
+        'truncate_dialog_to_min_turns': False,
+        'ignore_improper_utterances': True,
+    },
 }

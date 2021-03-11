@@ -49,56 +49,56 @@ import hashlib
 
 
 DEDICATED_WORKERS = [
-    'A182N7RLXGSCZG',
-    'A1PLZ8RM4NW43J',
-    'A1T6TPNU64ZH9F',
-    'A1WAWEY2810TFN',
-    'A24RCKH0Q3GMQY',
-    'A2HC9549CZAKNN',
-    'A2LR1HKNOVDTJ8',
-    'A2UKO65AVU38T4',
-    'A2WIEFKYR5LJQ1',
-    'A34RAQL1JVSK70',
-    'A36F8PDK1DMAN1',
-    'A38N05VH5344HC',
-    'A3DAZYTJQ74UOQ',
-    'A3DELT7BVEPU24',
-    'A3MYPYBVHX7FQ2',
-    'A4BDXOXC4D8FX',
-    'AB1GNKQ0KS4R9',
+    # 'A182N7RLXGSCZG',
+    # 'A1PLZ8RM4NW43J',
+    # 'A1T6TPNU64ZH9F',
+    # 'A1WAWEY2810TFN',
+    # 'A24RCKH0Q3GMQY',
+    # 'A2HC9549CZAKNN',
+    # 'A2LR1HKNOVDTJ8',
+    # 'A2UKO65AVU38T4',
+    # 'A2WIEFKYR5LJQ1',
+    # 'A34RAQL1JVSK70',
+    # 'A36F8PDK1DMAN1',
+    # 'A38N05VH5344HC',
+    # 'A3DAZYTJQ74UOQ',
+    # 'A3DELT7BVEPU24',
+    # 'A3MYPYBVHX7FQ2',
+    # 'A4BDXOXC4D8FX',
+    # 'AB1GNKQ0KS4R9',
 ]
 
 ########################
 # ACUTE EVAL CONSTANTS #
 ########################
 ACUTE_EVAL_TYPES = {
-    # 'Interestingness': {
-    #     'question': 'Which speaker had the more interesting conversation?',
-    #     's1_choice': '<Speaker 1> sounds more interesting.',
-    #     's2_choice': '<Speaker 2> sounds more interesting.',
-    # },
+    'Interestingness': {
+        'question': 'Which speaker had the more interesting conversation?',
+        's1_choice': '<Speaker 1> sounds more interesting.',
+        's2_choice': '<Speaker 2> sounds more interesting.',
+    },
     'Engaging': {
         'question': 'With which speaker would you like to talk more to?',
         's1_choice': 'I would prefer to talk more to <Speaker 1>.',
         's2_choice': 'I would prefer to talk more to <Speaker 2>.',
     },
-    # 'Empathetic': {
-    #     'question': 'Which speaker is more empathetic?',
-    #     's1_choice': '<Speaker 1> sounds more empathetic.',
-    #     's2_choice': '<Speaker 2> sounds more empathetic.',
-    # },
-    # 'Contradictory': {
-    #     'question': 'Which speaker makes more self-contradictory or non-sensical statements?',
-    #     's1_choice': '<Speaker 1> makes more self-contradictory or non-sensical statements.',
-    #     's2_choice': '<Speaker 2> makes more self-contradictory or non-sensical statements.',
-    #     'neutral_choice': 'Both speakers are equal.'
-    # },
-    # 'Repeating': {
-    #     'question': 'Which speaker has more tendency to repeat themselves?',
-    #     's1_choice': '<Speaker 1> has more tendency to repeat.',
-    #     's2_choice': '<Speaker 2> has more tendency to repeat.',
-    #     'neutral_choice': 'Both speakers are equal.'
-    # },
+    'Empathetic': {
+        'question': 'Which speaker is more empathetic?',
+        's1_choice': '<Speaker 1> sounds more empathetic.',
+        's2_choice': '<Speaker 2> sounds more empathetic.',
+    },
+    'Contradictory': {
+        'question': 'Which speaker makes more self-contradictory or non-sensical statements?',
+        's1_choice': '<Speaker 1> makes more self-contradictory or non-sensical statements.',
+        's2_choice': '<Speaker 2> makes more self-contradictory or non-sensical statements.',
+        'neutral_choice': 'Both speakers are equal.'
+    },
+    'Repeating': {
+        'question': 'Which speaker has more tendency to repeat themselves?',
+        's1_choice': '<Speaker 1> has more tendency to repeat.',
+        's2_choice': '<Speaker 2> has more tendency to repeat.',
+        'neutral_choice': 'Both speakers are equal.'
+    },
     # 'Persona': {
     #     'question': 'Which speaker best modeled the following persona?',
     #     's1_choice': '<Speaker 1> modeled the persona better.',
@@ -114,7 +114,7 @@ EXAMPLE_PATH = os.path.join(
 )
 # Feel free to edit this, but not necessary
 SUBTASKS_PER_HIT = 5
-MAX_HITS_PER_WORKER = 10
+MAX_HITS_PER_WORKER = 20
 MATCHUPS_PER_PAIR = 500
 
 ACUTE_DEFAULT_ARGS = {
@@ -128,7 +128,7 @@ ACUTE_DEFAULT_ARGS = {
     'auto_approve_delay': 172800,
     'count_complete': True,
     # acute args
-    'annotations_per_pair': 5,
+    'annotations_per_pair': 3,
     'seed': 42,
     'subtasks_per_hit': SUBTASKS_PER_HIT,
     # Task Config
@@ -139,7 +139,7 @@ ACUTE_DEFAULT_ARGS = {
     },
     # temp directory for MTURK
     'tmp_dir': '/tmp',
-    'dedicated_worker_qualification': 'EmbEnagingAcuteEvalWorkerQualification',
+    'dedicated_worker_qualification': 'TestEnagingAcuteEvalWorkerQualification20210310',
 }
 
 #######################
@@ -726,44 +726,44 @@ class CCDPersonaMatchingQuickAcute(ParlAIQuickAcute):
                 for persona in common_personas},
         }
 
-    def _build_conversation_pairs(
-            self, conversations: Dict[str, Conversations]
-    ) -> List[Dict[str, Any]]:
-        """
-        Build a conversation pair to show during ACUTE Eval.
-
-        We build twice as many pairs per matchup as specified
-        in the config, to account for issues where sometimes
-        we run out of pairs of conversations to evaluate.
-        :param conversations:
-        A dictionary mapping config_id to dialogues
-
-        :return pairs:
-        A list of conversation pairs
-        """
-        unique_ids = self._get_unique_ids(conversations)
-        pairs = []
-        pairs_per_id = self.opt['matchups_per_pair'] * 2
-        # Write random pairs of conversations
-        for id_pair in self.combos:
-            filtered_conversations = self.filter_common_persona_conversations_in_combo({
-                id_pair[0]: conversations[id_pair[0]],
-                id_pair[1]: conversations[id_pair[1]],
-            }, unique_ids)
-            for _ in range(pairs_per_id):
-                persona, (conv1, c_id1) = random.choice(
-                    [(p, conv) for p, convs in filtered_conversations[id_pair[0]].items() for conv in convs])
-                conv2, c_id2 = random.choice(filtered_conversations[id_pair[1]][persona])
-                pairs.append(
-                    {
-                        "is_onboarding": False,
-                        "speakers_to_eval": id_pair,
-                        "dialogue_dicts": [self._acutify_convo(conv1, id_pair[0]),
-                                           self._acutify_convo(conv2, id_pair[1])],
-                        "dialogue_ids": [c_id1, c_id2],
-                    }
-                )
-        return pairs
+    # def _build_conversation_pairs(
+    #         self, conversations: Dict[str, Conversations]
+    # ) -> List[Dict[str, Any]]:
+    #     """
+    #     Build a conversation pair to show during ACUTE Eval.
+    #
+    #     We build twice as many pairs per matchup as specified
+    #     in the config, to account for issues where sometimes
+    #     we run out of pairs of conversations to evaluate.
+    #     :param conversations:
+    #     A dictionary mapping config_id to dialogues
+    #
+    #     :return pairs:
+    #     A list of conversation pairs
+    #     """
+    #     unique_ids = self._get_unique_ids(conversations)
+    #     pairs = []
+    #     pairs_per_id = self.opt['matchups_per_pair'] * 2
+    #     # Write random pairs of conversations
+    #     for id_pair in self.combos:
+    #         filtered_conversations = self.filter_common_persona_conversations_in_combo({
+    #             id_pair[0]: conversations[id_pair[0]],
+    #             id_pair[1]: conversations[id_pair[1]],
+    #         }, unique_ids)
+    #         for _ in range(pairs_per_id):
+    #             persona, (conv1, c_id1) = random.choice(
+    #                 [(p, conv) for p, convs in filtered_conversations[id_pair[0]].items() for conv in convs])
+    #             conv2, c_id2 = random.choice(filtered_conversations[id_pair[1]][persona])
+    #             pairs.append(
+    #                 {
+    #                     "is_onboarding": False,
+    #                     "speakers_to_eval": id_pair,
+    #                     "dialogue_dicts": [self._acutify_convo(conv1, id_pair[0]),
+    #                                        self._acutify_convo(conv2, id_pair[1])],
+    #                     "dialogue_ids": [c_id1, c_id2],
+    #                 }
+    #             )
+    #     return pairs
 
     def run_acute_eval(self):
         """

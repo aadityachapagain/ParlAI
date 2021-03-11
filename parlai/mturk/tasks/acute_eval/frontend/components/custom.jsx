@@ -572,7 +572,7 @@ class TaskDescription extends React.Component {
       content = (
         <div>
           <b>
-            You are currently at {cur_index} / {num_subtasks} question{" "}
+            You are currently at {cur_index} / {num_subtasks} {multiple_question_single_conversation ? "questions": "conversations"}{" "}
           </b>
           <br />
           <br />

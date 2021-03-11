@@ -762,6 +762,7 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
                 'task_description': {
                     'num_subtasks': self.opt['subtasks_per_hit'],
                     'question': self.opt['question'],
+                    'multiple_question_single_conversation': True if self.opt.get('acute_questions') else False,
                 },
                 'frontend_version': 1,
             }
@@ -784,6 +785,7 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
             a list of tasks for a worker to complete
         """
         worker_data = self._get_worker_data(worker_id)
+        tasks_per_hit = 1 if self.opt.get('acute_questions') else self.opt.get('subtasks_per_hit')
         # num_attempts = 0
         # while (not self.task_queue.empty()) and num_attempts < self.task_queue.qsize():
         for next_task in self.task_queue:
@@ -807,7 +809,7 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
                 worker_data['conversations_seen'].extend(dialogue_ids)
                 self.pair_annotation_count[pair_id] = self.pair_annotation_count.get(pair_id, 0) + 1
                 task_data.append(next_task)
-                if len(task_data) == 1:
+                if len(task_data) == tasks_per_hit:
                     return task_data
             # else:
             #     self.task_queue.put(next_task)
@@ -834,8 +836,9 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
         :return task_data:
             a list of tasks for a worker to complete
         """
+        tasks_per_hit = 1 if self.opt.get('acute_questions') else self.opt.get('subtasks_per_hit')
         worker_data = self._get_worker_data(worker_id)
-        tasks_still_needed = 1 - len(task_data)
+        tasks_still_needed = tasks_per_hit - len(task_data)
         tasks_remaining = [
             t_id
             for t_id in range(len(self.desired_tasks))
@@ -909,7 +912,7 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
         :return task_data:
             A list of tasks for the worker to complete
         """
-        # tasks_per_hit = self.opt['subtasks_per_hit']
+        tasks_per_hit = 1 if self.opt.get('acute_questions') else self.opt.get('subtasks_per_hit')
         # # first add onboarding tasks
         # task_data = self.get_onboarding_tasks(worker_id)
         #
@@ -918,7 +921,7 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
         task_data = self._poll_task_queue(worker_id, [])
 
         # top up the task_data if we don't hit the desired tasks_per_hit
-        if len(task_data) < 1:
+        if len(task_data) < tasks_per_hit:
             task_data = self._top_up_task_data(worker_id, task_data)
 
         if self.opt.get('acute_questions'):

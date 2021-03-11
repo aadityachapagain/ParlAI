@@ -535,14 +535,14 @@ class TaskDescription extends React.Component {
       return <div>Loading</div>;
     }
     let num_subtasks = this.props.task_description.num_subtasks;
-
+    let multiple_question_single_conversation = this.props.task_description.multiple_question_single_conversation;
     let question = this.props.task_description.question;
     let content = (
       <div>
         In this task, you will read two conversations and judge&nbsp;
         <div style={speaker1_style}>Speaker 1</div> on the left and&nbsp;
         <div style={speaker2_style}>Speaker 2</div> on the right based on this:&nbsp;
-        <b>{num_subtasks === 1? question: "[Interestingness, Empathy, Engagingness, Fitting a Persona, Repetition, Contradictory / Nonsensical Statement]"}</b>.&nbsp;
+        <b>{(num_subtasks === 1) || (!multiple_question_single_conversation)? question: "[Interestingness, Empathy, Engagingness, Fitting a Persona, Repetition, Contradictory / Nonsensical Statement]"}</b>.&nbsp;
         <b>Don't base your judgement&nbsp; on their hobbies, job, etc. You should&nbsp; also provide a very brief
         justification.</b>&nbsp;
         Do your best to ignore the{" "}
@@ -551,7 +551,7 @@ class TaskDescription extends React.Component {
         <br />
         <b>
           {" "}
-          You will do this for {num_subtasks} questions.&nbsp; Use
+          You will do this for {num_subtasks} {multiple_question_single_conversation ? "questions": "conversations"}.&nbsp; Use
           the [NEXT] button when you're done with each judgment.
         </b>
         <br />
@@ -579,7 +579,7 @@ class TaskDescription extends React.Component {
           You will read two conversations and judge&nbsp;
           <div style={speaker1_style}>Speaker 1</div> on the left and&nbsp;
           <div style={speaker2_style}>Speaker 2</div> on the right based on&nbsp;
-          <b>"{num_subtasks === 1? question: "[Interestingness, Empathy, Engagingness, Fitting a Persona, Repetition, Contradictory / Nonsensical Statement]"}"</b>.&nbsp;
+          <b>"{(num_subtasks === 1) || (!multiple_question_single_conversation)? question: "[Interestingness, Empathy, Engagingness, Repetition, Contradictory / Nonsensical Statement]"}"</b>.&nbsp;
           <b>Don't base your judgement&nbsp; on their hobbies, job, etc. You should&nbsp; also provide a very brief
         justification.</b>
           &nbsp; Do your best to ignore the{" "}
@@ -588,7 +588,7 @@ class TaskDescription extends React.Component {
           <br />
           <b>
             {" "}
-            You will do this for {num_subtasks} questions.&nbsp;
+            You will do this for {num_subtasks} {multiple_question_single_conversation ? "questions": "conversations"}.&nbsp;
             After completing {num_subtasks===1?"":"each"} judgement, use the {num_subtasks===1?"[DONE]":"[NEXT]"} button (which will
             appear below(bottom of left green panel) after you finish your judgement {num_subtasks===1?"":"in each question"}).
           </b>

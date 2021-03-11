@@ -6,6 +6,22 @@ from .build import build
 
 
 class ChildCompanionDialogTeacher(ParlAIDialogTeacher):
+    @classmethod
+    def add_cmdline_args(cls, parser):
+        parser = parser.add_argument_group('CCD opt')
+        parser.add_argument(
+            '--task-data-version',
+            type=str,
+            default='All',
+            help="Specify which version of data to use"
+        )
+        parser.add_argument(
+            '--min-dialogue-turns',
+            type=int,
+            default=-1,
+            help="Minimum number of turns required in conversation to be considered in dataset "
+        )
+
     def __init__(self, opt, shared=None):
         opt = copy.deepcopy(opt)
         opt['parlaidialogteacher_datafile'] = _processed_data_path(opt)

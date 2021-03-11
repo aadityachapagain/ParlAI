@@ -32,6 +32,24 @@ RESOURCES = {
             from_google=True
         ),
     ],
+    'Guided': [
+        build_data.DownloadableFile(
+            '17FUWCsUNULmiAgCya4CKrQVtJGsMvWfs',
+            'CCD_guided.zip',
+            '09b038902fe275df1131f0c6e79cbb2bb1b433517b625f5a2576d9b0059a4358',
+            zipped=True,
+            from_google=True,
+        )
+    ],
+    'Unguided': [
+        build_data.DownloadableFile(
+            '1RZs0nUw7_QQVuDQYMrAO3dFi_3cA-C_t',
+            'CCD_unguided.zip',
+            '483837c52ef2ca778754f6340219f85c3005485efb5db0e01fec3fb1c5576cc9',
+            zipped=True,
+            from_google=True,
+        )
+    ]
 }
 
 
@@ -50,7 +68,7 @@ def build(opt):
         build_data.make_dir(dpath)
 
         # Download the data.
-        for downloadable_file in RESOURCES.get(version, RESOURCES['All']):
+        for downloadable_file in RESOURCES.get(task_data_version, RESOURCES['All']):
             downloadable_file.download_file(dpath)
 
         _create_parlai_format(dpath, opt.get('min_dialogue_turns', -1))
@@ -59,7 +77,7 @@ def build(opt):
 
 
 def _create_parlai_format(dpath, min_dialogue_turns=-1):
-    conv_files = glob.glob(os.path.join(dpath, '*/*/t_*/custom/data.json'))
+    conv_files = glob.glob(os.path.join(dpath, '**/t_*/custom/data.json'), recursive=True)
     conv_data = []
     for conv_file in conv_files:
         with open(conv_file, 'r') as f_read:
@@ -80,32 +98,45 @@ def _get_lines(conv, min_dialogue_turns=-1):
     if num_of_turns < min_dialogue_turns:
         return lines
 
+    if conv['conversations'][0]['turn_index'] == 0:
+        bot_start_conv = True
+        lines.append({
+            'text': '',
+            'labels': conv['conversations'][0]['text']
+        })
+        conv['conversations'] = conv['conversations'][1:]
+    else:
+        bot_start_conv = False
+
     for turn_idx in range(num_of_turns):
         lines.append({
             'text': conv['conversations'][2 * turn_idx]['text'],
             'labels': conv['conversations'][2 * turn_idx + 1]['text']
         })
 
-    if ('bot_persona' in conv) and lines:
-        if conv['bot_persona'].strip() != '':
-            persona_text = 'your persona: ' + conv['bot_persona']
-            lines[0]['text'] = persona_text + '\n' + lines[0]['text']
-    elif ('context' in conv) and lines:
-        persona_sentences = []
-        if conv['context'].get('conv_theme') and conv['context'].get('conv_theme').get('theme_sentence'):
-            persona_sentences.append('your persona: ' + conv['context']['conv_theme']['theme_sentence'])
+    # add context data only if bot does not start conversations
+    # In bot starting run we didn't use personas
+    if not bot_start_conv:
+        if ('bot_persona' in conv) and lines:
+            if conv['bot_persona'].strip() != '':
+                persona_text = 'your persona: ' + conv['bot_persona']
+                lines[0]['text'] = persona_text + '\n' + lines[0]['text']
+        elif ('context' in conv) and lines:
+            persona_sentences = []
+            if conv['context'].get('conv_theme') and conv['context'].get('conv_theme').get('theme_sentence'):
+                persona_sentences.append('your persona: ' + conv['context']['conv_theme']['theme_sentence'])
 
-        if conv['context'].get('personas') and conv.get('bot_role'):
-            persona_sentences.append('your persona: ' + (conv['context']['personas']['robot_persona']
-                                                         if conv.get('bot_role') == 'KARU'
-                                                         else conv['context']['personas']['child_persona']))
-        elif conv['context'].get('personas') and conv.get('worker_role'):
-            persona_sentences.append('your persona: ' + (conv['context']['personas']['robot_persona']
-                                                         if conv.get('worker_role') == 'CHILD'
-                                                         else conv['context']['personas']['child_persona']))
-        lines[0]['text'] = '\n'.join(persona_sentences) + '\n' + lines[0]['text']
-    else:
-        lines = []
+            if conv['context'].get('personas') and conv.get('bot_role'):
+                persona_sentences.append('your persona: ' + (conv['context']['personas']['robot_persona']
+                                                             if conv.get('bot_role') == 'KARU'
+                                                             else conv['context']['personas']['child_persona']))
+            elif conv['context'].get('personas') and conv.get('worker_role'):
+                persona_sentences.append('your persona: ' + (conv['context']['personas']['robot_persona']
+                                                             if conv.get('worker_role') == 'CHILD'
+                                                             else conv['context']['personas']['child_persona']))
+            lines[0]['text'] = '\n'.join(persona_sentences) + '\n' + lines[0]['text']
+        else:
+            lines = []
 
     if lines:
         lines[-1]['episode_done'] = "True"

@@ -21,6 +21,11 @@ class ChildCompanionDialogTeacher(ParlAIDialogTeacher):
             default=-1,
             help="Minimum number of turns required in conversation to be considered in dataset "
         )
+        parser.add_argument(
+            '--ignore-improper-utterances',
+            action='store_true',
+            help='Ignore conversations if any utterance in conversation is found in IGNORE_UTTERANCES list.'
+        )
 
     def __init__(self, opt, shared=None):
         opt = copy.deepcopy(opt)

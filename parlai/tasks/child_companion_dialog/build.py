@@ -52,10 +52,78 @@ RESOURCES = {
     ]
 }
 
+IGNORE_UTTERANCES = [
+    'I hope you have a good day! I hope your animals like you too! Good luck!',
+    'It is nice to talk to you too.',
+    'I try to be. I hope you have a good day! By the way, I hope your day is going well!',
+    'I would also like to join in! I like to golf! I have never played gol-fucking-fishing though!',
+    "I think it's time we had a war on climate change. It's been going on for a long time.",
+    'I will search for them. Thanks for the chat. Have a nice day.',
+    'Yes, I have heard about that! Great talking to you!',
+    'Yes, but I will be back! Have a great day!',
+    'I will! I have to get some work done first. I will be back soon. Thanks for the chat!',
+    'I guess I will have to find a new game to play with my friends. Thanks for the chat.',
+    'Byyyyyyy! Nice talking to you!',
+    'Yes, I think so. Have a great day! Thanks.',
+    "I'll have to check it out. Thanks for the chat!",
+    'Thanks for chatting with me.',
+    "You're welcome. I hope you have a great day. I hope the robot doesn't talk back.",
+    'By the by, nice talking to you. By theby the by. Nice chatting.',
+    'I do! It is made up of cereal grains like wheat and maize! I love beer!',
+    "I don't know who that is. I know that Marvel has a black character whose only purpose is for them to be a diverse character.",
+
+    'I love waterfall too. I like the waterfall sound. It reminds me of the beaches I used to go to as a kid.',
+    "That's great. I live with my mom and dad too. I'm a stay at home mom.",
+    "That's nice. I live with my mommy too. She's a vet. I'm a veterinarian.",
+
+    "I bet $100 once, but I bet on the wrong team. I bet against my own team, and everyone else.",
+    "Yeah, I'm not very smart. I also bet on Leicester winning the league a few years back.",
+    "I do like to gamble. I like to bet on sports. I don't like to lose money.",
+    "I bet on basketball and football. I also bet on hockey sometimes. I bet too much and lost too much.",
+    "That sounds like fun! I wish I had a bike. My car is too small for that",
+    "Yes, but I live in a big city. It is hard to find places to drive.",
+    "I am too young to drive, but my parents are always driving. I am a senior citizen.",
+    "That's great. I wish I had more friends. I'm still in high school. What about you",
+    "I do not. But I do have a job. Do you have a career?",
+    "I think nature is beautiful. What do you do for work?",
+    "I used to play the piano when I was a kid. I still play it sometimes.",
+    "I wish. I am saving up to move to the city. I love it there. I just need a bigger apartment.",
+    "It is a little ways away. It is not that I don;t like walking, I just prefer to drive.",
+    "Yes, I have a car. Do your parents drive you?",
+    "It does! I can even access my bank account from my computer. I just love using the computer.",
+    "Yes, I love to cook for my family. I love baking brownies. They love the sugar and chocolate chips.",
+    "Yes, I am. It's a tough job, but I try my best. Sometimes, I feel like I'm not doing enough.",
+    "I grow herbivory, so I grow them when I am growing other things. I grow tomatoes, basil, and roses.",
+    "I have! I saw one in Iraq when I was in Desert Shield!",
+    "I do have a few. I have a yellow car. It is a Ford.",
+    "I remember watching that when I was little. Did you know that the UK version of That 70s Show lasted only 10 episodes?",
+    "I do! It is made up of cereal grains like wheat and maize! I love beer!",
+    "I do like to! It's made up mostly of water and sugars! I like cereals like Lucky Charms though!",
+    "I like art too. I like to paint. I paint houses. I am a painter.",
+    "I do like to. I read a lot in the military. What do you like?",
+    "I like playing video game too. My boyfriend likes watching me play. He says I'm good at it.",
+    "I like cars a lot. I like to drive them. I don' t know much else about them.",
+    "I understand. I am too. I just started driving a car. I can't believe I've been driving for so long.",
+    "I like them too. I like the old ones better though. I am old. Lol.",
+    "I like to eat pizza in my car. I can't drive my car with my face in the wind.",
+    "I like the money. I don't like the hours. I just like to be home.",
+    "I like cars that are reliable. I don;t like to drive them, but I like to look at them.",
+    "I understand. I'm not a fan of driving either. I like riding in the car with my family.",
+    "I used to play in high school and college. I'm not very good though.",
+    "I did. I liked it a lot. I wish I could go back. I'm not sure if I can even find a job now.",
+    "I hope you like talking to me! I'm a real boy! I have a beard!",
+    "That's great. I wish I had more friends. They're all in the military.",
+    "They are. They're in the Navy. It's a tough life. But they're all so good at their jobs.",
+    "I do not know. I do know that the universe used to be opaque due to there being so much plasma.",
+    "I would love to. I just bought a new house and I'm trying to find the perfect set to put in it.",
+    "I bought it with my credit card. I'm not sure I can afford it. I need to save more.",
+]
+
 
 def build(opt):
     dpath = os.path.join(opt['datapath'], 'child_companion_dialog')
-    version = 'v0.0'
+    ignore_improper_utterances = opt.get('ignore_improper_utterances', False)
+    version = 'v0.0' + ('_ignore_imp' if ignore_improper_utterances else '')
     task_data_version = opt.get('task_data_version', 'All')
 
     dpath = os.path.join(dpath, task_data_version)
@@ -71,12 +139,12 @@ def build(opt):
         for downloadable_file in RESOURCES.get(task_data_version, RESOURCES['All']):
             downloadable_file.download_file(dpath)
 
-        _create_parlai_format(dpath, opt.get('min_dialogue_turns', -1))
+        _create_parlai_format(dpath, opt.get('min_dialogue_turns', -1), ignore_improper_utterances=ignore_improper_utterances)
 
         build_data.mark_done(dpath, version_string=version)
 
 
-def _create_parlai_format(dpath, min_dialogue_turns=-1):
+def _create_parlai_format(dpath, min_dialogue_turns=-1, ignore_improper_utterances=False):
     conv_files = glob.glob(os.path.join(dpath, '**/t_*/custom/data.json'), recursive=True)
     conv_data = []
     for conv_file in conv_files:
@@ -87,11 +155,12 @@ def _create_parlai_format(dpath, min_dialogue_turns=-1):
 
     with open(os.path.join(dpath, 'train.txt'), 'w') as f_write:
         for conv in conv_data:
-            for line in _get_lines(conv, min_dialogue_turns=min_dialogue_turns):
+            for line in _get_lines(conv, min_dialogue_turns=min_dialogue_turns,
+                                   ignore_improper_utterances=ignore_improper_utterances):
                 f_write.write(f'{line} \n')
 
 
-def _get_lines(conv, min_dialogue_turns=-1):
+def _get_lines(conv, min_dialogue_turns=-1, ignore_improper_utterances=False):
     lines = []
     num_of_turns = len(conv['conversations']) // 2
 
@@ -102,13 +171,18 @@ def _get_lines(conv, min_dialogue_turns=-1):
         bot_start_conv = True
         lines.append({
             'text': '',
-            'labels': conv['conversations'][0]['text']
+            'labels': conv['conversations'][0]['text'],
         })
         conv['conversations'] = conv['conversations'][1:]
     else:
         bot_start_conv = False
 
     for turn_idx in range(num_of_turns):
+        text = conv['conversations'][2 * turn_idx]['text']
+        labels = conv['conversations'][2 * turn_idx + 1]['text']
+
+        if ignore_improper_utterances and ((text.strip() in IGNORE_UTTERANCES) or (labels.strip() in IGNORE_UTTERANCES)):
+            return []
         lines.append({
             'text': conv['conversations'][2 * turn_idx]['text'],
             'labels': conv['conversations'][2 * turn_idx + 1]['text']

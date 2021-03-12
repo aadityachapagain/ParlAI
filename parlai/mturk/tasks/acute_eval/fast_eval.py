@@ -48,24 +48,49 @@ import torch
 import hashlib
 
 
+# DEDICATED_WORKERS = [
+#     'A182N7RLXGSCZG',
+#     'A1PLZ8RM4NW43J',
+#     'A1T6TPNU64ZH9F',
+#     'A1WAWEY2810TFN',
+#     'A24RCKH0Q3GMQY',
+#     'A2HC9549CZAKNN',
+#     'A2LR1HKNOVDTJ8',
+#     'A2UKO65AVU38T4',
+#     'A2WIEFKYR5LJQ1',
+#     'A34RAQL1JVSK70',
+#     'A36F8PDK1DMAN1',
+#     'A38N05VH5344HC',
+#     'A3DAZYTJQ74UOQ',
+#     'A3DELT7BVEPU24',
+#     'A3MYPYBVHX7FQ2',
+#     'A4BDXOXC4D8FX',
+#     'AB1GNKQ0KS4R9',
+# ]
+
 DEDICATED_WORKERS = [
-    # 'A182N7RLXGSCZG',
-    # 'A1PLZ8RM4NW43J',
-    # 'A1T6TPNU64ZH9F',
-    # 'A1WAWEY2810TFN',
-    # 'A24RCKH0Q3GMQY',
-    # 'A2HC9549CZAKNN',
-    # 'A2LR1HKNOVDTJ8',
-    # 'A2UKO65AVU38T4',
-    # 'A2WIEFKYR5LJQ1',
-    # 'A34RAQL1JVSK70',
-    # 'A36F8PDK1DMAN1',
-    # 'A38N05VH5344HC',
-    # 'A3DAZYTJQ74UOQ',
-    # 'A3DELT7BVEPU24',
-    # 'A3MYPYBVHX7FQ2',
-    # 'A4BDXOXC4D8FX',
-    # 'AB1GNKQ0KS4R9',
+    'AZKX3JFPKFWNC',
+    'A1PLZ8RM4NW43J',
+    'A1T6TPNU64ZH9F',  # Removed Worker A182N7RLXGSCZG from golden list
+    'A1WAWEY2810TFN',
+    'A24RCKH0Q3GMQY',
+    'A2HC9549CZAKNN',
+    'A2LR1HKNOVDTJ8',
+    'A2UKO65AVU38T4',
+    'A2WIEFKYR5LJQ1',
+    'A34RAQL1JVSK70',
+    'A36F8PDK1DMAN1',
+
+    'A38N05VH5344HC',
+    'A3DAZYTJQ74UOQ',
+    'A3DELT7BVEPU24',
+    'A3MYPYBVHX7FQ2',
+    'A4BDXOXC4D8FX',
+    'A7SXWHGK8B40R',
+    'AB1GNKQ0KS4R9',
+    'AGZ3GHE3N634N',
+    'AJZEXCH1TSUE1',
+    'AOEO9ZV81R0I4',
 ]
 
 ########################
@@ -114,8 +139,8 @@ EXAMPLE_PATH = os.path.join(
 )
 # Feel free to edit this, but not necessary
 SUBTASKS_PER_HIT = 5
-MAX_HITS_PER_WORKER = 20
-MATCHUPS_PER_PAIR = 500
+MAX_HITS_PER_WORKER = 75
+MATCHUPS_PER_PAIR = 1500
 
 ACUTE_DEFAULT_ARGS = {
     # onboarding
@@ -139,7 +164,7 @@ ACUTE_DEFAULT_ARGS = {
     },
     # temp directory for MTURK
     'tmp_dir': '/tmp',
-    'dedicated_worker_qualification': 'TestEnagingAcuteEvalWorkerQualification20210310',
+    'dedicated_worker_qualification': 'GuidedVsUnguidedDedicatedWorkerAcuteEvalWorkerQualification20210312',
 }
 
 #######################
@@ -725,6 +750,52 @@ class CCDPersonaMatchingQuickAcute(ParlAIQuickAcute):
                           (c.context and (c.context[0]['text'][-1] == persona))]
                 for persona in common_personas},
         }
+
+    def _build_conversation_pairs(
+        self, conversations: Dict[str, Conversations]
+    ) -> List[Dict[str, Any]]:
+        """
+        Build a conversation pair to show during ACUTE Eval.
+
+        We build twice as many pairs per matchup as specified
+        in the config, to account for issues where sometimes
+        we run out of pairs of conversations to evaluate.
+
+        :param conversations:
+            A dictionary mapping config_id to dialogues
+
+        :return pairs:
+            A list of conversation pairs
+        """
+        unique_ids = self._get_unique_ids(conversations)
+        pairs = []
+        pairs_per_id = self.opt['matchups_per_pair'] * 2
+        # Write random pairs of conversations
+        for id_pair in self.combos:
+            idx = 0
+            while True:
+                conversation_indices = [
+                    random.choice(range(len(conversations[id_]))) for id_ in id_pair
+                ]
+                pair = []
+                pair_ids = []
+                for i, c_id in enumerate(conversation_indices):
+                    id_ = id_pair[i]
+                    pair.append(self._acutify_convo(conversations[id_][c_id], id_))
+                    pair_ids.append(unique_ids[id_][c_id])
+
+                candidate_pair = {
+                        "is_onboarding": False,
+                        "speakers_to_eval": id_pair,
+                        "dialogue_dicts": pair,
+                        "dialogue_ids": pair_ids,
+                    }
+                if candidate_pair not in pairs:
+                    pairs.append(candidate_pair)
+                    idx += 1
+                if idx >= pairs_per_id:
+                    break
+        return pairs
 
     # def _build_conversation_pairs(
     #         self, conversations: Dict[str, Conversations]

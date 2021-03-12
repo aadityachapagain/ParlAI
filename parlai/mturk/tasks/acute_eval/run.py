@@ -642,8 +642,8 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
             f"{len(self.opt.get('acute_questions')) if self.opt.get('acute_questions') else 'some'} questions "
             "we've put on the task. Please find the HITs using following link. "
             f"\nLink: {self.mturk_page_url} \n"
-            "Note: We're experimenting with this tasks. If everything goes well we might come up with higher"
-            " number of HITs with higher rewards."
+            # "Note: We're experimenting with this tasks. If everything goes well we might come up with higher"
+            # " number of HITs with higher rewards."
         )
 
         return subject, message

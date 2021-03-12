@@ -139,7 +139,7 @@ EXAMPLE_PATH = os.path.join(
 )
 # Feel free to edit this, but not necessary
 SUBTASKS_PER_HIT = 5
-MAX_HITS_PER_WORKER = 75
+MAX_HITS_PER_WORKER = 85
 MATCHUPS_PER_PAIR = 1500
 
 ACUTE_DEFAULT_ARGS = {

@@ -139,15 +139,16 @@ EXAMPLE_PATH = os.path.join(
 )
 # Feel free to edit this, but not necessary
 SUBTASKS_PER_HIT = 5
-MAX_HITS_PER_WORKER = 85
+MAX_HITS_PER_WORKER = 40
 MATCHUPS_PER_PAIR = 1500
 
 ACUTE_DEFAULT_ARGS = {
     # onboarding
-    'block-on-onboarding-fail': True,
+    # 'block-on-onboarding-fail': True,
+    'block_on_onboarding_fail': False,
     # pairings
     # general mturk
-    'reward': 0.25,
+    'reward': 0.5,
     'max_hits_per_worker': MAX_HITS_PER_WORKER,
     'assignment_duration_in_seconds': 600,
     'auto_approve_delay': 172800,
@@ -164,7 +165,7 @@ ACUTE_DEFAULT_ARGS = {
     },
     # temp directory for MTURK
     'tmp_dir': '/tmp',
-    'dedicated_worker_qualification': 'GuidedVsUnguidedDedicatedWorkerAcuteEvalWorkerQualification20210312',
+    'dedicated_worker_qualification': 'GuidedVsUnguidedDedicatedWorkerAcuteEvalWorkerQualification20210315',
 }
 
 #######################

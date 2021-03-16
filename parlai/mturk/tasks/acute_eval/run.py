@@ -634,10 +634,12 @@ class PersonaMatchingAcuteEvaluator(AcuteEvaluator):
         ]
 
     def _get_hit_notification_message(self):
-        subject = "Which Conversational Partner is Better?"
+        subject = "Relaunch: Which Conversational Partner is Better?"
         message = (
+            "Due to technical issues we've relaunched yesterday's HITs. We apologise for any inconvenience caused.\n\n"
             "Thank you for your contribution in Child Companion Dialog HIT you did for us. "
-            f"We have created another set of {self.opt['max_hits_per_worker']} HITs, only for you. "
+            f"We have created another set of {self.opt['max_hits_per_worker']} HITs with "
+            f"${self.opt['reward']} reward per HIT, only for you. "
             f"In this task, you'll read two conversation and compare two of the speakers based on "
             f"{len(self.opt.get('acute_questions')) if self.opt.get('acute_questions') else 'some'} questions "
             "we've put on the task. Please find the HITs using following link. "

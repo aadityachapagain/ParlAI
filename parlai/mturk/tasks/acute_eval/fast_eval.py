@@ -151,7 +151,7 @@ ACUTE_DEFAULT_ARGS = {
     'reward': 0.5,
     'max_hits_per_worker': MAX_HITS_PER_WORKER,
     'assignment_duration_in_seconds': 600,
-    'auto_approve_delay': 172800,
+    'auto_approve_delay': 86400,
     'count_complete': True,
     # acute args
     'annotations_per_pair': 3,
@@ -165,7 +165,7 @@ ACUTE_DEFAULT_ARGS = {
     },
     # temp directory for MTURK
     'tmp_dir': '/tmp',
-    'dedicated_worker_qualification': 'GuidedVsUnguidedDedicatedWorkerAcuteEvalWorkerQualification20210315',
+    'dedicated_worker_qualification': 'GuidedVsUnguidedDedicatedWorkerAcuteEvalWorkerQualification20210316',
 }
 
 #######################
